@@ -8,7 +8,7 @@ from petools.tools.utils import (TF, preprocess_input,
                                  scale_predicted_kp, scales_image_single_dim_keep_dims,
                                  draw_skeleton)
 from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
-from utils import (CONNECT_KP, modify_humans, IMAGE_INPUT_SIZE)
+from .utils import CONNECT_KP, modify_humans, IMAGE_INPUT_SIZE
 
 
 class PosePredictorLite:
