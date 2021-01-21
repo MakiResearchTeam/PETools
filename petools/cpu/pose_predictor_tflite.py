@@ -295,7 +295,7 @@ class PosePredictor:
             Image with skeletons on it
 
         """
-        predictions_humans = predictions[PosePredictorLite.HUMANS]
+        predictions_humans = predictions[PosePredictor.HUMANS]
         humans = [list(single_h.values()) for single_h in predictions_humans]
         return draw_skeleton(image.copy(), humans, connect_indexes=CONNECT_KP, color=color, thickness=thick)
 
