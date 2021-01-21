@@ -176,11 +176,11 @@ class PosePredictor:
 
         updated_humans = modify_humans(humans)
         return {
-            PosePredictorLite.HUMANS: [
-                dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictorLite.NUM_KEYPOINTS), single_human)))
+            PosePredictor.HUMANS: [
+                dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictor.NUM_KEYPOINTS), single_human)))
                 for single_human in updated_humans
             ],
-            PosePredictorLite.TIME: end_time
+            PosePredictor.TIME: end_time
         }
 
     def _predict(self, norm_img):
