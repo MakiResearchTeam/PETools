@@ -1,2 +1,2 @@
 
-from .pose_predictor_tflite import PosePredictorLite
+from .pose_predictor_tflite import PosePredictor

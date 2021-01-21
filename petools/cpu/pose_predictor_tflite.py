@@ -11,9 +11,9 @@ from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, 
 from .utils import CONNECT_KP, modify_humans, IMAGE_INPUT_SIZE
 
 
-class PosePredictorLite:
+class PosePredictor:
     """
-    PosePredictorLite - wrapper of PEModel from MakiPoseNet
+    PosePredictor - wrapper of PEModel from MakiPoseNet
     Contains main tools for drawing skeletons and predict them.
 
     """
