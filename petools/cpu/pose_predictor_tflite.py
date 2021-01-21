@@ -4,7 +4,7 @@ import time
 import json
 import numpy as np
 import os
-from petools.tools.utils import (TF, preprocess_input,
+from petools.tools.utils import (TF, CAFFE, preprocess_input,
                                  scale_predicted_kp, scales_image_single_dim_keep_dims,
                                  draw_skeleton)
 from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
@@ -27,7 +27,7 @@ class PosePredictorLite:
             self,
             path_to_tflite: str,
             path_to_config: str,
-            norm_mode=TF,
+            norm_mode=CAFFE,
             gpu_id=';'
     ):
         """
@@ -67,6 +67,7 @@ class PosePredictorLite:
         self.__min_h = H
         self.__max_w = W
         self._saved_mesh_grid = None
+        self._pred_down_scale = 2
 
         interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb))
         interpreter.allocate_tensors()
@@ -211,6 +212,11 @@ class PosePredictorLite:
         )
 
         indices, peaks = self._apply_nms_and_get_indices(smoothed_heatmap_pr)
+
+        if self._pred_down_scale > 1:
+            # Scale kp
+            indices *= np.array([self._pred_down_scale] * 2 + [1], dtype=np.int32)
+
         return [
             merge_similar_skelets(estimate_paf(
                 peaks=peaks.astype(np.float32, copy=False),
