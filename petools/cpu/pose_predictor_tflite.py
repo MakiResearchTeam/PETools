@@ -94,7 +94,8 @@ class PosePredictor:
         padding : int
             Number of padding need to be added to W, in order to be divided by 8 without remains
         padding_h_before_resize : int
-            Padding h before resize operation
+            Padding h before resize operation, if equal to None,
+            i.e. this operation (padding) is not required
 
         """
         padding_h_before_resize = None
@@ -105,13 +106,16 @@ class PosePredictor:
         new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
 
         if self.__max_w - new_w <= 0:
+            # Find new value for H which is more suitable in order to calculate lower image
+            # And give that to model
             recalc_w = int(image_size[1] * self.__W_BY_H)
             new_image_size = (
                 recalc_w + (self.__SCALE + recalc_w % self.__SCALE) - self.__SCALE,
                 image_size[1]
             )
+            # We must add zeros by H dimension in original image
             padding_h_before_resize = new_image_size[0] - image_size[0]
-
+            # Again calculate resize scales and calculate new_w and new_h for resize operation
             scale_x, scale_y = scales_image_single_dim_keep_dims(
                 image_size=new_image_size,
                 resize_to=self.__min_h
