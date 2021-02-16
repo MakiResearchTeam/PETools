@@ -128,7 +128,7 @@ class PosePredictor:
         ----------
         image : np.ndarray
             Input image, with shape (H, W, 3): H - Height, W - Width (H and W can have any values)
-            For mose models - input image must be in bgr order
+            For most of models - input image must be in bgr order
 
         Returns
         -------
@@ -166,7 +166,8 @@ class PosePredictor:
         """
         # Get final image size and padding value
         (new_h, new_w), padding, padding_h_before_resize = self.__get_image_info(image.shape[:-1])
-        # Padding image by H axis
+        # Padding image by H axis with zeros
+        # in order to be more suitable size after resize to new_w and new_h
         if padding_h_before_resize is not None:
             # Pad image with zeros,
             padding_image = np.zeros(
@@ -174,12 +175,11 @@ class PosePredictor:
             ).astype(np.uint8, copy=False)
             padding_image[:image.shape[0]] = image
             image = padding_image
-
+        # Apply resize
         resized_img = cv2.resize(image, (new_w, new_h))
-
+        # Pad image with zeros,
+        # In order to image be divided by PosePredictor.__SCALE (in most cases equal to 8) without reminder
         if padding:
-            # Pad image with zeros,
-            # In order to image be divided by PosePredictor.__SCALE (in most cases equal to 8) without reminder
             single_img_input = np.zeros((new_h, new_w + padding, 3)).astype(np.uint8, copy=False)
             single_img_input[:, :resized_img.shape[1]] = resized_img
         else:
