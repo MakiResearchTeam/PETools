@@ -93,7 +93,7 @@ class PosePredictor:
         )
         self.__sess = tf.Session()
 
-    def __get_image_info(self, image_size: list) -> ((int, int), int):
+    def __get_image_info(self, image_size: list):
         """
 
         Parameters
@@ -109,7 +109,6 @@ class PosePredictor:
             Number of padding need to be added to W, in order to be divided by 8 without remains
 
         """
-
         scale_x, scale_y = scales_image_single_dim_keep_dims(
             image_size=image_size,
             resize_to=self.__min_h

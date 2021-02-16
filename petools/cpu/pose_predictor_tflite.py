@@ -17,6 +17,10 @@ class PosePredictor:
     Contains main tools for drawing skeletons and predict them.
 
     """
+    # 1920x1080
+    __H_BY_W = 1920.0 / 1080.0
+    __W_BY_H = 1080.0 / 1920.0
+
     __SCALE = 8
     NUM_KEYPOINTS = 23
 
@@ -78,7 +82,7 @@ class PosePredictor:
         self.__resized_paf = interpreter.get_output_details()[0]["index"]
         self.__smoothed_heatmap = interpreter.get_output_details()[1]["index"]
 
-    def __get_image_info(self, image_size: list) -> ((int, int), int):
+    def __get_image_info(self, image_size: list):
         """
 
         Parameters
@@ -94,12 +98,23 @@ class PosePredictor:
             Number of padding need to be added to W, in order to be divided by 8 without remains
 
         """
-
         scale_x, scale_y = scales_image_single_dim_keep_dims(
             image_size=image_size,
             resize_to=self.__min_h
         )
         new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
+        if self.__max_w - new_w <= 0:
+            recalc_w = int(image_size[1] * self.__W_BY_H)
+            image_size = (
+                recalc_w + (self.__SCALE + recalc_w % self.__SCALE) + self.__SCALE,
+                image_size[1]
+            )
+
+            scale_x, scale_y = scales_image_single_dim_keep_dims(
+                image_size=image_size,
+                resize_to=self.__min_h
+            )
+            new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
 
         return (new_h, new_w), self.__max_w - new_w
 
