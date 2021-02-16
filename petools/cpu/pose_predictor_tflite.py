@@ -96,27 +96,32 @@ class PosePredictor:
             Height and Width of final input image into estimate_tools
         padding : int
             Number of padding need to be added to W, in order to be divided by 8 without remains
+        padding_h_before_resize : int
+            Padding h before resize operation
 
         """
+        padding_h_before_resize = None
         scale_x, scale_y = scales_image_single_dim_keep_dims(
             image_size=image_size,
             resize_to=self.__min_h
         )
         new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
+
         if self.__max_w - new_w <= 0:
             recalc_w = int(image_size[1] * self.__W_BY_H)
-            image_size = (
-                recalc_w + (self.__SCALE + recalc_w % self.__SCALE) + self.__SCALE,
+            new_image_size = (
+                recalc_w + (self.__SCALE + recalc_w % self.__SCALE) - self.__SCALE,
                 image_size[1]
             )
+            padding_h_before_resize = new_image_size[0] - image_size[0]
 
             scale_x, scale_y = scales_image_single_dim_keep_dims(
-                image_size=image_size,
+                image_size=new_image_size,
                 resize_to=self.__min_h
             )
-            new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
+            new_w, new_h = round(scale_x * new_image_size[1]), round(scale_y * new_image_size[0])
 
-        return (new_h, new_w), self.__max_w - new_w
+        return (new_h, new_w), self.__max_w - new_w, padding_h_before_resize
 
     def predict(self, image: np.ndarray):
         """
@@ -163,8 +168,18 @@ class PosePredictor:
 
         """
         # Get final image size and padding value
-        (new_h, new_w), padding = self.__get_image_info(image.shape[:-1])
+        (new_h, new_w), padding, padding_h_before_resize = self.__get_image_info(image.shape[:-1])
+        # Padding image by H axis
+        if padding_h_before_resize is not None:
+            # Pad image with zeros,
+            padding_image = np.zeros(
+                (image.shape[0]+padding_h_before_resize, image.shape[1], image.shape[2])
+            ).astype(np.uint8, copy=False)
+            padding_image[:image.shape[0]] = image
+            image = padding_image
+
         resized_img = cv2.resize(image, (new_w, new_h))
+
         if padding:
             # Pad image with zeros,
             # In order to image be divided by PosePredictor.__SCALE (in most cases equal to 8) without reminder
