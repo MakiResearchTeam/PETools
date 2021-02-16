@@ -17,10 +17,7 @@ class PosePredictor:
     Contains main tools for drawing skeletons and predict them.
 
     """
-    # 1920x1080
-    __H_BY_W = 1920.0 / 1080.0
-    __W_BY_H = 1080.0 / 1920.0
-
+    __W_BY_H = 1128.0 / 1920.0
     __SCALE = 8
     NUM_KEYPOINTS = 23
 
