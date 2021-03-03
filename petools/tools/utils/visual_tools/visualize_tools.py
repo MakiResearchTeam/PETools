@@ -55,3 +55,4 @@ def draw_skeleton(image, humans: list, connect_indexes: list, color=(255, 0, 0),
                 cv2.line(image, p_1, p_2, color=color, thickness=thickness)
 
     return image
+

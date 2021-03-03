@@ -4,27 +4,18 @@ import time
 import json
 import numpy as np
 import os
-from petools.tools.utils import (CAFFE, preprocess_input,
-                                 scale_predicted_kp, scales_image_single_dim_keep_dims,
-                                 draw_skeleton)
+from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp, scales_image_single_dim_keep_dims
 from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
+from petools.core import modify_humans, load_graph_def, PosePredictorInterface
+from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR
 
-from .utils import (CONNECT_KP, modify_humans, load_graph_def,
-                    INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR)
 
-
-class PosePredictor:
+class PosePredictor(PosePredictorInterface):
     """
     PosePredictor - wrapper of PEModel from MakiPoseNet
     Contains main tools for drawing skeletons and predict them.
 
     """
-    __SCALE = 8
-    NUM_KEYPOINTS = 23
-
-    HUMANS = 'humans'
-    TIME = 'time'
-
     INPUT_NAME = INPUT_TENSOR
     IND_TENSOR_NAME = IND_TENSOR
     PAF_NAME = PAF_TENSOR
@@ -115,9 +106,10 @@ class PosePredictor:
         )
         new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
 
-        return (new_h, new_w), self.__SCALE - new_w % self.__SCALE
+        return (new_h, new_w), self.SCALE - new_w % self.SCALE
 
     def predict(self, image: np.ndarray):
+
         """
         Estimate poses on single image
 
@@ -159,14 +151,14 @@ class PosePredictor:
                 ],
                 PosePredictor.TIME: some_float_number
             }
-
+            Where PosePredictor.HUMANS and PosePredictor.TIME - are strings ('humans' and 'time')
         """
         # Get final image size and padding value
         (new_h, new_w), padding = self.__get_image_info(image.shape[:-1])
         resized_img = cv2.resize(image, (new_w, new_h))
         if padding:
             # Pad image with zeros,
-            # In order to image be divided by PosePredictor.__SCALE (in most cases equal to 8) without reminder
+            # In order to image be divided by PosePredictor.SCALE (in most cases equal to 8) without reminder
             single_img_input = np.zeros((new_h, new_w + padding, 3)).astype(np.uint8, copy=False)
             single_img_input[:, :resized_img.shape[1]] = resized_img
         else:
@@ -230,30 +222,7 @@ class PosePredictor:
             ))
         ]
 
-    def draw(self, image: np.ndarray, predictions: dict, color=(255, 0, 0), thick=3):
-        """
-        Draw skeletons from `preidctions` on certain `image`
-        With parameters such as color and thick of the line
 
-        Parameters
-        ----------
-        image : np.ndarray
-            The image on which detection was performed
-        predictions : dict
-            Prediction on `image` from this class and method `predict`
-        color : tuple
-            Color of the line,
-            By default equal to (255, 0, 0) - i.e. red line
-        thick : int
-            Thick of the line, by default equal to 3, in most cases this value is enough
-
-        Returns
-        -------
-        np.ndarray
-            Image with skeletons on it
-
-        """
-        predictions_humans = predictions[PosePredictor.HUMANS]
-        humans = [list(single_h.values()) for single_h in predictions_humans]
-        return draw_skeleton(image.copy(), humans, connect_indexes=CONNECT_KP, color=color, thickness=thick)
+if __name__ == '__main__':
+    print(PosePredictor.HUMANS)
 
