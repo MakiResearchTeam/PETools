@@ -1,5 +1,5 @@
 import cv2
-from petools.core import PosePredictorInterface
+from petools.tools.utils.visual_tools.draw_skeletons import draw_skeletons_on_image
 
 
 class SkeletonDrawer:
@@ -41,7 +41,7 @@ class SkeletonDrawer:
             self._init((h, w))
 
         for image, prediction in zip(images, predictions):
-            image = PosePredictorInterface.draw(image, prediction, self._color)
+            image = draw_skeletons_on_image(image, prediction, self._color)
             self._video.write(image)
 
     def release(self):
