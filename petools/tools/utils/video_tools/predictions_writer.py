@@ -1,7 +1,8 @@
 from tqdm import tqdm
-from .video_reader import VideoReader
-from .skeleton_video_writer import SkeletonDrawer
+
 from petools.core import PosePredictorInterface
+from .skeleton_video_writer import SkeletonDrawer
+from .video_reader import VideoReader
 
 DEFAULT_BATCH_SIZE = 1
 

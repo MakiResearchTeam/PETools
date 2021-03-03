@@ -1,7 +1,7 @@
 import numpy as np
 
 from petools.core import PosePredictorInterface, CONNECT_KP
-from petools.tools import draw_skeleton
+from .visualize_tools import draw_skeleton
 
 
 def draw_skeletons_on_image(image: np.ndarray, predictions: dict, color=(255, 0, 0), thick=3):

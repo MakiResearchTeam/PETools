@@ -1,14 +1,16 @@
-import cv2
-import tensorflow as tf
-import time
 import json
-import numpy as np
 import os
+import time
+
+import cv2
+import numpy as np
+import tensorflow as tf
+
+from petools.core import PosePredictorInterface, modify_humans
+from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
 from petools.tools.utils import (CAFFE, preprocess_input,
                                  scale_predicted_kp, scales_image_single_dim_keep_dims)
-from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
 from .utils import IMAGE_INPUT_SIZE
-from petools.core import PosePredictorInterface, modify_humans
 
 
 class PosePredictor(PosePredictorInterface):
