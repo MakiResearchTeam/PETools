@@ -177,7 +177,7 @@ class PosePredictor(PosePredictorInterface):
             padding_image[:image.shape[0]] = image
             image = padding_image
         # Apply resize
-        resized_img = cv2.resize(image, (new_w, new_h))
+        resized_img = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
         # Pad image with zeros,
         # In order to image be divided by PosePredictor.SCALE (in most cases equal to 8) without reminder
         if padding:
