@@ -196,7 +196,7 @@ class PosePredictor(PosePredictorInterface):
                 (self._saved_padding_image.shape[1] != calc_new_w) or \
                 (self._saved_padding_image.shape[2] != 3):
                 self._saved_padding_image = np.zeros(
-                    (new_h, calc_new_w + padding, 3),
+                    (new_h, calc_new_w, 3),
                     dtype=np.uint8
                 )
 
