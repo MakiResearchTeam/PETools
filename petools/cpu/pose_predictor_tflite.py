@@ -172,8 +172,9 @@ class PosePredictor(PosePredictorInterface):
         if padding_h_before_resize is not None:
             # Pad image with zeros,
             padding_image = np.zeros(
-                (image.shape[0]+padding_h_before_resize, image.shape[1], image.shape[2])
-            ).astype(np.uint8, copy=False)
+                (image.shape[0]+padding_h_before_resize, image.shape[1], image.shape[2]),
+                dtype=np.uint8
+            )
             padding_image[:image.shape[0]] = image
             image = padding_image
         # Apply resize
@@ -181,13 +182,16 @@ class PosePredictor(PosePredictorInterface):
         # Pad image with zeros,
         # In order to image be divided by PosePredictor.SCALE (in most cases equal to 8) without reminder
         if padding:
-            single_img_input = np.zeros((new_h, new_w + padding, 3)).astype(np.uint8, copy=False)
+            single_img_input = np.zeros(
+                (new_h, new_w + padding, 3),
+                dtype=np.uint8
+            )
             single_img_input[:, :resized_img.shape[1]] = resized_img
         else:
             single_img_input = resized_img
 
         # Add batch dimension
-        img = np.expand_dims(single_img_input, axis=0).astype(np.float32, copy=False)
+        img = np.expand_dims(single_img_input, axis=0)
         # Normalize image
         norm_img = preprocess_input(img, mode=self.__norm_mode).astype(np.float32, copy=False)
         # Measure time of prediction
@@ -230,7 +234,7 @@ class PosePredictor(PosePredictorInterface):
 
         interpreter = self.__interpreter
         interpreter.set_tensor(self.__in_x, norm_img)
-        interpreter.set_tensor(self.__upsample_size, np.array(resize_to).astype(np.int32, copy=False))
+        interpreter.set_tensor(self.__upsample_size, np.array(resize_to))
         # Run estimate_tools
         interpreter.invoke()
 
