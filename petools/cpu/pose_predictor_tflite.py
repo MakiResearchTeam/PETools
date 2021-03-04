@@ -234,7 +234,7 @@ class PosePredictor(PosePredictorInterface):
 
         interpreter = self.__interpreter
         interpreter.set_tensor(self.__in_x, norm_img)
-        interpreter.set_tensor(self.__upsample_size, np.array(resize_to))
+        interpreter.set_tensor(self.__upsample_size, np.array(resize_to, dtype=np.int32))
         # Run estimate_tools
         interpreter.invoke()
 
