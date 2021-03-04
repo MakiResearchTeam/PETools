@@ -65,6 +65,8 @@ class PosePredictor(PosePredictorInterface):
         self.__min_h = H
         self.__max_w = W
         self._saved_mesh_grid = None
+        self._saved_new_image = None
+        self._saved_padding_image = None
         self._pred_down_scale = 2
 
         interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb))
@@ -171,27 +173,39 @@ class PosePredictor(PosePredictorInterface):
         # in order to be more suitable size after resize to new_w and new_h
         if padding_h_before_resize is not None:
             # Pad image with zeros,
-            padding_image = np.zeros(
-                (image.shape[0]+padding_h_before_resize, image.shape[1], image.shape[2]),
-                dtype=np.uint8
-            )
-            padding_image[:image.shape[0]] = image
-            image = padding_image
+            calc_new_h = image.shape[0]+padding_h_before_resize
+            if self._saved_new_image is None or \
+                (self._saved_new_image.shape[0] != calc_new_h) or \
+                (self._saved_new_image.shape[1] != image.shape[1]) or \
+                (self._saved_new_image.shape[2] != image.shape[2]):
+                self._saved_new_image = np.zeros(
+                    (calc_new_h, image.shape[1], image.shape[2]),
+                    dtype=np.uint8
+                )
+
+            self._saved_new_image[:image.shape[0]] = image
+            image = self._saved_new_image
         # Apply resize
         resized_img = cv2.resize(image, (new_w, new_h))
         # Pad image with zeros,
         # In order to image be divided by PosePredictor.SCALE (in most cases equal to 8) without reminder
         if padding:
-            single_img_input = np.zeros(
-                (new_h, new_w + padding, 3),
-                dtype=np.uint8
-            )
-            single_img_input[:, :resized_img.shape[1]] = resized_img
+            calc_new_w = new_w + padding
+            if self._saved_padding_image is None or \
+                (self._saved_padding_image.shape[0] != new_h) or \
+                (self._saved_padding_image.shape[1] != calc_new_w) or \
+                (self._saved_padding_image.shape[2] != 3):
+                self._saved_padding_image = np.zeros(
+                    (new_h, calc_new_w + padding, 3),
+                    dtype=np.uint8
+                )
+
+            self._saved_padding_image[:, :resized_img.shape[1]] = resized_img
         else:
-            single_img_input = resized_img
+            self._saved_padding_image = resized_img
 
         # Add batch dimension
-        img = np.expand_dims(single_img_input, axis=0)
+        img = np.expand_dims(self._saved_padding_image, axis=0)
         # Normalize image
         norm_img = preprocess_input(img, mode=self.__norm_mode).astype(np.float32, copy=False)
         # Measure time of prediction
