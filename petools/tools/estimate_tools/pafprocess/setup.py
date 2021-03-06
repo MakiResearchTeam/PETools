@@ -1,6 +1,6 @@
 from distutils.core import setup, Extension
+
 import numpy
-import os
 
 # os.environ['CC'] = 'g++';
 setup(name='pafprocess_ext', version='1.0',
