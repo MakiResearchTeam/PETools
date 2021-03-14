@@ -179,6 +179,8 @@ class PosePredictor(PosePredictorInterface):
             ).astype(np.uint8, copy=False)
             padding_image[:image.shape[0]] = image
             image = padding_image
+        else:
+            padding_h_before_resize = 0
         # Apply resize
         resized_img = cv2.resize(image, (new_w, new_h))
         # Pad image with zeros,
