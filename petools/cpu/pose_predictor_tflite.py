@@ -66,6 +66,7 @@ class PosePredictor(PosePredictorInterface):
         H, W = config[IMAGE_INPUT_SIZE]
         self.__min_h = H
         self.__max_w = W
+        self.__resize_to = np.array([H, W]).astype(np.int32)
         self._saved_mesh_grid = None
         self._saved_padding_h = None
         self._saved_padding_w = None
@@ -251,11 +252,9 @@ class PosePredictor(PosePredictorInterface):
             List of predictions to each input image.
             Single element of this list is a List of classes Human which were detected.
         """
-        resize_to = norm_img[0].shape[:2]
-
         interpreter = self.__interpreter
         interpreter.set_tensor(self.__in_x, norm_img)
-        interpreter.set_tensor(self.__upsample_size, np.array(resize_to).astype(np.int32, copy=False))
+        interpreter.set_tensor(self.__upsample_size, self.__resize_to)
         # Run estimate_tools
         interpreter.invoke()
 
