@@ -69,8 +69,8 @@ class PosePredictor(PosePredictorInterface):
         self._saved_mesh_grid = None
         self._saved_padding_h = None
         self._saved_padding_w = None
-        self._scale_kp = np.array([self._pred_down_scale] * 2 + [1], dtype=np.int32)
         self._pred_down_scale = 2
+        self._scale_kp = np.array([self._pred_down_scale] * 2 + [1], dtype=np.int32)
 
         interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
         interpreter.allocate_tensors()
