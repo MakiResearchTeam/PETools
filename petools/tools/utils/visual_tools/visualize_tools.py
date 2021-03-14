@@ -1,7 +1,6 @@
-
-
 import cv2
 import numpy as np
+
 from petools.tools.estimate_tools.human import Human
 
 
@@ -55,3 +54,4 @@ def draw_skeleton(image, humans: list, connect_indexes: list, color=(255, 0, 0),
                 cv2.line(image, p_1, p_2, color=color, thickness=thickness)
 
     return image
+

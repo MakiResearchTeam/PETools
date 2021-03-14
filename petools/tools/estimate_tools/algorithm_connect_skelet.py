@@ -1,7 +1,8 @@
 
+import itertools
+
 from .constants import NUMBER_OF_KEYPOINTS
 from .human import Human, BodyPart
-import itertools
 
 try:
     from .pafprocess import pafprocess

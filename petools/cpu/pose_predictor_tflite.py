@@ -1,28 +1,25 @@
-import cv2
-import tensorflow as tf
-import time
 import json
-import numpy as np
 import os
-from petools.tools.utils import (TF, CAFFE, preprocess_input,
-                                 scale_predicted_kp, scales_image_single_dim_keep_dims,
-                                 draw_skeleton)
+import time
+
+import cv2
+import numpy as np
+import tensorflow as tf
+
+from petools.core import PosePredictorInterface, modify_humans
 from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
-from .utils import CONNECT_KP, modify_humans, IMAGE_INPUT_SIZE
+from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
+from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
+from .utils import IMAGE_INPUT_SIZE
 
 
-class PosePredictor:
+class PosePredictor(PosePredictorInterface):
     """
     PosePredictor - wrapper of PEModel from MakiPoseNet
     Contains main tools for drawing skeletons and predict them.
 
     """
-    __W_BY_H = 1128.0 / 1920.0
-    __SCALE = 8
-    NUM_KEYPOINTS = 23
-
-    HUMANS = 'humans'
-    TIME = 'time'
+    W_BY_H = 1128.0 / 1920.0
 
     def __init__(
             self,
@@ -108,9 +105,9 @@ class PosePredictor:
         if self.__max_w - new_w <= 0:
             # Find new value for H which is more suitable in order to calculate lower image
             # And give that to model
-            recalc_w = int(image_size[1] * self.__W_BY_H)
+            recalc_w = int(image_size[1] * PosePredictor.W_BY_H)
             new_image_size = (
-                recalc_w + (self.__SCALE + recalc_w % self.__SCALE) - self.__SCALE,
+                recalc_w + (PosePredictor.SCALE + recalc_w % PosePredictor.SCALE) - PosePredictor.SCALE,
                 image_size[1]
             )
             # We must add zeros by H dimension in original image
@@ -182,7 +179,7 @@ class PosePredictor:
         # Apply resize
         resized_img = cv2.resize(image, (new_w, new_h))
         # Pad image with zeros,
-        # In order to image be divided by PosePredictor.__SCALE (in most cases equal to 8) without reminder
+        # In order to image be divided by PosePredictor.SCALE (in most cases equal to 8) without reminder
         if padding:
             single_img_input = np.zeros((new_h, new_w + padding, 3)).astype(np.uint8, copy=False)
             single_img_input[:, :resized_img.shape[1]] = resized_img
@@ -302,31 +299,3 @@ class PosePredictor:
         indices, peaks = self._get_peak_indices(heatmap_peaks)
 
         return indices, peaks
-
-    def draw(self, image: np.ndarray, predictions: dict, color=(255, 0, 0), thick=3):
-        """
-        Draw skeletons from `preidctions` on certain `image`
-        With parameters such as color and thick of the line
-
-        Parameters
-        ----------
-        image : np.ndarray
-            The image on which detection was performed
-        predictions : dict
-            Prediction on `image` from this class and method `predict`
-        color : tuple
-            Color of the line,
-            By default equal to (255, 0, 0) - i.e. red line
-        thick : int
-            Thick of the line, by default equal to 3, in most cases this value is enough
-
-        Returns
-        -------
-        np.ndarray
-            Image with skeletons on it
-
-        """
-        predictions_humans = predictions[PosePredictor.HUMANS]
-        humans = [list(single_h.values()) for single_h in predictions_humans]
-        return draw_skeleton(image.copy(), humans, connect_indexes=CONNECT_KP, color=color, thickness=thick)
-
