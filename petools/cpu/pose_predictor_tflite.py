@@ -67,6 +67,9 @@ class PosePredictor(PosePredictorInterface):
         self.__min_h = H
         self.__max_w = W
         self._saved_mesh_grid = None
+        self._saved_padding_h = None
+        self._saved_padding_w = None
+        self._scale_kp = np.array([self._pred_down_scale] * 2 + [1], dtype=np.int32)
         self._pred_down_scale = 2
 
         interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
@@ -174,9 +177,17 @@ class PosePredictor(PosePredictorInterface):
         # in order to be more suitable size after resize to new_w and new_h
         if padding_h_before_resize is not None:
             # Pad image with zeros,
-            padding_image = np.zeros(
-                (image.shape[0]+padding_h_before_resize, image.shape[1], image.shape[2])
-            ).astype(np.uint8, copy=False)
+            if self._saved_padding_h is None or \
+                    self._saved_padding_h.shape[0] != (image.shape[0]+padding_h_before_resize) or \
+                    self._saved_padding_h.shape[1] != image.shape[1] or \
+                    self._saved_padding_h.shape[2] != image.shape[2]:
+                padding_image = np.zeros(
+                    (image.shape[0]+padding_h_before_resize, image.shape[1], image.shape[2]),
+                    dtype=np.uint8
+                )
+                self._saved_padding_h = padding_image
+            else:
+                padding_image = self._saved_padding_h
             padding_image[:image.shape[0]] = image
             image = padding_image
         else:
@@ -186,15 +197,23 @@ class PosePredictor(PosePredictorInterface):
         # Pad image with zeros,
         # In order to image be divided by PosePredictor.SCALE (in most cases equal to 8) without reminder
         if padding:
-            single_img_input = np.zeros((new_h, new_w + padding, 3)).astype(np.uint8, copy=False)
+            # Pad image with zeros,
+            if self._saved_padding_w is None or \
+                    self._saved_padding_w.shape[0] != new_h or \
+                    self._saved_padding_w.shape[1] != (new_w + padding) or \
+                    self._saved_padding_w.shape[2] != 3:
+                single_img_input = np.zeros((new_h, new_w + padding, 3), dtype=np.uint8)
+                self._saved_padding_w = single_img_input
+            else:
+                single_img_input = self._saved_padding_w
             single_img_input[:, :resized_img.shape[1]] = resized_img
         else:
             single_img_input = resized_img
 
         # Add batch dimension
-        img = np.expand_dims(single_img_input, axis=0).astype(np.float32, copy=False)
+        img = np.expand_dims(single_img_input, axis=0)
         # Normalize image
-        norm_img = preprocess_input(img, mode=self.__norm_mode).astype(np.float32, copy=False)
+        norm_img = preprocess_input(img, mode=self.__norm_mode)
         # Measure time of prediction
         start_time = time.time()
         humans = self._predict(norm_img)[0]
@@ -249,13 +268,13 @@ class PosePredictor(PosePredictorInterface):
 
         if self._pred_down_scale > 1:
             # Scale kp
-            indices *= np.array([self._pred_down_scale] * 2 + [1], dtype=np.int32)
+            indices *= self._scale_kp
 
         return [
             merge_similar_skelets(estimate_paf(
                 peaks=peaks.astype(np.float32, copy=False),
                 indices=indices.astype(np.int32, copy=False),
-                paf_mat=paf_pr[0]
+                paf_mat=paf_pr[0].astype(np.float32, copy=False)
             ))
         ]
 
