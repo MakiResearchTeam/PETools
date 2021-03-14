@@ -26,7 +26,8 @@ class PosePredictor(PosePredictorInterface):
             path_to_tflite: str,
             path_to_config: str,
             norm_mode=CAFFE,
-            gpu_id=';'
+            gpu_id=';',
+            num_threads=None
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -52,6 +53,7 @@ class PosePredictor(PosePredictorInterface):
         self.__norm_mode = norm_mode
         self.__path_to_tb = path_to_tflite
         self.__path_to_config = path_to_config
+        self.__num_threads = num_threads
         self._init_model()
 
     def _init_model(self):
@@ -67,7 +69,7 @@ class PosePredictor(PosePredictorInterface):
         self._saved_mesh_grid = None
         self._pred_down_scale = 2
 
-        interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb))
+        interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
         interpreter.allocate_tensors()
         self.__interpreter = interpreter
         self.__in_x = interpreter.get_input_details()[0]["index"]
@@ -165,6 +167,7 @@ class PosePredictor(PosePredictorInterface):
             }
 
         """
+        original_in_size = image.shape[:-1]
         # Get final image size and padding value
         (new_h, new_w), padding, padding_h_before_resize = self.__get_image_info(image.shape[:-1])
         # Padding image by H axis with zeros
@@ -196,10 +199,11 @@ class PosePredictor(PosePredictorInterface):
         end_time = time.time() - start_time
 
         # Scale prediction to original image
+        up_h = int(new_h - (padding_h_before_resize * (resized_img.shape[0] / image.shape[0])))
         scale_predicted_kp(
             predictions=[humans],
-            model_size=(new_h, new_w),
-            source_size=image.shape[:-1]
+            model_size=(up_h, new_w),
+            source_size=original_in_size
         )
 
         updated_humans = modify_humans(humans)
