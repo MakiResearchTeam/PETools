@@ -2,40 +2,6 @@ import numpy as np
 import tensorflow as tf
 
 
-CONNECT_KP = [
-    # head
-    [1, 2],
-    [2, 3],
-    # body
-    #     left
-    [1, 5],
-    [5, 7],
-    [7, 9],
-    [9, 20],
-    [9, 21],
-    #     right
-    [1, 4],
-    [4, 6],
-    [6, 8],
-    [8, 18],
-    [8, 19],
-    #     center
-    [1, 0],
-    [0, -1],
-    [11, -1],
-    [10, -1],
-    # legs
-    #     left
-    [11, 13],
-    [13, 15],
-    [15, 17],
-    #     right
-    [10, 12],
-    [12, 14],
-    [14, 16]
-]
-
-
 def modify_humans(humans: list, thr=0.1) -> list:
     return [
         interp_points(single_human.to_list(), thr)
