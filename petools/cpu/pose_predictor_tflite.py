@@ -68,6 +68,8 @@ class PosePredictor(PosePredictorInterface):
         self.__min_h = H
         self.__max_w = W
         self.__resize_to = np.array([H, W]).astype(np.int32)
+        self._recent_input_img_size = None
+        self._saved_img_settings = None
         self._saved_mesh_grid = None
         self._saved_padding_h = None
         self._saved_padding_w = None
@@ -102,31 +104,36 @@ class PosePredictor(PosePredictorInterface):
             i.e. this operation (padding) is not required
 
         """
-        padding_h_before_resize = None
-        scale_x, scale_y = scales_image_single_dim_keep_dims(
-            image_size=image_size,
-            resize_to=self.__min_h
-        )
-        new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
+        if self._recent_input_img_size is None or \
+                (self._recent_input_img_size[0] != image_size[0] and self._recent_input_img_size[1] != image_size[1]):
+            padding_h_before_resize = None
+            self._recent_input_img_size = image_size
 
-        if self.__max_w - new_w <= 0:
-            # Find new value for H which is more suitable in order to calculate lower image
-            # And give that to model
-            recalc_w = int(image_size[1] * PosePredictor.W_BY_H)
-            new_image_size = (
-                recalc_w + (PosePredictor.SCALE + recalc_w % PosePredictor.SCALE) - PosePredictor.SCALE,
-                image_size[1]
-            )
-            # We must add zeros by H dimension in original image
-            padding_h_before_resize = new_image_size[0] - image_size[0]
-            # Again calculate resize scales and calculate new_w and new_h for resize operation
             scale_x, scale_y = scales_image_single_dim_keep_dims(
-                image_size=new_image_size,
+                image_size=image_size,
                 resize_to=self.__min_h
             )
-            new_w, new_h = round(scale_x * new_image_size[1]), round(scale_y * new_image_size[0])
+            new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
 
-        return (new_h, new_w), self.__max_w - new_w, padding_h_before_resize
+            if self.__max_w - new_w <= 0:
+                # Find new value for H which is more suitable in order to calculate lower image
+                # And give that to model
+                recalc_w = int(image_size[1] * PosePredictor.W_BY_H)
+                new_image_size = (
+                    recalc_w + (PosePredictor.SCALE + recalc_w % PosePredictor.SCALE) - PosePredictor.SCALE,
+                    image_size[1]
+                )
+                # We must add zeros by H dimension in original image
+                padding_h_before_resize = new_image_size[0] - image_size[0]
+                # Again calculate resize scales and calculate new_w and new_h for resize operation
+                scale_x, scale_y = scales_image_single_dim_keep_dims(
+                    image_size=new_image_size,
+                    resize_to=self.__min_h
+                )
+                new_w, new_h = round(scale_x * new_image_size[1]), round(scale_y * new_image_size[0])
+
+            self._saved_img_settings = ((new_h, new_w), self.__max_w - new_w, padding_h_before_resize)
+        return self._saved_img_settings
 
     def predict(self, image: np.ndarray):
         """
