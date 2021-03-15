@@ -264,7 +264,12 @@ class PosePredictor(PosePredictorInterface):
             interpreter.get_tensor(self.__smoothed_heatmap)
         )
         h_f, w_f = paf_pr.shape[1:3]
-        paf_pr = cv2.resize(paf_pr[0].reshape(h_f, w_f, -1), (self.__resize_to[1], self.__resize_to[0]), interpolation=cv2.INTER_NEAREST)
+        paf_pr = cv2.resize(
+            paf_pr[0].reshape(h_f, w_f, -1),
+            (self.__resize_to[1], self.__resize_to[0]),
+            interpolation=cv2.INTER_NEAREST
+        )
+
         indices, peaks = self._apply_nms_and_get_indices(smoothed_heatmap_pr)
 
         if self._pred_down_scale > 1:
@@ -273,21 +278,20 @@ class PosePredictor(PosePredictorInterface):
 
         return [
             merge_similar_skelets(estimate_paf(
-                peaks=peaks.astype(np.float32, copy=False),
-                indices=indices.astype(np.int32, copy=False),
-                paf_mat=paf_pr.astype(np.float32, copy=False)
+                peaks=peaks,
+                indices=indices,
+                paf_mat=paf_pr
             ))
         ]
 
-    def _get_peak_indices(self, array, thresh=0.1):
+    def _get_peak_indices(self, array):
         """
         Returns array indices of the values larger than threshold.
         Parameters
         ----------
         array : ndarray of any shape
             Tensor which values' indices to gather.
-        thresh : float
-            Threshold value.
+
         Returns
         -------
         ndarray of shape [n_peaks, dim(array)]
@@ -299,16 +303,13 @@ class PosePredictor(PosePredictorInterface):
         if self._saved_mesh_grid is None or len(flat_peaks) != self._saved_mesh_grid.shape[0]:
             self._saved_mesh_grid = np.arange(len(flat_peaks))
 
-        peaks_coords = self._saved_mesh_grid[flat_peaks > thresh]
-
-        peaks = flat_peaks.take(peaks_coords)
-
+        peaks_coords = self._saved_mesh_grid[flat_peaks]
+        peaks = np.ones(len(peaks_coords), dtype=np.float32)
         indices = np.unravel_index(peaks_coords, shape=array.shape)
-        indices = np.stack(indices, axis=-1)
+        indices = np.stack(indices, axis=-1).astype(np.int32, copy=False)
         return indices, peaks
 
     def _apply_nms_and_get_indices(self, heatmap_pr):
-        """
         heatmap_pr = heatmap_pr[0]
         heatmap_pr[heatmap_pr < 0.1] = 0
         heatmap_with_borders = np.pad(heatmap_pr, [(2, 2), (2, 2), (0, 0)], mode='constant')
@@ -322,7 +323,7 @@ class PosePredictor(PosePredictorInterface):
                         (heatmap_center > heatmap_right) & \
                         (heatmap_center > heatmap_up) & \
                         (heatmap_center > heatmap_down)
-        """
-        indices, peaks = self._get_peak_indices(heatmap_pr)
+
+        indices, peaks = self._get_peak_indices(heatmap_peaks)
 
         return indices, peaks
