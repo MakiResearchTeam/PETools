@@ -263,7 +263,8 @@ class PosePredictor(PosePredictorInterface):
             interpreter.get_tensor(self.__resized_paf),
             interpreter.get_tensor(self.__smoothed_heatmap)
         )
-
+        h_f, w_f = paf_pr.shape[1:3]
+        paf_pr = cv2.resize(paf_pr[0].reshape(h_f, w_f, -1), self.__resize_to, interpolation=cv2.INTER_NEAREST)
         indices, peaks = self._apply_nms_and_get_indices(smoothed_heatmap_pr)
 
         if self._pred_down_scale > 1:
@@ -274,7 +275,7 @@ class PosePredictor(PosePredictorInterface):
             merge_similar_skelets(estimate_paf(
                 peaks=peaks.astype(np.float32, copy=False),
                 indices=indices.astype(np.int32, copy=False),
-                paf_mat=paf_pr[0].astype(np.float32, copy=False)
+                paf_mat=paf_pr.astype(np.float32, copy=False)
             ))
         ]
 
