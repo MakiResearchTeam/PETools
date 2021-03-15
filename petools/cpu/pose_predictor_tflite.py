@@ -68,6 +68,8 @@ class PosePredictor(PosePredictorInterface):
         self.__min_h = H
         self.__max_w = W
         self.__resize_to = np.array([H, W]).astype(np.int32)
+        self._recent_input_img_size = None
+        self._saved_img_settings = None
         self._saved_mesh_grid = None
         self._saved_padding_h = None
         self._saved_padding_w = None
@@ -102,31 +104,36 @@ class PosePredictor(PosePredictorInterface):
             i.e. this operation (padding) is not required
 
         """
-        padding_h_before_resize = None
-        scale_x, scale_y = scales_image_single_dim_keep_dims(
-            image_size=image_size,
-            resize_to=self.__min_h
-        )
-        new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
+        if self._recent_input_img_size is None or \
+                (self._recent_input_img_size[0] != image_size[0] and self._recent_input_img_size[1] != image_size[1]):
+            padding_h_before_resize = None
+            self._recent_input_img_size = image_size
 
-        if self.__max_w - new_w <= 0:
-            # Find new value for H which is more suitable in order to calculate lower image
-            # And give that to model
-            recalc_w = int(image_size[1] * PosePredictor.W_BY_H)
-            new_image_size = (
-                recalc_w + (PosePredictor.SCALE + recalc_w % PosePredictor.SCALE) - PosePredictor.SCALE,
-                image_size[1]
-            )
-            # We must add zeros by H dimension in original image
-            padding_h_before_resize = new_image_size[0] - image_size[0]
-            # Again calculate resize scales and calculate new_w and new_h for resize operation
             scale_x, scale_y = scales_image_single_dim_keep_dims(
-                image_size=new_image_size,
+                image_size=image_size,
                 resize_to=self.__min_h
             )
-            new_w, new_h = round(scale_x * new_image_size[1]), round(scale_y * new_image_size[0])
+            new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
 
-        return (new_h, new_w), self.__max_w - new_w, padding_h_before_resize
+            if self.__max_w - new_w <= 0:
+                # Find new value for H which is more suitable in order to calculate lower image
+                # And give that to model
+                recalc_w = int(image_size[1] * PosePredictor.W_BY_H)
+                new_image_size = (
+                    recalc_w + (PosePredictor.SCALE + recalc_w % PosePredictor.SCALE) - PosePredictor.SCALE,
+                    image_size[1]
+                )
+                # We must add zeros by H dimension in original image
+                padding_h_before_resize = new_image_size[0] - image_size[0]
+                # Again calculate resize scales and calculate new_w and new_h for resize operation
+                scale_x, scale_y = scales_image_single_dim_keep_dims(
+                    image_size=new_image_size,
+                    resize_to=self.__min_h
+                )
+                new_w, new_h = round(scale_x * new_image_size[1]), round(scale_y * new_image_size[0])
+
+            self._saved_img_settings = ((new_h, new_w), self.__max_w - new_w, padding_h_before_resize)
+        return self._saved_img_settings
 
     def predict(self, image: np.ndarray):
         """
@@ -263,6 +270,12 @@ class PosePredictor(PosePredictorInterface):
             interpreter.get_tensor(self.__resized_paf),
             interpreter.get_tensor(self.__smoothed_heatmap)
         )
+        h_f, w_f = paf_pr.shape[1:3]
+        paf_pr = cv2.resize(
+            paf_pr[0].reshape(h_f, w_f, -1),
+            (self.__resize_to[1], self.__resize_to[0]),
+            interpolation=cv2.INTER_NEAREST
+        )
 
         indices, peaks = self._apply_nms_and_get_indices(smoothed_heatmap_pr)
 
@@ -272,21 +285,20 @@ class PosePredictor(PosePredictorInterface):
 
         return [
             merge_similar_skelets(estimate_paf(
-                peaks=peaks.astype(np.float32, copy=False),
-                indices=indices.astype(np.int32, copy=False),
-                paf_mat=paf_pr[0].astype(np.float32, copy=False)
+                peaks=peaks,
+                indices=indices,
+                paf_mat=paf_pr
             ))
         ]
 
-    def _get_peak_indices(self, array, thresh=0.1):
+    def _get_peak_indices(self, array):
         """
         Returns array indices of the values larger than threshold.
         Parameters
         ----------
         array : ndarray of any shape
             Tensor which values' indices to gather.
-        thresh : float
-            Threshold value.
+
         Returns
         -------
         ndarray of shape [n_peaks, dim(array)]
@@ -298,12 +310,10 @@ class PosePredictor(PosePredictorInterface):
         if self._saved_mesh_grid is None or len(flat_peaks) != self._saved_mesh_grid.shape[0]:
             self._saved_mesh_grid = np.arange(len(flat_peaks))
 
-        peaks_coords = self._saved_mesh_grid[flat_peaks > thresh]
-
-        peaks = flat_peaks.take(peaks_coords)
-
+        peaks_coords = self._saved_mesh_grid[flat_peaks]
+        peaks = np.ones(len(peaks_coords), dtype=np.float32)
         indices = np.unravel_index(peaks_coords, shape=array.shape)
-        indices = np.stack(indices, axis=-1)
+        indices = np.stack(indices, axis=-1).astype(np.int32, copy=False)
         return indices, peaks
 
     def _apply_nms_and_get_indices(self, heatmap_pr):
