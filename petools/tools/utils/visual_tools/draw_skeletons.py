@@ -1,6 +1,7 @@
 import numpy as np
 
-from petools.core import PosePredictorInterface, CONNECT_KP
+from petools.core import PosePredictorInterface
+from petools.tools.estimate_tools.constants import CONNECT_KP
 from .visualize_tools import draw_skeleton
 
 
