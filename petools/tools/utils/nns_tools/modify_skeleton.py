@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 
 
 def modify_humans(humans: list, thr=0.1) -> list:
@@ -63,11 +62,4 @@ def interp_points(keypoints: list, thr=0.1) -> list:
         ],
         axis=0
     ).astype(np.float32, copy=False).tolist()
-
-
-def load_graph_def(path):
-    with tf.gfile.GFile(path, 'rb') as f:
-        frozen_graph = tf.GraphDef()
-        frozen_graph.ParseFromString(f.read())
-    return frozen_graph
 
