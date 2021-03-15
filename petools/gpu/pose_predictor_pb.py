@@ -6,10 +6,12 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-from petools.core import modify_humans, load_graph_def, PosePredictorInterface
+from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
 from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
 from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
+from petools.tools.utils.tf_tools import load_graph_def
+from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR
 
 
