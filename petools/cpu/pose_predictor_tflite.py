@@ -28,7 +28,8 @@ class PosePredictor(PosePredictorInterface):
             path_to_config: str,
             norm_mode=CAFFE,
             gpu_id=';',
-            num_threads=None
+            num_threads=None,
+            top_kp_scale=2
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -55,6 +56,7 @@ class PosePredictor(PosePredictorInterface):
         self.__path_to_tb = path_to_tflite
         self.__path_to_config = path_to_config
         self.__num_threads = num_threads
+        self._top_kp_scale = top_kp_scale
         self._init_model()
 
     def _init_model(self):
@@ -73,8 +75,7 @@ class PosePredictor(PosePredictorInterface):
         self._saved_mesh_grid = None
         self._saved_padding_h = None
         self._saved_padding_w = None
-        self._pred_down_scale = 2
-        self._scale_kp = np.array([self._pred_down_scale] * 2 + [1], dtype=np.int32)
+        self._scale_kp = np.array([self._top_kp_scale] * 2 + [1], dtype=np.int32)
 
         interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
         interpreter.allocate_tensors()
@@ -279,7 +280,7 @@ class PosePredictor(PosePredictorInterface):
 
         indices, peaks = self._apply_nms_and_get_indices(smoothed_heatmap_pr)
 
-        if self._pred_down_scale > 1:
+        if self._top_kp_scale > 1:
             # Scale kp
             indices *= self._scale_kp
 
