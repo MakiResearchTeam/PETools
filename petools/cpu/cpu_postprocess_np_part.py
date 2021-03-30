@@ -105,11 +105,11 @@ class CPUOptimizedPostProcessNPPart:
                         (heatmap_center > heatmap_up) & \
                         (heatmap_center > heatmap_down)
 
-        indices, peaks = self._get_peak_indices(heatmap_peaks, heatmap_center)
+        indices, peaks = self._get_peak_indices(heatmap_peaks)
 
         return indices, peaks
 
-    def _get_peak_indices(self, array, orig_values):
+    def _get_peak_indices(self, array):
         """
         Returns array indices of the values larger than threshold.
 
@@ -131,8 +131,8 @@ class CPUOptimizedPostProcessNPPart:
             self._saved_mesh_grid = np.arange(len(flat_peaks))
 
         peaks_coords = self._saved_mesh_grid[flat_peaks]
+        peaks = np.ones(len(peaks_coords), dtype=np.float32)
         indices = np.unravel_index(peaks_coords, shape=array.shape)
-        peaks = orig_values[indices]
         indices = np.stack(indices, axis=-1).astype(np.int32, copy=False)
         return indices, peaks
 
