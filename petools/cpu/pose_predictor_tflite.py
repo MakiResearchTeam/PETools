@@ -80,7 +80,7 @@ class PosePredictor(PosePredictorInterface):
         interpreter.allocate_tensors()
         self.__interpreter = interpreter
         self.__in_x = interpreter.get_input_details()[0]["index"]
-        self.__upsample_size = interpreter.get_input_details()[1]["index"]
+        #self.__upsample_size = interpreter.get_input_details()[1]["index"]
 
         self.__paf_tensor = interpreter.get_output_details()[0]["index"]
         self.__heatmap_tensor = interpreter.get_output_details()[1]["index"]
@@ -268,7 +268,7 @@ class PosePredictor(PosePredictorInterface):
         """
         interpreter = self.__interpreter
         interpreter.set_tensor(self.__in_x, norm_img)
-        interpreter.set_tensor(self.__upsample_size, self.__resize_to)
+        #interpreter.set_tensor(self.__upsample_size, self.__resize_to)
         # Run estimate_tools
         interpreter.invoke()
 
