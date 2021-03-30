@@ -73,12 +73,10 @@ class PosePredictor(PosePredictorInterface):
         self.__resize_to = np.array([H, W]).astype(np.int32)
         self._recent_input_img_size = None
         self._saved_img_settings = None
-        self._saved_mesh_grid = None
         self._saved_padding_h = None
         self._saved_padding_w = None
-        self._scale_kp = np.array([self._top_kp_scale] * 2 + [1], dtype=np.int32)
 
-        interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
+        interpreter = tf.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
         interpreter.allocate_tensors()
         self.__interpreter = interpreter
         self.__in_x = interpreter.get_input_details()[0]["index"]
@@ -281,47 +279,3 @@ class PosePredictor(PosePredictorInterface):
         upsample_paf, indices, peaks = self._postprocess_np.process(heatmap=smoothed_heatmap_pr, paf=paf_pr)
 
         return SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=upsample_paf)
-
-    def _get_peak_indices(self, array):
-        """
-        Returns array indices of the values larger than threshold.
-        Parameters
-        ----------
-        array : ndarray of any shape
-            Tensor which values' indices to gather.
-
-        Returns
-        -------
-        ndarray of shape [n_peaks, dim(array)]
-            Array of indices of the values larger than threshold.
-        ndarray of shape [n_peaks]
-            Array of the values at corresponding indices.
-        """
-        flat_peaks = np.reshape(array, -1)
-        if self._saved_mesh_grid is None or len(flat_peaks) != self._saved_mesh_grid.shape[0]:
-            self._saved_mesh_grid = np.arange(len(flat_peaks))
-
-        peaks_coords = self._saved_mesh_grid[flat_peaks]
-        peaks = np.ones(len(peaks_coords), dtype=np.float32)
-        indices = np.unravel_index(peaks_coords, shape=array.shape)
-        indices = np.stack(indices, axis=-1).astype(np.int32, copy=False)
-        return indices, peaks
-
-    def _apply_nms_and_get_indices(self, heatmap_pr):
-        heatmap_pr = heatmap_pr[0]
-        heatmap_pr[heatmap_pr < 0.1] = 0
-        heatmap_with_borders = np.pad(heatmap_pr, [(2, 2), (2, 2), (0, 0)], mode='constant')
-        heatmap_center = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 1:heatmap_with_borders.shape[1] - 1]
-        heatmap_left = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 2:heatmap_with_borders.shape[1]]
-        heatmap_right = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 0:heatmap_with_borders.shape[1] - 2]
-        heatmap_up = heatmap_with_borders[2:heatmap_with_borders.shape[0], 1:heatmap_with_borders.shape[1] - 1]
-        heatmap_down = heatmap_with_borders[0:heatmap_with_borders.shape[0] - 2, 1:heatmap_with_borders.shape[1] - 1]
-
-        heatmap_peaks = (heatmap_center > heatmap_left) & \
-                        (heatmap_center > heatmap_right) & \
-                        (heatmap_center > heatmap_up) & \
-                        (heatmap_center > heatmap_down)
-
-        indices, peaks = self._get_peak_indices(heatmap_peaks)
-
-        return indices, peaks
