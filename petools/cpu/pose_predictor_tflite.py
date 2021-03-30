@@ -30,7 +30,7 @@ class PosePredictor(PosePredictorInterface):
             norm_mode=CAFFE,
             gpu_id=';',
             num_threads=None,
-            kp_scale_end=4
+            kp_scale_end=2
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -276,6 +276,10 @@ class PosePredictor(PosePredictorInterface):
             interpreter.get_tensor(self.__paf_tensor),
             interpreter.get_tensor(self.__heatmap_tensor)
         )
+        print("in paf: ", paf_pr.shape)
+        print("in heatmap: ", smoothed_heatmap_pr.shape)
         upsample_paf, indices, peaks = self._postprocess_np.process(heatmap=smoothed_heatmap_pr, paf=paf_pr)
-
+        print("indices: ", indices.shape)
+        print("peaks: ", peaks)
+        print("paf: ", upsample_paf.shape)
         return SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=upsample_paf)
