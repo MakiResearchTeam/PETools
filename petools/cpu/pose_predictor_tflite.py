@@ -7,11 +7,12 @@ import numpy as np
 import tensorflow as tf
 
 from petools.core import PosePredictorInterface
-from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
+from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
 from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from .utils import IMAGE_INPUT_SIZE
+from .cpu_postprocess_np_part import CPUOptimizedPostProcessNPPart
 
 
 class PosePredictor(PosePredictorInterface):
@@ -29,7 +30,7 @@ class PosePredictor(PosePredictorInterface):
             norm_mode=CAFFE,
             gpu_id=';',
             num_threads=None,
-            top_kp_scale=2
+            kp_scale_end=4
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -56,7 +57,7 @@ class PosePredictor(PosePredictorInterface):
         self.__path_to_tb = path_to_tflite
         self.__path_to_config = path_to_config
         self.__num_threads = num_threads
-        self._top_kp_scale = top_kp_scale
+        self._kp_scale_end = kp_scale_end
         self._init_model()
 
     def _init_model(self):
@@ -83,8 +84,14 @@ class PosePredictor(PosePredictorInterface):
         self.__in_x = interpreter.get_input_details()[0]["index"]
         self.__upsample_size = interpreter.get_input_details()[1]["index"]
 
-        self.__resized_paf = interpreter.get_output_details()[0]["index"]
-        self.__smoothed_heatmap = interpreter.get_output_details()[1]["index"]
+        self.__paf_tensor = interpreter.get_output_details()[0]["index"]
+        self.__heatmap_tensor = interpreter.get_output_details()[1]["index"]
+
+        self._postprocess_np = CPUOptimizedPostProcessNPPart(
+            resize_to=(H, W),
+            upsample_heatmap=False,
+            kp_scale_end=self._kp_scale_end
+        )
 
     def __get_image_info(self, image_size: list):
         """
@@ -226,7 +233,7 @@ class PosePredictor(PosePredictorInterface):
         norm_img = preprocess_input(img, mode=self.__norm_mode)
         # Measure time of prediction
         start_time = time.time()
-        humans = self._predict(norm_img)[0]
+        humans = self._predict(norm_img)
         end_time = time.time() - start_time
 
         # Scale prediction to original image
@@ -268,29 +275,12 @@ class PosePredictor(PosePredictorInterface):
         interpreter.invoke()
 
         paf_pr, smoothed_heatmap_pr = (
-            interpreter.get_tensor(self.__resized_paf),
-            interpreter.get_tensor(self.__smoothed_heatmap)
+            interpreter.get_tensor(self.__paf_tensor),
+            interpreter.get_tensor(self.__heatmap_tensor)
         )
-        h_f, w_f = paf_pr.shape[1:3]
-        paf_pr = cv2.resize(
-            paf_pr[0].reshape(h_f, w_f, -1),
-            (self.__resize_to[1], self.__resize_to[0]),
-            interpolation=cv2.INTER_NEAREST
-        )
+        upsample_paf, indices, peaks = self._postprocess_np.process(heatmap=smoothed_heatmap_pr, paf=paf_pr)
 
-        indices, peaks = self._apply_nms_and_get_indices(smoothed_heatmap_pr)
-
-        if self._top_kp_scale > 1:
-            # Scale kp
-            indices *= self._scale_kp
-
-        return [
-            merge_similar_skelets(estimate_paf(
-                peaks=peaks,
-                indices=indices,
-                paf_mat=paf_pr
-            ))
-        ]
+        return SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=upsample_paf)
 
     def _get_peak_indices(self, array):
         """
