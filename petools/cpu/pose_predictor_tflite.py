@@ -276,13 +276,5 @@ class PosePredictor(PosePredictorInterface):
             interpreter.get_tensor(self.__paf_tensor),
             interpreter.get_tensor(self.__heatmap_tensor)
         )
-        print("in paf: ", paf_pr.shape)
-        print("in heatmap: ", smoothed_heatmap_pr.shape)
         upsample_paf, indices, peaks = self._postprocess_np.process(heatmap=smoothed_heatmap_pr, paf=paf_pr)
-        print("indices: ", indices.shape)
-        np.save('indices.npy', indices)
-        print("peaks: ", peaks)
-        np.save('peaks.npy', peaks)
-        print("paf: ", upsample_paf.shape)
-        np.save('paf.npy', upsample_paf)
         return SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=upsample_paf)
