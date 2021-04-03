@@ -7,11 +7,12 @@ import numpy as np
 import tensorflow as tf
 
 from petools.core import PosePredictorInterface
-from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
+from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
 from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from .utils import IMAGE_INPUT_SIZE
+from .cpu_postprocess_np_part import CPUOptimizedPostProcessNPPart
 
 
 class PosePredictor(PosePredictorInterface):
@@ -29,7 +30,7 @@ class PosePredictor(PosePredictorInterface):
             norm_mode=CAFFE,
             gpu_id=';',
             num_threads=None,
-            top_kp_scale=2
+            kp_scale_end=2
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -56,7 +57,7 @@ class PosePredictor(PosePredictorInterface):
         self.__path_to_tb = path_to_tflite
         self.__path_to_config = path_to_config
         self.__num_threads = num_threads
-        self._top_kp_scale = top_kp_scale
+        self._kp_scale_end = kp_scale_end
         self._init_model()
 
     def _init_model(self):
@@ -72,19 +73,26 @@ class PosePredictor(PosePredictorInterface):
         self.__resize_to = np.array([H, W]).astype(np.int32)
         self._recent_input_img_size = None
         self._saved_img_settings = None
-        self._saved_mesh_grid = None
         self._saved_padding_h = None
         self._saved_padding_w = None
-        self._scale_kp = np.array([self._top_kp_scale] * 2 + [1], dtype=np.int32)
 
-        interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
+        interpreter = tf.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
         interpreter.allocate_tensors()
         self.__interpreter = interpreter
         self.__in_x = interpreter.get_input_details()[0]["index"]
-        self.__upsample_size = interpreter.get_input_details()[1]["index"]
+        # TODO: In most our models for CPU, placeholder upsample_size is not used
+        # TODO: But it can be used in further updates
+        # TODO: Think how fix this, for now - leave it as it is
+        #self.__upsample_size = interpreter.get_input_details()[1]["index"]
 
-        self.__resized_paf = interpreter.get_output_details()[0]["index"]
-        self.__smoothed_heatmap = interpreter.get_output_details()[1]["index"]
+        self.__paf_tensor = interpreter.get_output_details()[0]["index"]
+        self.__heatmap_tensor = interpreter.get_output_details()[1]["index"]
+
+        self._postprocess_np = CPUOptimizedPostProcessNPPart(
+            resize_to=(H, W),
+            upsample_heatmap=False,
+            kp_scale_end=self._kp_scale_end
+        )
 
     def __get_image_info(self, image_size: list):
         """
@@ -226,7 +234,7 @@ class PosePredictor(PosePredictorInterface):
         norm_img = preprocess_input(img, mode=self.__norm_mode)
         # Measure time of prediction
         start_time = time.time()
-        humans = self._predict(norm_img)[0]
+        humans = self._predict(norm_img)
         end_time = time.time() - start_time
 
         # Scale prediction to original image
@@ -263,75 +271,16 @@ class PosePredictor(PosePredictorInterface):
         """
         interpreter = self.__interpreter
         interpreter.set_tensor(self.__in_x, norm_img)
-        interpreter.set_tensor(self.__upsample_size, self.__resize_to)
+        # TODO: In most our models for CPU, placeholder upsample_size is not used
+        # TODO: But it can be used in further updates
+        # TODO: Think how fix this, for now - leave it as it is
+        # interpreter.set_tensor(self.__upsample_size, self.__resize_to)
         # Run estimate_tools
         interpreter.invoke()
 
         paf_pr, smoothed_heatmap_pr = (
-            interpreter.get_tensor(self.__resized_paf),
-            interpreter.get_tensor(self.__smoothed_heatmap)
+            interpreter.get_tensor(self.__paf_tensor),
+            interpreter.get_tensor(self.__heatmap_tensor)
         )
-        h_f, w_f = paf_pr.shape[1:3]
-        paf_pr = cv2.resize(
-            paf_pr[0].reshape(h_f, w_f, -1),
-            (self.__resize_to[1], self.__resize_to[0]),
-            interpolation=cv2.INTER_NEAREST
-        )
-
-        indices, peaks = self._apply_nms_and_get_indices(smoothed_heatmap_pr)
-
-        if self._top_kp_scale > 1:
-            # Scale kp
-            indices *= self._scale_kp
-
-        return [
-            merge_similar_skelets(estimate_paf(
-                peaks=peaks,
-                indices=indices,
-                paf_mat=paf_pr
-            ))
-        ]
-
-    def _get_peak_indices(self, array):
-        """
-        Returns array indices of the values larger than threshold.
-        Parameters
-        ----------
-        array : ndarray of any shape
-            Tensor which values' indices to gather.
-
-        Returns
-        -------
-        ndarray of shape [n_peaks, dim(array)]
-            Array of indices of the values larger than threshold.
-        ndarray of shape [n_peaks]
-            Array of the values at corresponding indices.
-        """
-        flat_peaks = np.reshape(array, -1)
-        if self._saved_mesh_grid is None or len(flat_peaks) != self._saved_mesh_grid.shape[0]:
-            self._saved_mesh_grid = np.arange(len(flat_peaks))
-
-        peaks_coords = self._saved_mesh_grid[flat_peaks]
-        peaks = np.ones(len(peaks_coords), dtype=np.float32)
-        indices = np.unravel_index(peaks_coords, shape=array.shape)
-        indices = np.stack(indices, axis=-1).astype(np.int32, copy=False)
-        return indices, peaks
-
-    def _apply_nms_and_get_indices(self, heatmap_pr):
-        heatmap_pr = heatmap_pr[0]
-        heatmap_pr[heatmap_pr < 0.1] = 0
-        heatmap_with_borders = np.pad(heatmap_pr, [(2, 2), (2, 2), (0, 0)], mode='constant')
-        heatmap_center = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 1:heatmap_with_borders.shape[1] - 1]
-        heatmap_left = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 2:heatmap_with_borders.shape[1]]
-        heatmap_right = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 0:heatmap_with_borders.shape[1] - 2]
-        heatmap_up = heatmap_with_borders[2:heatmap_with_borders.shape[0], 1:heatmap_with_borders.shape[1] - 1]
-        heatmap_down = heatmap_with_borders[0:heatmap_with_borders.shape[0] - 2, 1:heatmap_with_borders.shape[1] - 1]
-
-        heatmap_peaks = (heatmap_center > heatmap_left) & \
-                        (heatmap_center > heatmap_right) & \
-                        (heatmap_center > heatmap_up) & \
-                        (heatmap_center > heatmap_down)
-
-        indices, peaks = self._get_peak_indices(heatmap_peaks)
-
-        return indices, peaks
+        upsample_paf, indices, peaks = self._postprocess_np.process(heatmap=smoothed_heatmap_pr, paf=paf_pr)
+        return SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=upsample_paf)
