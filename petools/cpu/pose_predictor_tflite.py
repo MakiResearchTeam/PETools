@@ -80,6 +80,9 @@ class PosePredictor(PosePredictorInterface):
         interpreter.allocate_tensors()
         self.__interpreter = interpreter
         self.__in_x = interpreter.get_input_details()[0]["index"]
+        # TODO: In most our models for CPU, placeholder upsample_size is not used
+        # TODO: But it can be used in further updates
+        # TODO: Think how fix this, for now - leave it as it is
         #self.__upsample_size = interpreter.get_input_details()[1]["index"]
 
         self.__paf_tensor = interpreter.get_output_details()[0]["index"]
@@ -268,7 +271,10 @@ class PosePredictor(PosePredictorInterface):
         """
         interpreter = self.__interpreter
         interpreter.set_tensor(self.__in_x, norm_img)
-        #interpreter.set_tensor(self.__upsample_size, self.__resize_to)
+        # TODO: In most our models for CPU, placeholder upsample_size is not used
+        # TODO: But it can be used in further updates
+        # TODO: Think how fix this, for now - leave it as it is
+        # interpreter.set_tensor(self.__upsample_size, self.__resize_to)
         # Run estimate_tools
         interpreter.invoke()
 
