@@ -114,7 +114,8 @@ class PosePredictor(PosePredictorInterface):
 
         """
         if self._recent_input_img_size is None or \
-                (self._recent_input_img_size[0] != image_size[0] and self._recent_input_img_size[1] != image_size[1]):
+                self._recent_input_img_size[0] != image_size[0] or \
+                self._recent_input_img_size[1] != image_size[1]:
             padding_h_before_resize = None
             self._recent_input_img_size = image_size
 
