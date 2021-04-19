@@ -6,10 +6,12 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-from petools.core import modify_humans, load_graph_def, PosePredictorInterface
-from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
+from petools.core import PosePredictorInterface
+from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
 from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
+from petools.tools.utils.tf_tools import load_graph_def
+from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR
 
 
@@ -173,7 +175,7 @@ class PosePredictor(PosePredictorInterface):
         norm_img = preprocess_input(img, mode=self.__norm_mode).astype(np.float32, copy=False)
         # Measure time of prediction
         start_time = time.time()
-        humans = self._predict(norm_img)[0]
+        humans = self._predict(norm_img)
         end_time = time.time() - start_time
 
         # Scale prediction to original image
@@ -217,13 +219,7 @@ class PosePredictor(PosePredictorInterface):
             }
         )
 
-        return [
-            merge_similar_skelets(estimate_paf(
-                peaks=peaks.astype(np.float32, copy=False),
-                indices=indices.astype(np.int32, copy=False),
-                paf_mat=batched_paf[0]
-            ))
-        ]
+        return SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
 
 
 if __name__ == '__main__':

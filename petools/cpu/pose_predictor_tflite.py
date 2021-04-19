@@ -6,11 +6,13 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-from petools.core import PosePredictorInterface, modify_humans
-from petools.tools.estimate_tools.algorithm_connect_skelet import estimate_paf, merge_similar_skelets
+from petools.core import PosePredictorInterface
+from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
 from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
+from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from .utils import IMAGE_INPUT_SIZE
+from .cpu_postprocess_np_part import CPUOptimizedPostProcessNPPart
 
 
 class PosePredictor(PosePredictorInterface):
@@ -27,7 +29,8 @@ class PosePredictor(PosePredictorInterface):
             path_to_config: str,
             norm_mode=CAFFE,
             gpu_id=';',
-            num_threads=None
+            num_threads=None,
+            kp_scale_end=2
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -54,6 +57,7 @@ class PosePredictor(PosePredictorInterface):
         self.__path_to_tb = path_to_tflite
         self.__path_to_config = path_to_config
         self.__num_threads = num_threads
+        self._kp_scale_end = kp_scale_end
         self._init_model()
 
     def _init_model(self):
@@ -67,20 +71,28 @@ class PosePredictor(PosePredictorInterface):
         self.__min_h = H
         self.__max_w = W
         self.__resize_to = np.array([H, W]).astype(np.int32)
-        self._saved_mesh_grid = None
+        self._recent_input_img_size = None
+        self._saved_img_settings = None
         self._saved_padding_h = None
         self._saved_padding_w = None
-        self._pred_down_scale = 2
-        self._scale_kp = np.array([self._pred_down_scale] * 2 + [1], dtype=np.int32)
 
-        interpreter = tf.compat.v1.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
+        interpreter = tf.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
         interpreter.allocate_tensors()
         self.__interpreter = interpreter
         self.__in_x = interpreter.get_input_details()[0]["index"]
-        self.__upsample_size = interpreter.get_input_details()[1]["index"]
+        # TODO: In most our models for CPU, placeholder upsample_size is not used
+        # TODO: But it can be used in further updates
+        # TODO: Think how fix this, for now - leave it as it is
+        #self.__upsample_size = interpreter.get_input_details()[1]["index"]
 
-        self.__resized_paf = interpreter.get_output_details()[0]["index"]
-        self.__smoothed_heatmap = interpreter.get_output_details()[1]["index"]
+        self.__paf_tensor = interpreter.get_output_details()[0]["index"]
+        self.__heatmap_tensor = interpreter.get_output_details()[1]["index"]
+
+        self._postprocess_np = CPUOptimizedPostProcessNPPart(
+            resize_to=(H, W),
+            upsample_heatmap=False,
+            kp_scale_end=self._kp_scale_end
+        )
 
     def __get_image_info(self, image_size: list):
         """
@@ -101,31 +113,37 @@ class PosePredictor(PosePredictorInterface):
             i.e. this operation (padding) is not required
 
         """
-        padding_h_before_resize = None
-        scale_x, scale_y = scales_image_single_dim_keep_dims(
-            image_size=image_size,
-            resize_to=self.__min_h
-        )
-        new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
+        if self._recent_input_img_size is None or \
+                self._recent_input_img_size[0] != image_size[0] or \
+                self._recent_input_img_size[1] != image_size[1]:
+            padding_h_before_resize = None
+            self._recent_input_img_size = image_size
 
-        if self.__max_w - new_w <= 0:
-            # Find new value for H which is more suitable in order to calculate lower image
-            # And give that to model
-            recalc_w = int(image_size[1] * PosePredictor.W_BY_H)
-            new_image_size = (
-                recalc_w + (PosePredictor.SCALE + recalc_w % PosePredictor.SCALE) - PosePredictor.SCALE,
-                image_size[1]
-            )
-            # We must add zeros by H dimension in original image
-            padding_h_before_resize = new_image_size[0] - image_size[0]
-            # Again calculate resize scales and calculate new_w and new_h for resize operation
             scale_x, scale_y = scales_image_single_dim_keep_dims(
-                image_size=new_image_size,
+                image_size=image_size,
                 resize_to=self.__min_h
             )
-            new_w, new_h = round(scale_x * new_image_size[1]), round(scale_y * new_image_size[0])
+            new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
 
-        return (new_h, new_w), self.__max_w - new_w, padding_h_before_resize
+            if self.__max_w - new_w <= 0:
+                # Find new value for H which is more suitable in order to calculate lower image
+                # And give that to model
+                recalc_w = int(image_size[1] * PosePredictor.W_BY_H)
+                new_image_size = (
+                    recalc_w + (PosePredictor.SCALE + recalc_w % PosePredictor.SCALE) - PosePredictor.SCALE,
+                    image_size[1]
+                )
+                # We must add zeros by H dimension in original image
+                padding_h_before_resize = new_image_size[0] - image_size[0]
+                # Again calculate resize scales and calculate new_w and new_h for resize operation
+                scale_x, scale_y = scales_image_single_dim_keep_dims(
+                    image_size=new_image_size,
+                    resize_to=self.__min_h
+                )
+                new_w, new_h = round(scale_x * new_image_size[1]), round(scale_y * new_image_size[0])
+
+            self._saved_img_settings = ((new_h, new_w), self.__max_w - new_w, padding_h_before_resize)
+        return self._saved_img_settings
 
     def predict(self, image: np.ndarray):
         """
@@ -217,7 +235,7 @@ class PosePredictor(PosePredictorInterface):
         norm_img = preprocess_input(img, mode=self.__norm_mode)
         # Measure time of prediction
         start_time = time.time()
-        humans = self._predict(norm_img)[0]
+        humans = self._predict(norm_img)
         end_time = time.time() - start_time
 
         # Scale prediction to original image
@@ -254,72 +272,16 @@ class PosePredictor(PosePredictorInterface):
         """
         interpreter = self.__interpreter
         interpreter.set_tensor(self.__in_x, norm_img)
-        interpreter.set_tensor(self.__upsample_size, self.__resize_to)
+        # TODO: In most our models for CPU, placeholder upsample_size is not used
+        # TODO: But it can be used in further updates
+        # TODO: Think how fix this, for now - leave it as it is
+        # interpreter.set_tensor(self.__upsample_size, self.__resize_to)
         # Run estimate_tools
         interpreter.invoke()
 
         paf_pr, smoothed_heatmap_pr = (
-            interpreter.get_tensor(self.__resized_paf),
-            interpreter.get_tensor(self.__smoothed_heatmap)
+            interpreter.get_tensor(self.__paf_tensor),
+            interpreter.get_tensor(self.__heatmap_tensor)
         )
-
-        indices, peaks = self._apply_nms_and_get_indices(smoothed_heatmap_pr)
-
-        if self._pred_down_scale > 1:
-            # Scale kp
-            indices *= self._scale_kp
-
-        return [
-            merge_similar_skelets(estimate_paf(
-                peaks=peaks.astype(np.float32, copy=False),
-                indices=indices.astype(np.int32, copy=False),
-                paf_mat=paf_pr[0].astype(np.float32, copy=False)
-            ))
-        ]
-
-    def _get_peak_indices(self, array, thresh=0.1):
-        """
-        Returns array indices of the values larger than threshold.
-        Parameters
-        ----------
-        array : ndarray of any shape
-            Tensor which values' indices to gather.
-        thresh : float
-            Threshold value.
-        Returns
-        -------
-        ndarray of shape [n_peaks, dim(array)]
-            Array of indices of the values larger than threshold.
-        ndarray of shape [n_peaks]
-            Array of the values at corresponding indices.
-        """
-        flat_peaks = np.reshape(array, -1)
-        if self._saved_mesh_grid is None or len(flat_peaks) != self._saved_mesh_grid.shape[0]:
-            self._saved_mesh_grid = np.arange(len(flat_peaks))
-
-        peaks_coords = self._saved_mesh_grid[flat_peaks > thresh]
-
-        peaks = flat_peaks.take(peaks_coords)
-
-        indices = np.unravel_index(peaks_coords, shape=array.shape)
-        indices = np.stack(indices, axis=-1)
-        return indices, peaks
-
-    def _apply_nms_and_get_indices(self, heatmap_pr):
-        heatmap_pr = heatmap_pr[0]
-        heatmap_pr[heatmap_pr < 0.1] = 0
-        heatmap_with_borders = np.pad(heatmap_pr, [(2, 2), (2, 2), (0, 0)], mode='constant')
-        heatmap_center = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 1:heatmap_with_borders.shape[1] - 1]
-        heatmap_left = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 2:heatmap_with_borders.shape[1]]
-        heatmap_right = heatmap_with_borders[1:heatmap_with_borders.shape[0] - 1, 0:heatmap_with_borders.shape[1] - 2]
-        heatmap_up = heatmap_with_borders[2:heatmap_with_borders.shape[0], 1:heatmap_with_borders.shape[1] - 1]
-        heatmap_down = heatmap_with_borders[0:heatmap_with_borders.shape[0] - 2, 1:heatmap_with_borders.shape[1] - 1]
-
-        heatmap_peaks = (heatmap_center > heatmap_left) & \
-                        (heatmap_center > heatmap_right) & \
-                        (heatmap_center > heatmap_up) & \
-                        (heatmap_center > heatmap_down)
-
-        indices, peaks = self._get_peak_indices(heatmap_peaks)
-
-        return indices, peaks
+        upsample_paf, indices, peaks = self._postprocess_np.process(heatmap=smoothed_heatmap_pr, paf=paf_pr)
+        return SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=upsample_paf)
