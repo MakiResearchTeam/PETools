@@ -19,7 +19,7 @@ class CpuImagePreprocessor(ImagePreprocessor):
         self._saved_padding_h = None
         self._saved_padding_w = None
 
-    def preprocess(self, image):
+    def __call__(self, image):
         original_in_size = image.shape[:-1]
         # Get final image size and padding value
         (new_h, new_w), padding, padding_h_before_resize = self.__get_image_info(image.shape[:-1])

@@ -1,3 +1,3 @@
 class ImagePreprocessor:
-    def preprocess(self, image):
+    def __call__(self, image):
         pass

@@ -134,7 +134,7 @@ class PosePredictor(PosePredictorInterface):
         """
         # 1. Preprocess image before feeding into the NN
         start_time = time.time()
-        norm_img, up_h, new_w, original_in_size = self.__image_preprocessor.preprocess(image)
+        norm_img, up_h, new_w, original_in_size = self.__image_preprocessor(image)
         # 2. Feed the image into the NN and get PAF and heatmap tensors
         paf_pr, smoothed_heatmap_pr = self._model.predict(norm_img)
         # 3. Post process PAF and heatmap
