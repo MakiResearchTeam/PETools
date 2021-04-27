@@ -34,7 +34,8 @@ class GpuImagePreprocessor(ImagePreprocessor):
         img = np.expand_dims(single_img_input, axis=0).astype(np.float32, copy=False)
         # Normalize image
         norm_img = preprocess_input(img, mode=self.__norm_mode).astype(np.float32, copy=False)
-        return norm_img
+        original_in_size = image.shape[:-1]
+        return norm_img, new_h, new_w, original_in_size
 
     def __get_image_info(self, image_size: list):
         """
