@@ -2,17 +2,16 @@ import json
 import os
 import time
 
-import cv2
 import numpy as np
-import tensorflow as tf
 
 from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
-from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
-from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
-from petools.tools.utils.tf_tools import load_graph_def
+from petools.tools.utils import CAFFE, scale_predicted_kp
+
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR
+from .gpu_model import GpuModel
+from ..image_preprocessors import CpuImagePreprocessor
 
 
 class PosePredictor(PosePredictorInterface):
@@ -26,6 +25,7 @@ class PosePredictor(PosePredictorInterface):
     PAF_NAME = PAF_TENSOR
     PEAKS_SCORE_NAME = PEAKS_SCORE_TENSOR
     UPSAMPLE_SIZE = 'upsample_size'
+    W_BY_H = 1128.0 / 1920.0
 
     def __init__(
             self,
@@ -72,46 +72,20 @@ class PosePredictor(PosePredictorInterface):
         with open(self.__path_to_config, 'r') as f:
             config = json.load(f)
 
-        self.__graph_def = load_graph_def(self.__path_to_tb)
-        self.__in_x = tf.placeholder(dtype=tf.float32, shape=[1, None, None, 3], name='in_x')
-        self.__upsample_size = tf.placeholder(dtype=tf.int32, shape=(2), name='upsample')
-        self.__resized_paf, self.__indices, self.__peaks_score = tf.import_graph_def(
-            self.__graph_def,
-            input_map={
-                config[PosePredictor.INPUT_NAME]: self.__in_x,
-                PosePredictor.UPSAMPLE_SIZE: self.__upsample_size
-            },
-            return_elements=[
-                config[PosePredictor.PAF_NAME],
-                config[PosePredictor.IND_TENSOR_NAME],
-                config[PosePredictor.PEAKS_SCORE_NAME]
-            ]
+        self.__model = GpuModel(
+            pb_path=self.__path_to_tb,
+            input_name=config[PosePredictor.INPUT_NAME],
+            paf_name=config[PosePredictor.PAF_NAME],
+            ind_name=config[PosePredictor.IND_TENSOR_NAME],
+            peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME]
         )
-        self.__sess = tf.Session()
-
-    def __get_image_info(self, image_size: list):
-        """
-
-        Parameters
-        ----------
-        image_size : list
-            (H, W) of input image
-
-        Returns
-        -------
-        (H, W) : tuple
-            Height and Width of final input image into estimate_tools
-        padding : int
-            Number of padding need to be added to W, in order to be divided by 8 without remains
-
-        """
-        scale_x, scale_y = scales_image_single_dim_keep_dims(
-            image_size=image_size,
-            resize_to=self.__min_h
+        self.__image_preprocessor = CpuImagePreprocessor(
+            h=self.__min_h,
+            w=int(self.__min_h / PosePredictor.W_BY_H),
+            w_by_h=PosePredictor.W_BY_H,
+            scale=PosePredictor.SCALE,
+            norm_mode=self.__norm_mode
         )
-        new_w, new_h = round(scale_x * image_size[1]), round(scale_y * image_size[0])
-
-        return (new_h, new_w), self.SCALE - new_w % self.SCALE
 
     def predict(self, image: np.ndarray):
 
@@ -159,23 +133,12 @@ class PosePredictor(PosePredictorInterface):
             Where PosePredictor.HUMANS and PosePredictor.TIME - are strings ('humans' and 'time')
         """
         # Get final image size and padding value
-        (new_h, new_w), padding = self.__get_image_info(image.shape[:-1])
-        resized_img = cv2.resize(image, (new_w, new_h))
-        if padding:
-            # Pad image with zeros,
-            # In order to image be divided by PosePredictor.SCALE (in most cases equal to 8) without reminder
-            single_img_input = np.zeros((new_h, new_w + padding, 3)).astype(np.uint8, copy=False)
-            single_img_input[:, :resized_img.shape[1]] = resized_img
-        else:
-            single_img_input = resized_img
 
-        # Add batch dimension
-        img = np.expand_dims(single_img_input, axis=0).astype(np.float32, copy=False)
-        # Normalize image
-        norm_img = preprocess_input(img, mode=self.__norm_mode).astype(np.float32, copy=False)
         # Measure time of prediction
         start_time = time.time()
-        humans = self._predict(norm_img)
+        norm_img, new_h, new_w, original_in_size = self.__image_preprocessor(image)
+        batched_paf, indices, peaks = self.__model.predict(norm_img)
+        humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
         end_time = time.time() - start_time
 
         # Scale prediction to original image
@@ -193,33 +156,6 @@ class PosePredictor(PosePredictorInterface):
             ],
             PosePredictor.TIME: end_time
         }
-
-    def _predict(self, norm_img):
-        """
-        Imitates PEModel's predict.
-
-        Parameters
-        ----------
-        norm_img : ndarray
-            Normalized image according with the estimate_tools's needs.
-
-        Returns
-        -------
-        list
-            List of predictions to each input image.
-            Single element of this list is a List of classes Human which were detected.
-        """
-        resize_to = norm_img[0].shape[:2]
-
-        batched_paf, indices, peaks = self.__sess.run(
-            [self.__resized_paf, self.__indices, self.__peaks_score],
-            feed_dict={
-                self.__in_x: norm_img,
-                self.__upsample_size: resize_to
-            }
-        )
-
-        return SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
 
 
 if __name__ == '__main__':

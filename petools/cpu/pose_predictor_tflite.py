@@ -2,18 +2,16 @@ import json
 import os
 import time
 
-import cv2
 import numpy as np
-import tensorflow as tf
 
 from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
-from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
+from petools.tools.utils import CAFFE, scale_predicted_kp
 
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from .utils import IMAGE_INPUT_SIZE
 from .cpu_postprocess_np_part import CPUOptimizedPostProcessNPPart
-from .cpu_image_preprocessor import CpuImagePreprocessor
+from ..image_preprocessors import CpuImagePreprocessor
 from .cpu_model import CpuModel
 
 
@@ -132,19 +130,19 @@ class PosePredictor(PosePredictorInterface):
             }
 
         """
-        # 1. Preprocess image before feeding into the NN
         start_time = time.time()
-        norm_img, up_h, new_w, original_in_size = self.__image_preprocessor(image)
+        # 1. Preprocess image before feeding into the NN
+        norm_img, new_h, new_w, original_in_size = self.__image_preprocessor(image)
         # 2. Feed the image into the NN and get PAF and heatmap tensors
         paf_pr, smoothed_heatmap_pr = self._model.predict(norm_img)
-        # 3. Post process PAF and heatmap
+        # 3. Postprocess PAF and heatmap
         upsample_paf, indices, peaks = self._postprocess_np.process(heatmap=smoothed_heatmap_pr, paf=paf_pr)
         # 4. Build skeletons based off postprocessing results
         humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=upsample_paf)
         # 5. Scale skeletons' coordinates to the original image size
         scale_predicted_kp(
             predictions=[humans],
-            model_size=(up_h, new_w),
+            model_size=(new_h, new_w),
             source_size=original_in_size
         )
         # 6. Perform additional correction

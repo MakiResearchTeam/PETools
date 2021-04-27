@@ -1,4 +1,4 @@
-from ..core import ImagePreprocessor
+from petools.core import ImagePreprocessor
 from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
 from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
 
