@@ -11,7 +11,7 @@ from petools.tools.utils import CAFFE, scale_predicted_kp
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR
 from .gpu_model import GpuModel
-from ..image_preprocessors import CpuImagePreprocessor
+from ..image_preprocessors import GpuImagePreprocessor
 
 
 class PosePredictor(PosePredictorInterface):
@@ -79,7 +79,7 @@ class PosePredictor(PosePredictorInterface):
             ind_name=config[PosePredictor.IND_TENSOR_NAME],
             peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME]
         )
-        self.__image_preprocessor = CpuImagePreprocessor(
+        self.__image_preprocessor = GpuImagePreprocessor(
             h=self.__min_h,
             w=int(self.__min_h / PosePredictor.W_BY_H),
             w_by_h=PosePredictor.W_BY_H,
