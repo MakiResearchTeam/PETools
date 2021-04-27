@@ -4,7 +4,7 @@ import tensorflow as tf
 
 class CpuModel(Model):
     def __init__(self, tflite_file, num_threads):
-        interpreter = tf.lite.Interpreter(model_path=str(self.__path_to_tb), num_threads=self.__num_threads)
+        interpreter = tf.lite.Interpreter(model_path=str(tflite_file), num_threads=num_threads)
         interpreter.allocate_tensors()
         self.__interpreter = interpreter
         self.__in_x = interpreter.get_input_details()[0]["index"]
