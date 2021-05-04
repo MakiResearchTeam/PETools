@@ -1,17 +1,18 @@
 import json
 import os
 import time
-
 import numpy as np
+import tensorflow as tf
 
 from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, scale_predicted_kp
 
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
-from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR
+from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
 from .gpu_model import GpuModel
 from ..image_preprocessors import GpuImagePreprocessor
+from .gpu_converter_3d import GpuConverter3D
 
 
 class PosePredictor(PosePredictorInterface):
@@ -31,6 +32,7 @@ class PosePredictor(PosePredictorInterface):
             self,
             path_to_pb: str,
             path_to_config: str,
+            path_to_pb_3d: str,
             min_h=320,
             norm_mode=CAFFE,
             gpu_id=0
@@ -61,6 +63,7 @@ class PosePredictor(PosePredictorInterface):
         self.__min_h = min_h
         self.__norm_mode = norm_mode
         self.__path_to_tb = path_to_pb
+        self.__path_to_tb_3d = path_to_pb_3d
         self.__path_to_config = path_to_config
         self._init_model()
 
@@ -72,12 +75,15 @@ class PosePredictor(PosePredictorInterface):
         with open(self.__path_to_config, 'r') as f:
             config = json.load(f)
 
+        self.__sess = tf.Session()
+
         self.__model = GpuModel(
             pb_path=self.__path_to_tb,
             input_name=config[PosePredictor.INPUT_NAME],
             paf_name=config[PosePredictor.PAF_NAME],
             ind_name=config[PosePredictor.IND_TENSOR_NAME],
-            peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME]
+            peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME],
+            session=self.__sess
         )
         self.__image_preprocessor = GpuImagePreprocessor(
             h=self.__min_h,
@@ -85,6 +91,12 @@ class PosePredictor(PosePredictorInterface):
             w_by_h=PosePredictor.W_BY_H,
             scale=PosePredictor.SCALE,
             norm_mode=self.__norm_mode
+        )
+        self.__converter3d = GpuConverter3D(
+            pb_path=self.__path_to_tb_3d,
+            input_name=config[INPUT_TENSOR_3D],
+            output_name=config[OUTPUT_TENSOR_3D],
+            session=self.__sess
         )
 
     def predict(self, image: np.ndarray):
@@ -149,13 +161,8 @@ class PosePredictor(PosePredictorInterface):
         )
 
         updated_humans = modify_humans(humans)
-        return {
-            PosePredictor.HUMANS: [
-                dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictor.NUM_KEYPOINTS), single_human)))
-                for single_human in updated_humans
-            ],
-            PosePredictor.TIME: end_time
-        }
+        humans3d = self.__converter3d(updated_humans)
+        return PosePredictor.pack_data(humans=updated_humans, end_time=end_time, humans3d=humans3d)
 
 
 if __name__ == '__main__':

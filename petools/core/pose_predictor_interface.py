@@ -5,8 +5,10 @@ import numpy as np
 class PosePredictorInterface(ABC):
     SCALE = 8
     NUM_KEYPOINTS = 23
+    NUM_KEYPOINTS_3D = 16
 
     HUMANS = 'humans'
+    HUMANS3D = 'humans3d'
     TIME = 'time'
 
     @abstractmethod
@@ -55,6 +57,24 @@ class PosePredictorInterface(ABC):
             Where PosePredictorInterface.HUMANS and PosePredictorInterface.TIME - are strings ('humans' and 'time')
         """
         pass
+
+    @staticmethod
+    def pack_data(humans, end_time, humans3d=None):
+        data = {
+            PosePredictorInterface.HUMANS: [
+                dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictorInterface.NUM_KEYPOINTS), single_human)))
+                for single_human in humans
+            ],
+            PosePredictorInterface.TIME: end_time,
+            PosePredictorInterface.NUM_KEYPOINTS_3D: None
+        }
+
+        if humans3d is not None:
+            data[PosePredictorInterface.NUM_KEYPOINTS_3D] = [
+                dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictorInterface.NUM_KEYPOINTS_3D), single_human)))
+                for single_human in humans3d
+            ]
+        return data
 
 
 if __name__ == '__main__':

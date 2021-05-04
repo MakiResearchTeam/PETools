@@ -5,7 +5,12 @@ from petools.tools.utils.tf_tools import load_graph_def
 
 
 class GpuModel(Model):
-    def __init__(self, pb_path, input_name, paf_name, ind_name, peaks_score_name, upsample_size_name='upsample_size'):
+    def __init__(
+            self,
+            pb_path, input_name,
+            paf_name, ind_name, peaks_score_name, upsample_size_name='upsample_size',
+            session=None
+    ):
         self.__graph_def = load_graph_def(pb_path)
         self.__in_x = tf.placeholder(dtype=tf.float32, shape=[1, None, None, 3], name='in_x')
         self.__upsample_size = tf.placeholder(dtype=tf.int32, shape=(2), name='upsample')
@@ -21,7 +26,9 @@ class GpuModel(Model):
                 peaks_score_name
             ]
         )
-        self.__sess = tf.Session()
+        if session is None:
+            session = tf.Session()
+        self.__sess = session
 
     def predict(self, norm_img):
         """

@@ -8,6 +8,7 @@ from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
 
 class GpuImagePreprocessor(ImagePreprocessor):
     def __init__(self, h, w, scale, w_by_h, norm_mode):
+        # w isn't really used here. The code was just copied from the pu
         self.__min_h = h
         self.__max_w = w
         self.__scale = scale
