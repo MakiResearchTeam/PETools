@@ -3,6 +3,7 @@ import os
 import time
 import numpy as np
 import tensorflow as tf
+import pathlib
 
 from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
@@ -92,8 +93,21 @@ class PosePredictor(PosePredictorInterface):
             scale=PosePredictor.SCALE,
             norm_mode=self.__norm_mode
         )
+        # --- INIT CONVERTER3D
+        file_path = os.path.abspath(__file__)
+        dir_path = pathlib.Path(file_path).parent
+        data_stats_dir = os.path.join(dir_path, '3d_converter_stats')
+        mean_path = os.path.join(data_stats_dir, 'mean_3d.npy')
+        assert os.path.isfile(mean_path), f"Could not find mean.npy in {mean_path}."
+        std_path = os.path.join(data_stats_dir, 'std_3d.npy')
+        assert os.path.isfile(std_path), f"Could not find std.npy in {std_path}."
+        mean = np.load(mean_path)
+        std = np.load(std_path)
+
         self.__converter3d = GpuConverter3D(
             pb_path=self.__path_to_tb_3d,
+            mean=mean,
+            std=std,
             input_name=config[INPUT_TENSOR_3D],
             output_name=config[OUTPUT_TENSOR_3D],
             session=self.__sess
@@ -161,7 +175,7 @@ class PosePredictor(PosePredictorInterface):
         )
 
         updated_humans = modify_humans(humans)
-        humans3d = self.__converter3d(updated_humans)
+        humans3d = self.__converter3d(updated_humans, image.shape[:-1])
         return PosePredictor.pack_data(humans=updated_humans, end_time=end_time, humans3d=humans3d)
 
 

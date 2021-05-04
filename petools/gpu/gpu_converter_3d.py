@@ -52,7 +52,28 @@ class GpuConverter3D(Converter3D):
         [9, 16]
     ]
 
-    def __init__(self, pb_path, input_name='input', output_name='Identity', session=None):
+    def __init__(self, pb_path, mean, std, input_name='input', output_name='Identity', session=None):
+        """
+        2d-3d converter.
+
+        Parameters
+        ----------
+        pb_path : str
+            Path to the protobuf file with model's graph.
+        mean : np.ndarray of shape [32]
+            Mean statistics for data normalization.
+        std : np.ndarray of shape [32]
+            Std statistics for data normalization.
+        input_name : str
+            Input tensor name.
+        output_name : str
+            Output tensor name.
+        session : tf.Session
+            THe session object to run the model.
+        """
+        self._mean = mean.reshape(1, -1).astype('float32')
+        self._std = std.reshape(1, -1).astype('float32')
+
         self._graph_def = load_graph_def(pb_path)
         self._in_x = tf.placeholder(dtype=tf.float32, shape=[1, 32], name='in_x')
         self._3d_coords = tf.import_graph_def(
@@ -75,7 +96,7 @@ class GpuConverter3D(Converter3D):
         self.fill_points_buffer(points)
         return self._sess.run(
             self._3d_coords,
-            feed_dict={self._in_x: self._points_buffer_nn.reshape(1, -1)}
+            feed_dict={self._in_x: self.normalize_points_buffer()}
         )
 
     def fill_points_buffer(self, points: np.ndarray):
@@ -84,10 +105,16 @@ class GpuConverter3D(Converter3D):
         self._points_buffer_nn[:, :14] = self._points_buffer[:, :14]
         self._points_buffer_nn[:, 14:] = self._points_buffer[:, 15:]
 
-    def __call__(self, skeletons):
+    def normalize_points_buffer(self):
+        return (self._points_buffer_nn.reshape(1, -1) - self._mean) / self._std
+
+    def __call__(self, skeletons, source_resolution):
+        h, w = source_resolution
         skeletons_3d = []
         for skeleton in skeletons:
             skeleton = skeleton.to_np()[:, :2]
+            skeleton[:, 0] /= w * 1000
+            skeleton[:, 1] /= h * 1000
             skeleton_3d = self.predict(skeleton).reshape(16, 3)
             skeletons_3d.append(Human.from_array(skeleton_3d))
         return skeletons_3d
