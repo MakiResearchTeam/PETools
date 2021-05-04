@@ -4,7 +4,7 @@ import setuptools
 setup(
     name='PETools',
     packages=setuptools.find_packages(),
-    package_data={'petools': ['tools/estimate_tools/pafprocess/*.so']},
+    package_data={'petools': ['tools/estimate_tools/pafprocess/*.so', 'gpu/3d_converter_stats/*']},
     version='0.5.0',
     description='A set of tools to use pose estimation models',
     long_description='...',

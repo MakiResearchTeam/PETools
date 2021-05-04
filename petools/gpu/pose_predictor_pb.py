@@ -8,8 +8,9 @@ import pathlib
 from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, scale_predicted_kp
-
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
+from petools.tools.estimate_tools import Human
+
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
 from .gpu_model import GpuModel
 from ..image_preprocessors import GpuImagePreprocessor
@@ -33,7 +34,7 @@ class PosePredictor(PosePredictorInterface):
             self,
             path_to_pb: str,
             path_to_config: str,
-            path_to_pb_3d: str,
+            path_to_pb_3d: str = None,
             min_h=320,
             norm_mode=CAFFE,
             gpu_id=0
@@ -93,25 +94,37 @@ class PosePredictor(PosePredictorInterface):
             scale=PosePredictor.SCALE,
             norm_mode=self.__norm_mode
         )
-        # --- INIT CONVERTER3D
-        file_path = os.path.abspath(__file__)
-        dir_path = pathlib.Path(file_path).parent
-        data_stats_dir = os.path.join(dir_path, '3d_converter_stats')
-        mean_path = os.path.join(data_stats_dir, 'mean_3d.npy')
-        assert os.path.isfile(mean_path), f"Could not find mean.npy in {mean_path}."
-        std_path = os.path.join(data_stats_dir, 'std_3d.npy')
-        assert os.path.isfile(std_path), f"Could not find std.npy in {std_path}."
-        mean = np.load(mean_path)
-        std = np.load(std_path)
+        if self.__path_to_tb_3d is not None:
+            # --- INIT CONVERTER3D
+            file_path = os.path.abspath(__file__)
+            dir_path = pathlib.Path(file_path).parent
+            data_stats_dir = os.path.join(dir_path, '3d_converter_stats')
+            mean_path = os.path.join(data_stats_dir, 'mean_2d.npy')
+            assert os.path.isfile(mean_path), f"Could not find mean_2d.npy in {mean_path}."
+            mean_2d = np.load(mean_path)
 
-        self.__converter3d = GpuConverter3D(
-            pb_path=self.__path_to_tb_3d,
-            mean=mean,
-            std=std,
-            input_name=config[INPUT_TENSOR_3D],
-            output_name=config[OUTPUT_TENSOR_3D],
-            session=self.__sess
-        )
+            std_path = os.path.join(data_stats_dir, 'std_2d.npy')
+            assert os.path.isfile(std_path), f"Could not find std_2d.npy in {std_path}."
+            std_2d = np.load(std_path)
+
+            mean_path = os.path.join(data_stats_dir, 'mean_3d.npy')
+            assert os.path.isfile(mean_path), f"Could not find mean_3d.npy in {mean_path}."
+            mean_3d = np.load(mean_path)
+
+            std_path = os.path.join(data_stats_dir, 'std_3d.npy')
+            assert os.path.isfile(std_path), f"Could not find std_3d.npy in {std_path}."
+            std_3d = np.load(std_path)
+
+            self.__converter3d = GpuConverter3D(
+                pb_path=self.__path_to_tb_3d,
+                mean_2d=mean_2d,
+                std_2d=std_2d,
+                mean_3d=mean_3d,
+                std_3d=std_3d,
+                input_name=config[INPUT_TENSOR_3D],
+                output_name=config[OUTPUT_TENSOR_3D],
+                session=self.__sess
+            )
 
     def predict(self, image: np.ndarray):
 
@@ -173,9 +186,12 @@ class PosePredictor(PosePredictorInterface):
             model_size=(new_h, new_w),
             source_size=image.shape[:-1]
         )
-
+        # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
         updated_humans = modify_humans(humans)
-        humans3d = self.__converter3d(updated_humans, image.shape[:-1])
+        humans_humans = [Human.from_array(x) for x in updated_humans]
+        humans3d = None
+        if self.__path_to_tb_3d is not None:
+            humans3d = self.__converter3d(humans_humans, image.shape[:-1])
         return PosePredictor.pack_data(humans=updated_humans, end_time=end_time, humans3d=humans3d)
 
 

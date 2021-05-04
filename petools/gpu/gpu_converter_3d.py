@@ -52,7 +52,7 @@ class GpuConverter3D(Converter3D):
         [9, 16]
     ]
 
-    def __init__(self, pb_path, mean, std, input_name='input', output_name='Identity', session=None):
+    def __init__(self, pb_path, mean_2d, std_2d, mean_3d, std_3d, input_name='input', output_name='Identity', session=None):
         """
         2d-3d converter.
 
@@ -71,8 +71,10 @@ class GpuConverter3D(Converter3D):
         session : tf.Session
             THe session object to run the model.
         """
-        self._mean = mean.reshape(1, -1).astype('float32')
-        self._std = std.reshape(1, -1).astype('float32')
+        self._mean_2d = mean_2d.reshape(1, -1).astype('float32')
+        self._std_2d = std_2d.reshape(1, -1).astype('float32')
+        self._mean_3d = mean_3d.reshape(1, -1).astype('float32')
+        self._std_3d = std_3d.reshape(1, -1).astype('float32')
 
         self._graph_def = load_graph_def(pb_path)
         self._in_x = tf.placeholder(dtype=tf.float32, shape=[1, 32], name='in_x')
@@ -84,29 +86,33 @@ class GpuConverter3D(Converter3D):
             return_elements=[
                 output_name
             ]
-        )
+        )[0]
         if session is None:
             session = tf.Session()
         self._sess = session
 
-        self._points_buffer = np.zeros(1, 17, 2).astype('float32')
-        self._points_buffer_nn = np.zeros(1, 16, 2).astype('float32')
+        self._points_buffer = np.zeros((1, 17, 2)).astype('float32')
+        self._points_buffer_nn = np.zeros((1, 16, 2)).astype('float32')
 
     def predict(self, points: np.ndarray):
         self.fill_points_buffer(points)
-        return self._sess.run(
+        pred = self._sess.run(
             self._3d_coords,
             feed_dict={self._in_x: self.normalize_points_buffer()}
         )
+        return self.denormalize(pred)
 
     def fill_points_buffer(self, points: np.ndarray):
         for i, j in GpuConverter3D.PRODUCTION_TO_HUMAN36:
-            self._points_buffer[j] = points[i]
+            self._points_buffer[0, j] = points[i]
         self._points_buffer_nn[:, :14] = self._points_buffer[:, :14]
         self._points_buffer_nn[:, 14:] = self._points_buffer[:, 15:]
 
     def normalize_points_buffer(self):
-        return (self._points_buffer_nn.reshape(1, -1) - self._mean) / self._std
+        return (self._points_buffer_nn.reshape(1, -1) - self._mean_2d) / self._std_2d
+
+    def denormalize(self, prediction):
+        return prediction * self._std_3d + self._mean_3d
 
     def __call__(self, skeletons, source_resolution):
         h, w = source_resolution
@@ -116,5 +122,5 @@ class GpuConverter3D(Converter3D):
             skeleton[:, 0] /= w * 1000
             skeleton[:, 1] /= h * 1000
             skeleton_3d = self.predict(skeleton).reshape(16, 3)
-            skeletons_3d.append(Human.from_array(skeleton_3d))
+            skeletons_3d.append(skeleton_3d.tolist())
         return skeletons_3d
