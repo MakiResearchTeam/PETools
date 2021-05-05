@@ -178,8 +178,6 @@ class PosePredictor(PosePredictorInterface):
         norm_img, new_h, new_w, original_in_size = self.__image_preprocessor(image)
         batched_paf, indices, peaks = self.__model.predict(norm_img)
         humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
-        end_time = time.time() - start_time
-
         # Scale prediction to original image
         scale_predicted_kp(
             predictions=[humans],
@@ -192,6 +190,8 @@ class PosePredictor(PosePredictorInterface):
         humans3d = None
         if self.__path_to_tb_3d is not None:
             humans3d = self.__converter3d(humans_humans, image.shape[:-1])
+
+        end_time = time.time() - start_time
         return PosePredictor.pack_data(humans=updated_humans, end_time=end_time, humans3d=humans3d)
 
 

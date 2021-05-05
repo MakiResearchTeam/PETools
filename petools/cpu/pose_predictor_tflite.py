@@ -13,6 +13,7 @@ from .utils import IMAGE_INPUT_SIZE
 from .cpu_postprocess_np_part import CPUOptimizedPostProcessNPPart
 from ..image_preprocessors import CpuImagePreprocessor
 from .cpu_model import CpuModel
+from .cpu_converter_3d import CpuConverter3D
 
 
 class PosePredictor(PosePredictorInterface):
@@ -27,6 +28,7 @@ class PosePredictor(PosePredictorInterface):
             self,
             path_to_tflite: str,
             path_to_config: str,
+            path_to_tflite_3d: str = None,
             norm_mode=CAFFE,
             gpu_id=';',
             num_threads=None,
@@ -53,10 +55,11 @@ class PosePredictor(PosePredictorInterface):
 
         """
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-        self.__norm_mode = norm_mode
-        self.__path_to_tb = path_to_tflite
-        self.__path_to_config = path_to_config
-        self.__num_threads = num_threads
+        self._norm_mode = norm_mode
+        self._path_to_tflite = path_to_tflite
+        self._path_to_config = path_to_config
+        self._path_to_tflite_3d = path_to_tflite_3d
+        self._num_threads = num_threads
         self._kp_scale_end = kp_scale_end
         self._init_model()
 
@@ -65,7 +68,7 @@ class PosePredictor(PosePredictorInterface):
         Loads config and the estimate_tools's weights
 
         """
-        with open(self.__path_to_config, 'r') as f:
+        with open(self._path_to_config, 'r') as f:
             config = json.load(f)
         H, W = config[IMAGE_INPUT_SIZE]
 
@@ -74,17 +77,46 @@ class PosePredictor(PosePredictorInterface):
             w=W,
             scale=PosePredictor.SCALE,
             w_by_h=PosePredictor.W_BY_H,
-            norm_mode=self.__norm_mode
+            norm_mode=self._norm_mode
         )
         self._model = CpuModel(
-            tflite_file=self.__path_to_tb,
-            num_threads=self.__num_threads
+            tflite_file=self._path_to_tflite,
+            num_threads=self._num_threads
         )
         self._postprocess_np = CPUOptimizedPostProcessNPPart(
             resize_to=(H, W),
             upsample_heatmap=False,
             kp_scale_end=self._kp_scale_end
         )
+
+        if self._path_to_tflite_3d is not None:
+            # --- INIT CONVERTER3D
+            file_path = os.path.abspath(__file__)
+            dir_path = pathlib.Path(file_path).parent
+            data_stats_dir = os.path.join(dir_path, '3d_converter_stats')
+            mean_path = os.path.join(data_stats_dir, 'mean_2d.npy')
+            assert os.path.isfile(mean_path), f"Could not find mean_2d.npy in {mean_path}."
+            mean_2d = np.load(mean_path)
+
+            std_path = os.path.join(data_stats_dir, 'std_2d.npy')
+            assert os.path.isfile(std_path), f"Could not find std_2d.npy in {std_path}."
+            std_2d = np.load(std_path)
+
+            mean_path = os.path.join(data_stats_dir, 'mean_3d.npy')
+            assert os.path.isfile(mean_path), f"Could not find mean_3d.npy in {mean_path}."
+            mean_3d = np.load(mean_path)
+
+            std_path = os.path.join(data_stats_dir, 'std_3d.npy')
+            assert os.path.isfile(std_path), f"Could not find std_3d.npy in {std_path}."
+            std_3d = np.load(std_path)
+
+            self.__converter3d = CpuConverter3D(
+                tflite_path=self._path_to_tflite_3d,
+                mean_2d=mean_2d,
+                std_2d=std_2d,
+                mean_3d=mean_3d,
+                std_3d=std_3d
+            )
 
     def predict(self, image: np.ndarray):
         """
@@ -147,11 +179,10 @@ class PosePredictor(PosePredictorInterface):
         )
         # 6. Perform additional correction
         updated_humans = modify_humans(humans)
+        humans_humans = [Human.from_array(x) for x in updated_humans]
+        humans3d = None
+        if self._path_to_tflite_3d is not None:
+            humans3d = self.__converter3d(humans_humans, image.shape[:-1])
+
         end_time = time.time() - start_time
-        return {
-            PosePredictor.HUMANS: [
-                dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictor.NUM_KEYPOINTS), single_human)))
-                for single_human in updated_humans
-            ],
-            PosePredictor.TIME: end_time
-        }
+        return PosePredictor.pack_data(humans=updated_humans, end_time=end_time, humans3d=humans3d)
