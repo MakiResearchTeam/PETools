@@ -181,9 +181,9 @@ class PosePredictor(PosePredictorInterface):
         )
         # 6. Perform additional correction
         updated_humans = modify_humans(humans)
-        humans_humans = [Human.from_array(x) for x in updated_humans]
         humans3d = None
         if self._path_to_tflite_3d is not None:
+            humans_humans = [Human.from_array(x) for x in updated_humans]
             humans3d = self.__converter3d(humans_humans, image.shape[:-1])
 
         end_time = time.time() - start_time
