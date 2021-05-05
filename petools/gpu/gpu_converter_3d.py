@@ -90,7 +90,7 @@ class GpuConverter3D(Converter3D):
         if session is None:
             session = tf.Session()
         self._sess = session
-
+        # TODO remove these idiot buffers
         self._points_buffer = np.zeros((1, 17, 2)).astype('float32')
         self._points_buffer_nn = np.zeros((1, 16, 2)).astype('float32')
 
@@ -119,8 +119,7 @@ class GpuConverter3D(Converter3D):
         skeletons_3d = []
         for skeleton in skeletons:
             skeleton = skeleton.to_np()[:, :2]
-            skeleton[:, 0] *= 1000 / h
-            skeleton[:, 1] *= 1000 / h
+            skeleton *= 1000 / h
             skeleton_3d = self.predict(skeleton).reshape(16, 3)
             skeletons_3d.append(skeleton_3d.tolist())
         return skeletons_3d

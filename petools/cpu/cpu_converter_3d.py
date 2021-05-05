@@ -88,8 +88,9 @@ class CpuConverter3D(Converter3D):
         self._points_buffer_nn = np.zeros((1, 16, 2)).astype('float32')
 
     def predict(self, points: np.ndarray):
+        # TODO remove these idiot buffers
         self.fill_points_buffer(points)
-        self._interpreter.set_tensor(self._input_tensor, self._points_buffer_nn.reshape(1, -1))
+        self._interpreter.set_tensor(self._input_tensor, self.normalize_points_buffer())
         self._interpreter.invoke()
         pred = self._interpreter.get_tensor(self._output_tensor)
         return self.denormalize(pred)
@@ -111,8 +112,7 @@ class CpuConverter3D(Converter3D):
         skeletons_3d = []
         for skeleton in skeletons:
             skeleton = skeleton.to_np()[:, :2]
-            skeleton[:, 0] *= 1000 / h
-            skeleton[:, 1] *= 1000 / h
+            skeleton *= 1000 / h
             skeleton_3d = self.predict(skeleton).reshape(16, 3)
             skeletons_3d.append(skeleton_3d.tolist())
         return skeletons_3d
