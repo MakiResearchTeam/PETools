@@ -66,11 +66,11 @@ class PosePredictorInterface(ABC):
                 for single_human in humans
             ],
             PosePredictorInterface.TIME: end_time,
-            PosePredictorInterface.NUM_KEYPOINTS_3D: None
+            PosePredictorInterface.HUMANS3D: None
         }
 
         if humans3d is not None:
-            data[PosePredictorInterface.NUM_KEYPOINTS_3D] = [
+            data[PosePredictorInterface.HUMANS3D] = [
                 dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictorInterface.NUM_KEYPOINTS_3D), single_human)))
                 for single_human in humans3d
             ]
