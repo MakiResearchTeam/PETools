@@ -1,9 +1,9 @@
 import json
 import os
 import time
-import numpy as np
-import tensorflow as tf
 import pathlib
+import tensorflow as tf
+import numpy as np
 
 from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
@@ -11,10 +11,11 @@ from petools.tools.utils import CAFFE, scale_predicted_kp
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
 from petools.tools.estimate_tools import Human
 
-from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
-from .gpu_model import GpuModel
-from ..image_preprocessors import GpuImagePreprocessor
-from .gpu_converter_3d import GpuConverter3D
+from .utils import IMAGE_INPUT_SIZE, INPUT_TENSOR, PAF_TENSOR, SMOOTHED_HEATMAP_TENSOR
+from .cpu_postprocess_np_part import CPUOptimizedPostProcessNPPart
+from ..image_preprocessors import CpuImagePreprocessor
+from .cpu_model_pb import CpuModelPB
+from .cpu_converter_3d import CpuConverter3D
 
 
 class PosePredictor(PosePredictorInterface):
@@ -23,21 +24,17 @@ class PosePredictor(PosePredictorInterface):
     Contains main tools for drawing skeletons and predict them.
 
     """
-    INPUT_NAME = INPUT_TENSOR
-    IND_TENSOR_NAME = IND_TENSOR
-    PAF_NAME = PAF_TENSOR
-    PEAKS_SCORE_NAME = PEAKS_SCORE_TENSOR
-    UPSAMPLE_SIZE = 'upsample_size'
     W_BY_H = 1128.0 / 1920.0
 
     def __init__(
             self,
             path_to_pb: str,
             path_to_config: str,
-            path_to_pb_3d: str = None,
-            min_h=320,
+            path_to_tflite_3d: str = None,
             norm_mode=CAFFE,
-            gpu_id=0
+            gpu_id=';',
+            num_threads=None,
+            kp_scale_end=2
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -46,27 +43,26 @@ class PosePredictor(PosePredictorInterface):
         Parameters
         ----------
         path_to_pb : str
-            Path to pb file which contains estimate_tools obj,
-            Example: "/home/user/estimate_tools.pb"
+            Path to tflite file which contains estimate_tools obj,
+            Example: "/home/user/estimate_tools.tflite"
         path_to_config : str
             Path to config for pb file,
             This config contains of input/output information from estimate_tools, in order to get proper tensors
-        min_h : tuple
-            H_min
         norm_mode : str
-            Mode to normalize input images, default CAFFE, i.e. image will be normalized according to ImageNet dataset
+            Mode to normalize input images, default TF, i.e. image will be in range (-1, 1)
         gpu_id : int or str
             Number of GPU, which must be used to run estimate_tools on it,
-            If CPU is needed - enter any symbol (expect digits), for example: ";"
+            If CPU is needed - enter any symbol (expect digits), for example: ";",
+            By default CPU is used
 
         """
-
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-        self.__min_h = min_h
-        self.__norm_mode = norm_mode
-        self.__path_to_tb = path_to_pb
-        self.__path_to_tb_3d = path_to_pb_3d
-        self.__path_to_config = path_to_config
+        self._norm_mode = norm_mode
+        self._path_to_pb = path_to_pb
+        self._path_to_config = path_to_config
+        self._path_to_tflite_3d = path_to_tflite_3d
+        self._num_threads = num_threads
+        self._kp_scale_end = kp_scale_end
         self._init_model()
 
     def _init_model(self):
@@ -74,29 +70,33 @@ class PosePredictor(PosePredictorInterface):
         Loads config and the estimate_tools's weights
 
         """
-        with open(self.__path_to_config, 'r') as f:
+        with open(self._path_to_config, 'r') as f:
             config = json.load(f)
+        H, W = config[IMAGE_INPUT_SIZE]
 
         self.__sess = tf.Session()
 
-        self.__model = GpuModel(
-            pb_path=self.__path_to_tb,
-            input_name=config[PosePredictor.INPUT_NAME],
-            paf_name=config[PosePredictor.PAF_NAME],
-            ind_name=config[PosePredictor.IND_TENSOR_NAME],
-            peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME],
+        self.__image_preprocessor = CpuImagePreprocessor(
+            h=H,
+            w=W,
+            scale=PosePredictor.SCALE,
+            w_by_h=PosePredictor.W_BY_H,
+            norm_mode=self._norm_mode
+        )
+        self._model = CpuModelPB(
+            pb_path=self._path_to_pb,
+            input_name=config[INPUT_TENSOR],
+            paf_name=config[PAF_TENSOR],
+            heatmap_name=config[SMOOTHED_HEATMAP_TENSOR],
             session=self.__sess
         )
-
-        self.__image_preprocessor = GpuImagePreprocessor(
-            h=self.__min_h,
-            w=int(self.__min_h / PosePredictor.W_BY_H),
-            w_by_h=PosePredictor.W_BY_H,
-            scale=PosePredictor.SCALE,
-            norm_mode=self.__norm_mode
+        self._postprocess_np = CPUOptimizedPostProcessNPPart(
+            resize_to=(H, W),
+            upsample_heatmap=False,
+            kp_scale_end=self._kp_scale_end
         )
 
-        if self.__path_to_tb_3d is not None:
+        if self._path_to_tflite_3d is not None:
             # --- INIT CONVERTER3D
             file_path = os.path.abspath(__file__)
             dir_path = pathlib.Path(file_path).parent
@@ -117,19 +117,15 @@ class PosePredictor(PosePredictorInterface):
             assert os.path.isfile(std_path), f"Could not find std_3d.npy in {std_path}."
             std_3d = np.load(std_path)
 
-            self.__converter3d = GpuConverter3D(
-                pb_path=self.__path_to_tb_3d,
+            self.__converter3d = CpuConverter3D(
+                tflite_path=self._path_to_tflite_3d,
                 mean_2d=mean_2d,
                 std_2d=std_2d,
                 mean_3d=mean_3d,
-                std_3d=std_3d,
-                input_name=config[INPUT_TENSOR_3D],
-                output_name=config[OUTPUT_TENSOR_3D],
-                session=self.__sess
+                std_3d=std_3d
             )
 
     def predict(self, image: np.ndarray):
-
         """
         Estimate poses on single image
 
@@ -137,14 +133,14 @@ class PosePredictor(PosePredictorInterface):
         ----------
         image : np.ndarray
             Input image, with shape (H, W, 3): H - Height, W - Width (H and W can have any values)
-            For mose models - input image must be in bgr order
+            For most of models - input image must be in bgr order
 
         Returns
         -------
         dict
             Single predictions as dict object contains of:
             {
-                PosePredictor.HUMANS: [
+                "humans": [
                         [
                             [h1_x_1, h1_y_1, h1_v_1],
                             [h1_x_2, h1_y_2, h1_v_2],
@@ -169,34 +165,31 @@ class PosePredictor(PosePredictorInterface):
                             [hN_x_n, hN_y_n, hN_v_n],
                         ]
                 ],
-                PosePredictor.TIME: some_float_number
+                "time": some_float_number
             }
-            Where PosePredictor.HUMANS and PosePredictor.TIME - are strings ('humans' and 'time')
-        """
-        # Get final image size and padding value
 
-        # Measure time of prediction
+        """
         start_time = time.time()
+        # 1. Preprocess image before feeding into the NN
         norm_img, new_h, new_w, original_in_size = self.__image_preprocessor(image)
-        batched_paf, indices, peaks = self.__model.predict(norm_img)
-        humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
-        # Scale prediction to original image
+        # 2. Feed the image into the NN and get PAF and heatmap tensors
+        paf_pr, smoothed_heatmap_pr = self._model.predict(norm_img)
+        # 3. Postprocess PAF and heatmap
+        upsample_paf, indices, peaks = self._postprocess_np.process(heatmap=smoothed_heatmap_pr, paf=paf_pr)
+        # 4. Build skeletons based off postprocessing results
+        humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=upsample_paf)
+        # 5. Scale skeletons' coordinates to the original image size
         scale_predicted_kp(
             predictions=[humans],
             model_size=(new_h, new_w),
-            source_size=image.shape[:-1]
+            source_size=original_in_size
         )
-        # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
+        # 6. Perform additional correction
         updated_humans = modify_humans(humans)
-        humans_humans = [Human.from_array(x) for x in updated_humans]
         humans3d = None
-        if self.__path_to_tb_3d is not None:
+        if self._path_to_tflite_3d is not None:
+            humans_humans = [Human.from_array(x) for x in updated_humans]
             humans3d = self.__converter3d(humans_humans, image.shape[:-1])
 
         end_time = time.time() - start_time
         return PosePredictor.pack_data(humans=updated_humans, end_time=end_time, humans3d=humans3d)
-
-
-if __name__ == '__main__':
-    print(PosePredictor.HUMANS)
-
