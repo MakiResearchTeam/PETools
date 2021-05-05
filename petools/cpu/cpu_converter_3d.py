@@ -111,7 +111,7 @@ class CpuConverter3D(Converter3D):
         skeletons_3d = []
         for skeleton in skeletons:
             skeleton = skeleton.to_np()[:, :2]
-            skeleton[:, 0] /= w * 1000
+            skeleton[:, 0] /= h * 1000
             skeleton[:, 1] /= h * 1000
             skeleton_3d = self.predict(skeleton).reshape(16, 3)
             skeletons_3d.append(skeleton_3d.tolist())
