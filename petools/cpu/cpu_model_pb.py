@@ -11,6 +11,22 @@ class CpuModelPB(Model):
             paf_name, heatmap_name,
             session=None
     ):
+        """
+        A wrapper around CPU computational graph. Uses TF1.x
+
+        Parameters
+        ----------
+        pb_path : str
+            Path to the protobuf file.
+        input_name : str
+            Name of the input tensor. (does not end with :0)
+        paf_name : str
+            Name of the paf tensor. (ends with :0)
+        heatmap_name : str
+            Name of the heatmap tensor. (ends with :0)
+        session : tf.Session
+            A session object. If not provided, an internal session object is created.
+        """
         self.__graph_def = load_graph_def(pb_path)
         self.__in_x = tf.placeholder(dtype=tf.float32, shape=[1, None, None, 3], name='in_x')
         self.__upsample_size = tf.placeholder(dtype=tf.int32, shape=(2), name='upsample')

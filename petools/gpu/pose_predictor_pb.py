@@ -18,11 +18,6 @@ from .gpu_converter_3d import GpuConverter3D
 
 
 class PosePredictor(PosePredictorInterface):
-    """
-    PosePredictor - wrapper of PEModel from MakiPoseNet
-    Contains main tools for drawing skeletons and predict them.
-
-    """
     INPUT_NAME = INPUT_TENSOR
     IND_TENSOR_NAME = IND_TENSOR
     PAF_NAME = PAF_TENSOR

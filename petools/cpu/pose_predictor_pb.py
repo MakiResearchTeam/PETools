@@ -20,9 +20,8 @@ from .cpu_converter_3d import CpuConverter3D
 
 class PosePredictor(PosePredictorInterface):
     """
-    PosePredictor - wrapper of PEModel from MakiPoseNet
-    Contains main tools for drawing skeletons and predict them.
-
+    Same as pose_predictor_tflite except that it uses CpuModelPB which runs the model
+    using TF1.x loaded from protobuf.
     """
     W_BY_H = 1128.0 / 1920.0
 

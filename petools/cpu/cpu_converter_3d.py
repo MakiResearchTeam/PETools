@@ -2,8 +2,6 @@ import tensorflow as tf
 import numpy as np
 
 from ..core import Converter3D
-from petools.tools.utils.tf_tools import load_graph_def
-from petools.tools.estimate_tools import Human
 
 
 class CpuConverter3D(Converter3D):
@@ -60,16 +58,14 @@ class CpuConverter3D(Converter3D):
         ----------
         tflite_path : str
             Path to the protobuf file with model's graph.
-        mean : np.ndarray of shape [32]
+        mean_2d : np.ndarray of shape [32]
             Mean statistics for data normalization.
-        std : np.ndarray of shape [32]
+        std_2d : np.ndarray of shape [32]
             Std statistics for data normalization.
-        input_name : str
-            Input tensor name.
-        output_name : str
-            Output tensor name.
-        session : tf.Session
-            THe session object to run the model.
+        mean_3d : np.ndarray of shape [48]
+            Mean statistics for predictions denormalization.
+        std_3d : np.ndarray of shape [48]
+            Std statistics for predictions denormalization.
         """
         self._mean_2d = mean_2d.reshape(1, -1).astype('float32')
         self._std_2d = std_2d.reshape(1, -1).astype('float32')
