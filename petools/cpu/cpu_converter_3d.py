@@ -93,7 +93,7 @@ class CpuConverter3D(Converter3D):
 
     def predict(self, points: np.ndarray):
         self.fill_points_buffer(points)
-        self._interpreter.set_tensor(self._input_tensor, skeleton)
+        self._interpreter.set_tensor(self._input_tensor, points)
         self._interpreter.invoke()
         pred = self._interpreter.get_tensor(self._output_tensor)
         return self.denormalize(pred)

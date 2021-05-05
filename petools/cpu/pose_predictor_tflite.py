@@ -1,14 +1,16 @@
 import json
 import os
 import time
+import pathlib
 
 import numpy as np
 
 from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, scale_predicted_kp
-
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
+from petools.tools.estimate_tools import Human
+
 from .utils import IMAGE_INPUT_SIZE
 from .cpu_postprocess_np_part import CPUOptimizedPostProcessNPPart
 from ..image_preprocessors import CpuImagePreprocessor
