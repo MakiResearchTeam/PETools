@@ -62,7 +62,7 @@ class PosePredictorInterface(ABC):
     def pack_data(humans, end_time, humans3d=None):
         data = {
             PosePredictorInterface.HUMANS: [
-                dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictorInterface.NUM_KEYPOINTS), single_human)))
+                dict(list(map(lambda indx, in_x: (f'p{indx}', in_x), range(PosePredictorInterface.NUM_KEYPOINTS), single_human)))
                 for single_human in humans
             ],
             PosePredictorInterface.TIME: end_time,
@@ -70,10 +70,7 @@ class PosePredictorInterface(ABC):
         }
 
         if humans3d is not None:
-            data[PosePredictorInterface.HUMANS3D] = [
-                dict(list(map(lambda indx, in_x: (indx, in_x), range(PosePredictorInterface.NUM_KEYPOINTS_3D), single_human)))
-                for single_human in humans3d
-            ]
+            data[PosePredictorInterface.HUMANS3D] = humans3d
         return data
 
 
