@@ -102,18 +102,17 @@ class Converter3D:
             skeleton_2d = skeleton.to_np()[:, :2]
             skeleton_2d *= 1000 / h
             # Shift the skeleton into the center of 1000x1000 square image
+            selected_x = skeleton_2d[:, 0][skeleton_2d[:, 0] != 0]
+            left_x = 0
+            if len(selected_x) != 0:
+                left_x = np.min(selected_x)
+            right_x = np.max(skeleton_2d[:, 0])
+            width = right_x - left_x
+            center = left_x + width / 2
             if np.max(skeleton_2d[:, 0]) > 900:
-                left_x = np.min(skeleton_2d[:, 0][skeleton_2d[:, 0] != 0])
-                right_x = np.max(skeleton_2d[:, 0])
-                width = right_x - left_x
-                center = left_x + width / 2
                 shift = center - 500
                 skeleton_2d[:, 0] -= shift
             elif np.min(skeleton_2d[:, 0]) < 100:
-                left_x = np.min(skeleton_2d[:, 0][skeleton_2d[:, 0] != 0])
-                right_x = np.max(skeleton_2d[:, 0])
-                width = right_x - left_x
-                center = left_x + width / 2
                 shift = 500 - center
                 skeleton_2d[:, 0] += shift
 
