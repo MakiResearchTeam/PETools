@@ -99,19 +99,25 @@ class Converter3D:
         h, w = source_resolution
         skeletons_3d = []
         for skeleton in skeletons:
-            skeleton = skeleton.to_np()[:, :2]
-            skeleton *= 1000 / h
+            skeleton_2d = skeleton.to_np()[:, :2]
+            skeleton_2d *= 1000 / h
             # Shift the skeleton into the center of 1000x1000 square image
-            if np.max(skeleton[:, 0]) > 900:
-                x_max = np.max(skeleton[:, 0])
-                shift = x_max - 500
-                skeleton[:, 0] -= shift
-            elif np.min(skeleton[:, 0]) < 100:
-                x_min = np.min(skeleton[:, 0])
-                shift = 500 - x_min
-                skeleton[:, 0] += shift
+            if np.max(skeleton_2d[:, 0]) > 900:
+                left_x = np.min(skeleton_2d[:, 0][skeleton_2d[:, 0] != 0])
+                right_x = np.max(skeleton_2d[:, 0])
+                width = right_x - left_x
+                center = left_x + width / 2
+                shift = center - 500
+                skeleton_2d[:, 0] -= shift
+            elif np.min(skeleton_2d[:, 0]) < 100:
+                left_x = np.min(skeleton_2d[:, 0][skeleton_2d[:, 0] != 0])
+                right_x = np.max(skeleton_2d[:, 0])
+                width = right_x - left_x
+                center = left_x + width / 2
+                shift = 500 - center
+                skeleton_2d[:, 0] += shift
 
-            skeleton_3d = self.predict(skeleton).reshape(16, 3)
+            skeleton_3d = self.predict(skeleton_2d).reshape(16, 3)
             skeletons_3d.append(self.pack_skeleton(skeleton_3d, skeleton.to_np()))
         return skeletons_3d
 
