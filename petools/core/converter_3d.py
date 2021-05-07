@@ -129,6 +129,6 @@ class Converter3D:
         for prod_point_id, human36_point_id in Converter3D.PRODUCTION_TO_HUMAN36:
             out_dict[f'p{prod_point_id}'] = new_skeleton[human36_point_id].tolist()
             # Add confidence of the corresponding point
-            out_dict[f'p{prod_point_id}'].append(skeleton_2d[prod_point_id][-1])
+            out_dict[f'p{prod_point_id}'].append(float(skeleton_2d[prod_point_id][-1]))
 
         return out_dict
