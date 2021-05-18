@@ -70,6 +70,9 @@ class Converter3D:
         self._mean_3d = mean_3d.reshape(1, -1).astype('float32')
         self._std_3d = std_3d.reshape(1, -1).astype('float32')
 
+        # The input to the network does not include neck point
+        self._select_2d = [True] * 17
+        self._select_2d[9] = False
         # TODO remove these idiot buffers
         self._points_buffer = np.zeros((1, 17, 2)).astype('float32')
         self._points_buffer_nn = np.zeros((1, 16, 2)).astype('float32')
@@ -86,8 +89,7 @@ class Converter3D:
     def fill_points_buffer(self, points: np.ndarray):
         for i, j in Converter3D.PRODUCTION_TO_HUMAN36:
             self._points_buffer[0, j] = points[i]
-        self._points_buffer_nn[:, :14] = self._points_buffer[:, :14]
-        self._points_buffer_nn[:, 14:] = self._points_buffer[:, 15:]
+        self._points_buffer_nn = self._points_buffer[:, self._select_2d].copy()
 
     def normalize_points_buffer(self):
         return (self._points_buffer_nn.reshape(1, -1) - self._mean_2d) / self._std_2d
@@ -122,8 +124,8 @@ class Converter3D:
 
     def pack_skeleton(self, skeleton_3d: np.ndarray, skeleton_2d: np.ndarray):
         new_skeleton = np.zeros((17, 3))
-        new_skeleton[:14] = skeleton_3d[:14]
-        new_skeleton[15:] = skeleton_3d[14:]
+        # The 3D skeleton does not include central hip point, it is always zero
+        new_skeleton[1:] = skeleton_3d
 
         out_dict = {}
         for prod_point_id, human36_point_id in Converter3D.PRODUCTION_TO_HUMAN36:
