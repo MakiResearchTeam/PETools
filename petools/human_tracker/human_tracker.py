@@ -3,7 +3,7 @@ import numpy as np
 
 class HumanTracker:
 
-    def __init__(self, image_size, square_percent=0.15):
+    def __init__(self, image_size, square_percent=0.3):
         """
 
         Parameters
@@ -42,6 +42,8 @@ class HumanTracker:
             for h_indx, each_human in enumerate(humans):
                 # Calc new avg point
                 avg_point_new = self._mean_point_from_human(each_human)
+                if avg_point_new is None:
+                    continue
                 new_avg_x, new_avg_y = avg_point_new[0], avg_point_new[1]
                 # Is this point (new avg) in square?
                 if left_top_corner_x < new_avg_x < right_bottom_corner_x and \
@@ -60,6 +62,8 @@ class HumanTracker:
                 # Add id new human and calc new avg
                 humans[indx_used].id = self._id_counter
                 avg_point = self._mean_point_from_human(humans[indx_used])
+                if avg_point is None:
+                    continue
                 # Assign id and avg point to it
                 self._id2mean_point[str(self._id_counter)] = avg_point
                 # Update counter, in order to handle unique values of id
@@ -74,5 +78,7 @@ class HumanTracker:
         """
         h_np = human.to_np()
         visible_h_np = h_np[h_np[:, -1] > 1e-3]
+        if len(visible_h_np) == 0:
+            return None
         return np.mean(visible_h_np[:, :-1], axis=0)
 
