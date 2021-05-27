@@ -34,7 +34,7 @@ class OPWrapper:
 			if mod is None:
 				# Init new
 				mod = self.op_init_fn()
-				self.register[human.id] = mod
+				self.register[str(human.id)] = mod
 			# Apply mod on human
 			updated_human = mod(human)
 			# Store updated human
