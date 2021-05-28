@@ -53,11 +53,11 @@ class HumanTracker:
 
         for indx_used in range(len(used_h)):
             if not used_h[indx_used]:
-                # Add id new human and calc new avg
-                humans[indx_used].id = self._id_counter
                 avg_point = self._mean_point_from_human(humans[indx_used])
                 if avg_point is None:
                     continue
+                # Add id new human and calc new avg
+                humans[indx_used].id = self._id_counter
                 # Assign id and avg point to it
                 self._id2mean_point[str(self._id_counter)] = avg_point
                 # Update counter, in order to handle unique values of id

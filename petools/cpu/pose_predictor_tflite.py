@@ -13,7 +13,7 @@ from petools.tools.estimate_tools import Human
 
 from .utils import IMAGE_INPUT_SIZE
 from .cpu_postprocess_np_part import CPUOptimizedPostProcessNPPart
-from ..image_preprocessors import CpuImagePreprocessor
+from petools.model_tools.image_preprocessors import CpuImagePreprocessor
 from .cpu_model import CpuModel
 from .cpu_converter_3d import CpuConverter3D
 

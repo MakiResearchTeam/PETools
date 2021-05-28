@@ -13,7 +13,7 @@ from petools.tools.estimate_tools import Human
 
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
 from .gpu_model import GpuModel
-from ..image_preprocessors import GpuImagePreprocessor
+from petools.model_tools.image_preprocessors import GpuImagePreprocessor
 from .gpu_converter_3d import GpuConverter3D
 
 
@@ -181,6 +181,12 @@ class PosePredictor(PosePredictorInterface):
             model_size=(new_h, new_w),
             source_size=image.shape[:-1]
         )
+        # TODO: Clean humans
+
+        # TODO: Tracker of humans
+
+        # TODO: Some other stuff
+
         # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
         updated_humans = modify_humans(humans)
         humans_humans = [Human.from_array(x) for x in updated_humans]

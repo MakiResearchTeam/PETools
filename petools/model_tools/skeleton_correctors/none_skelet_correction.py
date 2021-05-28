@@ -1,4 +1,4 @@
-from ..core import SkeletonCorrector
+from petools.core import SkeletonCorrector
 
 
 class Identity(SkeletonCorrector):

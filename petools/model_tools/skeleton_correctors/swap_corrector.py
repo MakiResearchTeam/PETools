@@ -1,5 +1,5 @@
-from ..core import SkeletonCorrector
-from ..tools import Human
+from petools.core import SkeletonCorrector
+from petools.tools import Human
 import numpy as np
 
 
