@@ -14,13 +14,7 @@ class HumanTracker:
             Threshold for movement of the avg point
 
         """
-        self._threash_hold_x, self._threash_hold_y = (
-            image_size[1] * square_percent / 2,
-            image_size[0] * square_percent / 2
-        )
-        # Store { human_id : avg_point }
-        self._id2mean_point = dict()
-        self._id_counter = 0
+        self.reset(new_image_size=image_size, square_percent=square_percent)
 
     def __call__(self, humans: list) -> list:
         # This array show, which element from `humans` was used
@@ -82,3 +76,23 @@ class HumanTracker:
             return None
         return np.mean(visible_h_np[:, :-1], axis=0)
 
+    def reset(self, new_image_size, square_percent=0.3):
+        """
+        Reset parameters of the tracker
+
+        Parameters
+        ----------
+        new_image_size : list or tuple
+            New image size at this must be used tracker stuf.
+            List/tuple of (H, W), i.e. Height and Width of the image at which human will be appear
+        square_percent : float
+            Threshold for movement of the avg point. By default equal to 0.3
+
+        """
+        self._threash_hold_x, self._threash_hold_y = (
+            new_image_size[1] * square_percent / 2,
+            new_image_size[0] * square_percent / 2
+        )
+        # Store { human_id : avg_point }
+        self._id2mean_point = dict()
+        self._id_counter = 0
