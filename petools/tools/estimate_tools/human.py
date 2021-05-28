@@ -6,8 +6,9 @@ from .constants import NUMBER_OF_KEYPOINTS
 class Human:
     """
     Store keypoints of the single human
+
     """
-    __slots__ = ('body_parts', 'score', 'id', 'count_kp')
+    __slots__ = ('body_parts_3d', 'body_parts', 'score', 'id', 'count_kp')
 
     def __init__(self, count_kp=NUMBER_OF_KEYPOINTS):
         """
@@ -19,6 +20,7 @@ class Human:
             Number of keypoint of full human. By default equal to 24
 
         """
+        self.body_parts_3d = {}
         self.body_parts = {}
         self.score = 0.0
         self.id = -1
@@ -29,6 +31,31 @@ class Human:
 
     def get_max_score(self):
         return max([x.score for _, x in self.body_parts.items()])
+
+    def set_3d(self, array_3d):
+        """
+        Set z axis for every x,y keypoint
+
+        Parameters
+        ----------
+        array_3d : list or np.ndarray
+            Array of 3d keypoints with shape (N, 4)
+
+        """
+        if self.count_kp != len(array_3d):
+            raise TypeError(f"Wrong size of array `z_data`. " +
+                            f"\nExpected size: {self.count_kp}, but {len(array_3d)} was received."
+            )
+        self.body_parts_3d = dict()
+
+        for part_idx in range(self.count_kp):
+            self.body_parts_3d[part_idx] = BodyPart(
+                '0-%d' % part_idx, part_idx,
+                x=float(array_3d[part_idx][0]),
+                y=float(array_3d[part_idx][1]),
+                z=float(array_3d[part_idx][2]),
+                score=float(array_3d[part_idx][-1])
+            )
 
     def to_list(self, th_hold=0.2) -> list:
         """
@@ -82,9 +109,12 @@ class Human:
             If keypoint is not visible or below `th_hold`, this keypoint will be filled with zeros
 
         """
+        if len(self.body_parts_3d) == 0:
+            return np.zeros((self.count_kp * 4), dtype=np.float32).tolist()
+
         list_data = []
         for i in range(self.count_kp):
-            take_single = self.body_parts.get(i)
+            take_single = self.body_parts_3d.get(i)
             if take_single is None or take_single.score < th_hold:
                 list_data += [0.0, 0.0, 0.0, 0.0]
             else:
@@ -173,14 +203,18 @@ class Human:
             score - confidence of the neural network
             If keypoint is not visible or below `th_hold`, this keypoint will be filled with zeros
         """
+
         dict_data = {}
         if key_as_int:
             key_tr = lambda x: int(x)
         else:
             key_tr = lambda x: str(x)
 
+        if len(self.body_parts_3d) == 0:
+            return dict([(key_tr(i), [0.0, 0.0, 0.0, 0.0]) for i in range(self.count_kp)])
+
         for i in range(self.count_kp):
-            take_single = self.body_parts.get(i)
+            take_single = self.body_parts_3d.get(i)
             if take_single is not None and take_single.score >= th_hold:
                 dict_data.update({
                     key_tr(i): [take_single.x, take_single.y, take_single.z, take_single.score]
@@ -248,18 +282,18 @@ class Human:
         Returns
         -------
         Human
-            Created Human class with points in `human_np`
+            Created Human object with points in `human_np`
 
         """
         if len(human_array) == 0:
             return
 
         if len(human_array[0]) != 3:
-            raise ValueError("Wrong input shape of human array. Expected array with shape (N, 3), but"+
+            raise ValueError("Wrong input shape of human array. Expected array with shape (N, 3), but" +
                              f"shape (N, {len(human_array[0])}) were given."
             )
 
-        human_class = Human(count_kp=human_array.shape[0])
+        human_class = Human(count_kp=len(human_array))
         human_id = 0
         sum_probs = 0.0
 
@@ -290,7 +324,7 @@ class Human:
         Returns
         -------
         Human
-            Created Human class with points in `human_np`
+            Created Human object with points in `human_np`
 
         """
         if len(human_array) == 0:
@@ -301,12 +335,12 @@ class Human:
                              f"shape (N, {len(human_array[0])}) were given."
             )
 
-        human_class = Human(count_kp=human_array.shape[0])
+        human_class = Human(count_kp=len(human_array))
         human_id = 0
         sum_probs = 0.0
 
         for part_idx in range(len(human_array)):
-            human_class.body_parts[part_idx] = BodyPart(
+            human_class.body_parts_3d[part_idx] = BodyPart(
                 '%d-%d' % (human_id, part_idx), part_idx,
                 x=float(human_array[part_idx][0]),
                 y=float(human_array[part_idx][1]),
@@ -337,7 +371,7 @@ class Human:
         Returns
         -------
         Human
-            Created Human class with points in `human_dict`
+            Created Human object with points in `human_dict`
 
         """
         human_class = Human()
@@ -376,7 +410,7 @@ class Human:
         Returns
         -------
         Human
-            Created Human class with points in `human_dict`
+            Created Human object with points in `human_dict`
         """
         human_class = Human()
         human_id = 0
@@ -384,7 +418,7 @@ class Human:
         human_class.score = 0.0
 
         for part_idx, v_arr in human_dict.items():
-            human_class.body_parts[part_idx] = BodyPart(
+            human_class.body_parts_3d[part_idx] = BodyPart(
                 '%d-%d' % (human_id, part_idx), part_idx,
                 x=float(v_arr[0]),
                 y=float(v_arr[1]),
