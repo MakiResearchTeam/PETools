@@ -1,8 +1,8 @@
 import math
 import numpy as np
 
-from ..core import SkeletonCorrector
-from ..tools import Human
+from petools.core import SkeletonCorrector
+from petools.tools import Human
 
 
 class LowPassFilter(object):

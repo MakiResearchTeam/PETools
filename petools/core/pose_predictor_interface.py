@@ -59,18 +59,14 @@ class PosePredictorInterface(ABC):
         pass
 
     @staticmethod
-    def pack_data(humans, end_time, humans3d=None):
+    def pack_data(humans, end_time):
         data = {
             PosePredictorInterface.HUMANS: [
-                dict(list(map(lambda indx, in_x: (f'p{indx}', in_x), range(PosePredictorInterface.NUM_KEYPOINTS), single_human)))
+                (single_human.id, single_human.to_dict(prepend_p=True), single_human.to_dict_from3d(prepend_p=True))
                 for single_human in humans
             ],
             PosePredictorInterface.TIME: end_time,
-            PosePredictorInterface.HUMANS3D: None
         }
-
-        if humans3d is not None:
-            data[PosePredictorInterface.HUMANS3D] = humans3d
         return data
 
 
