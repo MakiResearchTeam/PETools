@@ -174,16 +174,18 @@ class PosePredictor(PosePredictorInterface):
             model_size=(new_h, new_w),
             source_size=image.shape[:-1]
         )
+        # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
         humans = modify_humans(humans)
         humans = [Human.from_array(x) for x in humans]
 
-        humans = self.__human_tracker(humans, image.shape[:-1])
         humans = self.__human_cleaner(humans)
-
-        # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
+        humans = self.__human_tracker(humans, image.shape[:-1])
+        # TODO: place one euro module here
+        #       and other stuff too!
 
         if self.__path_to_tb_3d is not None:
             # converter need source resolution to perform human normalization
+            # TODO: Remove debug prints
             print(humans)
             humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
             print(humans)
