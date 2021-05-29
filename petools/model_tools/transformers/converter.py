@@ -52,9 +52,7 @@ class TransformerConverter(Op):
         human_ = human
         human = self.preprocess(human, source_resolution)
         coords3d = self.convert(human)
-        print(coords3d.shape)
         coords3d = self.postprocess(coords3d, human_)
-        print(coords3d.shape)
         human_.set_3d(coords3d)
         return human_
 

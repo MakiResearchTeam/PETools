@@ -15,10 +15,11 @@ from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INP
 from .gpu_model import GpuModel
 from petools.model_tools.image_preprocessors import GpuImagePreprocessor
 from .gpu_converter_3d import GpuConverter3D
-from petools.model_tools.transformer_correctors import HumanProcessor, TransformerConverter
+from petools.model_tools.transformers import HumanProcessor, TransformerConverter, TransformerCorrector
 from petools.model_tools.operation_wrapper import OPWrapper
 from petools.model_tools.human_cleaner import HumanCleaner
 from petools.model_tools.human_tracker import HumanTracker
+from petools.model_tools.one_euro_filter import OneEuroModule
 
 
 class PosePredictor(PosePredictorInterface):
@@ -34,6 +35,7 @@ class PosePredictor(PosePredictorInterface):
             path_to_pb: str,
             path_to_config: str,
             path_to_pb_3d: str = None,
+            path_to_pb_cor: str = None,
             min_h=320,
             expected_w=600,
             norm_mode=CAFFE,
@@ -51,6 +53,10 @@ class PosePredictor(PosePredictorInterface):
         path_to_config : str
             Path to config for pb file,
             This config contains of input/output information from estimate_tools, in order to get proper tensors
+        path_to_pb_3d : str
+            Path to protobuf file with 2d-3d converter model.
+        path_to_pb_cor : str
+            Path to protobuf file with corrector model.
         min_h : tuple
             H_min
         norm_mode : str
@@ -67,6 +73,7 @@ class PosePredictor(PosePredictorInterface):
         self.__norm_mode = norm_mode
         self.__path_to_tb = path_to_pb
         self.__path_to_tb_3d = path_to_pb_3d
+        self.__path_to_tb_cor = path_to_pb_cor
         self.__path_to_config = path_to_config
         self._init_model()
 
@@ -101,6 +108,22 @@ class PosePredictor(PosePredictorInterface):
         # Will be initialized at first launch
         self.__tracker = None
 
+        # --- SMOOTHER
+        self.__smoother = OPWrapper(lambda: OneEuroModule())
+
+        # --- CORRECTOR
+        self.__corrector = lambda humans, **kwargs: humans
+        if self.__path_to_tb_cor is not None:
+            human_processor = HumanProcessor.init_from_lib()
+            corrector_fn = lambda: TransformerCorrector(
+                pb_path=self.__path_to_tb_cor,
+                human_processor=human_processor,
+                session=self.__sess
+            )
+            self.__corrector = OPWrapper(corrector_fn)
+
+        # --- CONVERTER
+        self.__converter3d = lambda humans, **kwargs: humans
         if self.__path_to_tb_3d is not None:
             # --- INIT CONVERTER3D
             human_processor = HumanProcessor.init_from_lib()
@@ -179,16 +202,16 @@ class PosePredictor(PosePredictorInterface):
         humans = [Human.from_array(x) for x in humans]
 
         humans = self.__human_cleaner(humans)
-        humans = self.__human_tracker(humans, image.shape[:-1])
-        # TODO: place one euro module here
-        #       and other stuff too!
 
-        if self.__path_to_tb_3d is not None:
-            # converter need source resolution to perform human normalization
-            # TODO: Remove debug prints
-            print(humans)
-            humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
-            print(humans)
+        humans = self.__human_tracker(humans, image.shape[:-1])
+        # One Euro algorithm for smoothing keypoints movement
+        humans = self.__smoother(humans)
+        print('after smoother', humans)
+        # Corrector need source resolution to perform human normalization
+        humans = self.__corrector(humans, source_resolution=image.shape[:-1])
+        print('after corrector', humans)
+        # Converter need source resolution to perform human normalization
+        humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
 
         end_time = time.time() - start_time
         return PosePredictor.pack_data(humans=humans, end_time=end_time)

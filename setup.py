@@ -7,7 +7,7 @@ setup(
     package_data={'petools': ['tools/estimate_tools/pafprocess/*.so',
                               'gpu/3d_converter_stats/*',
                               'cpu/3d_converter_stats/*'
-                              'model_tools/transformer_correctors/3d_converter_stats/*'
+                              'model_tools/transformers/3d_converter_stats/*'
                               ]},
     version='1.2.3',
     description='A set of tools to use pose estimation models',
