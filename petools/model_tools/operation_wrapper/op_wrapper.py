@@ -17,7 +17,7 @@ class OPWrapper:
         self.op_init_fn = op_init_fn
         self.register = {}
 
-    def __call__(self, humans: list) -> list:
+    def __call__(self, humans: list, **op_kwargs) -> list:
         """
         Returns updated human list
         According to init operation
@@ -36,7 +36,9 @@ class OPWrapper:
                 mod = self.op_init_fn()
                 self.register[str(human.id)] = mod
             # Apply mod on human
-            updated_human = mod(human)
+            print(human)
+            updated_human = mod(human, **op_kwargs)
+            print(updated_human)
             # Store updated human
             updated_humans.append(updated_human)
 
