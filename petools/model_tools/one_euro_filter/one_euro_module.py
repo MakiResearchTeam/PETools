@@ -14,7 +14,7 @@ class OneEuroModule:
     For mode details refer to: https://hal.inria.fr/hal-00670496/document
     """
 
-    def __init__(self, freq, mincutoff=1.0, beta=0.0, dcutoff=1.0, mode=MODE_2D):
+    def __init__(self, freq=1.0, mincutoff=0.4, beta=0.001, dcutoff=0.7, mode=MODE_2D):
         self._euro_list = None
         self._freq = freq
         self._mincutoff = mincutoff

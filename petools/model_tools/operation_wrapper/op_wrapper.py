@@ -28,6 +28,8 @@ class OPWrapper:
             # Todo: think about this case
             if human.id == -1:
                 continue
+            # Save id
+            old_id = human.id
             # Take mod
             mod = self.register.get(str(human.id))
             # If not found (new human)
@@ -36,9 +38,15 @@ class OPWrapper:
                 mod = self.op_init_fn()
                 self.register[str(human.id)] = mod
             # Apply mod on human
-            print(human)
+            # TODO: Remove prints
+            #print(human)
             updated_human = mod(human, **op_kwargs)
-            print(updated_human)
+            # Restore id
+            # Some modules recreate human class
+            # In order to keep id through different modules, apply old id
+            updated_human.id = old_id
+            # TODO: Remove prints
+            #print(updated_human)
             # Store updated human
             updated_humans.append(updated_human)
 
