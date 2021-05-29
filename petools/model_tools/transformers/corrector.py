@@ -13,10 +13,8 @@ class TransformerCorrector(TransformerConverter):
     def shift_and_scale(self, human: np.ndarray, source_resolution):
         assert len(human.shape) == 2
         h, w = source_resolution
-        print('before norm', human)
         human *= 800 / w
         human[:, -1] -= 100
-        print('after norm', human)
         return human
 
     def __call__(self, human: Human, **kwargs) -> Human:
@@ -42,10 +40,7 @@ class TransformerCorrector(TransformerConverter):
         coords2d *= source_resolution[1] / 800
         # Concatenate probabilities of converted points
         present_points = (coords2d[:, 0] == 0.0).astype('float32')
-        print(present_points)
-        print('coords2d before', coords2d)
         coords2d = coords2d + human.to_np()[:, :2] * np.expand_dims(present_points, axis=-1)
-        print('coords2d after', coords2d)
         p = human.to_np()[:, -1:]
         coords2d = np.concatenate([coords2d, p], axis=-1)
         return coords2d
