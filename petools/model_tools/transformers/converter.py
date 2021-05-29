@@ -5,44 +5,31 @@ from petools.core import Op, ProtobufModel
 from .human_processor import HumanProcessor
 from ...tools import Human
 from .seq_buffer import SequenceBuffer
+from .transformer import Transformer
 
 
 class TransformerConverter(Op):
     def __init__(
             self,
-            pb_path,
+            transformer: Transformer,
             human_processor: HumanProcessor,
             seq_len=32,
-            session=None
     ):
         """
         2d-3d converter.
 
         Parameters
         ----------
-        pb_path : str
-            Path to the protobuf file with model's graph.
-        input_name : str
-            Input tensor name.
-        output_name : str
-            Output tensor name.
-        session : tf.Session
-            THe session object to run the model.
+        transformer : Transformer
+            The actual model.
+        human_processor : HumanProcessor
+            HumanProcessor object for data processing.
+        seq_len : int
+            Sequence length used by the transformer model.
         """
-        self._human_processor = human_processor
-        self._input_sequence = tf.placeholder(dtype='float32', shape=[1, seq_len, 32], name='input_')
-        self._input_mask = tf.placeholder(dtype='float32', shape=[1, seq_len], name='mask_')
-        self._transformer = ProtobufModel(
-            protobuf_path=pb_path,
-            input_map={
-                'input': self._input_sequence,
-                'mask': self._input_mask
-            },
-            output_tensors=['Identity:0'],
-            session=session
-        )
+        self._transformer = transformer
         self._buffer = SequenceBuffer(dim=32, seqlen=seq_len)
-
+        self._human_processor = human_processor
         # The input to the network does not include neck point
         self._select_2d = [True] * 17
         self._select_2d[9] = False
@@ -89,12 +76,7 @@ class TransformerConverter(Op):
 
     def convert(self, human):
         human_seq, mask_seq = self._buffer(human)
-        output_seq = self._transformer.predict(
-            {
-                self._input_sequence: human_seq,
-                self._input_mask: mask_seq
-            }
-        )[0]
+        output_seq = self._transformer.predict_poses(human_seq, mask_seq)[0]
         # Return the last pose
         return output_seq[0, -1]
 

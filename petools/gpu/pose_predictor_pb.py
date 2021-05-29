@@ -20,6 +20,7 @@ from petools.model_tools.operation_wrapper import OPWrapper
 from petools.model_tools.human_cleaner import HumanCleaner
 from petools.model_tools.human_tracker import HumanTracker
 from petools.model_tools.one_euro_filter import OneEuroModule
+from petools.model_tools.transformers import Transformer
 
 
 class PosePredictor(PosePredictorInterface):
@@ -115,10 +116,10 @@ class PosePredictor(PosePredictorInterface):
         self.__corrector = lambda humans, **kwargs: humans
         if self.__path_to_tb_cor is not None:
             human_processor = HumanProcessor.init_from_lib()
+            t_corrector = Transformer(protobuf_path=self.__path_to_tb_cor, session=self.__sess)
             corrector_fn = lambda: TransformerCorrector(
-                pb_path=self.__path_to_tb_cor,
-                human_processor=human_processor,
-                session=self.__sess
+                transformer=t_corrector,
+                human_processor=human_processor
             )
             self.__corrector = OPWrapper(corrector_fn)
 
@@ -127,10 +128,10 @@ class PosePredictor(PosePredictorInterface):
         if self.__path_to_tb_3d is not None:
             # --- INIT CONVERTER3D
             human_processor = HumanProcessor.init_from_lib()
+            t_converter = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
             converter_fn = lambda: TransformerConverter(
-                pb_path=self.__path_to_tb_3d,
-                human_processor=human_processor,
-                session=self.__sess
+                transformer=t_converter,
+                human_processor=human_processor
             )
             self.__converter3d = OPWrapper(converter_fn)
 

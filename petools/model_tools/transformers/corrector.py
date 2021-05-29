@@ -39,7 +39,7 @@ class TransformerCorrector(TransformerConverter):
         coords2d = denorm(coords2d).reshape(-1, dim)
         coords2d = self._human_processor.to_production_format(coords2d)
         # Restore the width scale
-        coords2d *= source_resolution[1] / 1000
+        coords2d *= source_resolution[1] / 800
         # Concatenate probabilities of converted points
         present_points = (coords2d[:, 0] == 0.0).astype('float32')
         print(present_points)
