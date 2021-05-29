@@ -127,7 +127,7 @@ class Human:
 
         return list_data
 
-    def to_dict(self, th_hold=0.2, skip_not_visible=False, key_as_int=False) -> dict:
+    def to_dict(self, th_hold=0.2, skip_not_visible=False, key_as_int=False, prepend_p=False) -> dict:
         """
         Transform keypoints stored in this class to dict
 
@@ -138,6 +138,8 @@ class Human:
         skip_not_visible : bool
             If equal to True, then values with low probability (or invisible)
             Will be skipped from final dict
+        prepend_p: bool
+            Prepends letter 'p' to the points' ids. Needed in production.
 
         Returns
         -------
@@ -160,6 +162,9 @@ class Human:
         else:
             key_tr = lambda x: str(x)
 
+        if prepend_p:
+            key_tr = lambda x: f'p{x}'
+
         for i in range(self.count_kp):
             take_single = self.body_parts.get(i)
             if take_single is not None and take_single.score >= th_hold:
@@ -173,7 +178,7 @@ class Human:
 
         return dict_data
 
-    def to_dict_from3d(self, th_hold=0.2, skip_not_visible=False, key_as_int=False) -> dict:
+    def to_dict_from3d(self, th_hold=0.2, skip_not_visible=False, key_as_int=False, prepend_p=False) -> dict:
         """
         Transform 3d keypoints stored in this class to dict
 
@@ -187,6 +192,8 @@ class Human:
         key_as_int : bool
             If true, then in final dict, keys will be int values
             By default strings are used
+        prepend_p: bool
+            Prepends letter 'p' to the points' ids. Needed in production.
 
         Returns
         -------
@@ -209,6 +216,9 @@ class Human:
             key_tr = lambda x: int(x)
         else:
             key_tr = lambda x: str(x)
+
+        if prepend_p:
+            key_tr = lambda x: f'p{x}'
 
         if len(self.body_parts_3d) == 0:
             return dict([(key_tr(i), [0.0, 0.0, 0.0, 0.0]) for i in range(self.count_kp)])

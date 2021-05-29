@@ -15,6 +15,10 @@ from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INP
 from .gpu_model import GpuModel
 from petools.model_tools.image_preprocessors import GpuImagePreprocessor
 from .gpu_converter_3d import GpuConverter3D
+from petools.model_tools.transformer_correctors import HumanProcessor, TransformerConverter
+from petools.model_tools.operation_wrapper import OPWrapper
+from petools.model_tools.human_cleaner import HumanCleaner
+from petools.model_tools.human_tracker import HumanTracker
 
 
 class PosePredictor(PosePredictorInterface):
@@ -31,6 +35,7 @@ class PosePredictor(PosePredictorInterface):
             path_to_config: str,
             path_to_pb_3d: str = None,
             min_h=320,
+            expected_w=600,
             norm_mode=CAFFE,
             gpu_id=0
     ):
@@ -58,6 +63,7 @@ class PosePredictor(PosePredictorInterface):
 
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
         self.__min_h = min_h
+        self.__expected_w = expected_w
         self.__norm_mode = norm_mode
         self.__path_to_tb = path_to_pb
         self.__path_to_tb_3d = path_to_pb_3d
@@ -91,37 +97,24 @@ class PosePredictor(PosePredictorInterface):
             norm_mode=self.__norm_mode
         )
 
+        self.__human_cleaner = HumanCleaner(min_visible=5)
+        # Will be initialized at first launch
+        self.__tracker = None
+
         if self.__path_to_tb_3d is not None:
             # --- INIT CONVERTER3D
-            file_path = os.path.abspath(__file__)
-            dir_path = pathlib.Path(file_path).parent
-            data_stats_dir = os.path.join(dir_path, '3d_converter_stats')
-            mean_path = os.path.join(data_stats_dir, 'mean_2d.npy')
-            assert os.path.isfile(mean_path), f"Could not find mean_2d.npy in {mean_path}."
-            mean_2d = np.load(mean_path)
-
-            std_path = os.path.join(data_stats_dir, 'std_2d.npy')
-            assert os.path.isfile(std_path), f"Could not find std_2d.npy in {std_path}."
-            std_2d = np.load(std_path)
-
-            mean_path = os.path.join(data_stats_dir, 'mean_3d.npy')
-            assert os.path.isfile(mean_path), f"Could not find mean_3d.npy in {mean_path}."
-            mean_3d = np.load(mean_path)
-
-            std_path = os.path.join(data_stats_dir, 'std_3d.npy')
-            assert os.path.isfile(std_path), f"Could not find std_3d.npy in {std_path}."
-            std_3d = np.load(std_path)
-
-            self.__converter3d = GpuConverter3D(
+            human_processor = HumanProcessor.init_from_lib()
+            converter_fn = lambda: TransformerConverter(
                 pb_path=self.__path_to_tb_3d,
-                mean_2d=mean_2d,
-                std_2d=std_2d,
-                mean_3d=mean_3d,
-                std_3d=std_3d,
-                input_name=config[INPUT_TENSOR_3D],
-                output_name=config[OUTPUT_TENSOR_3D],
+                human_processor=human_processor,
                 session=self.__sess
             )
+            self.__converter3d = OPWrapper(converter_fn)
+
+    def __human_tracker(self, humans, im_size):
+        if self.__tracker is None:
+            self.__tracker = HumanTracker(image_size=im_size)
+        return self.__tracker(humans)
 
     def predict(self, image: np.ndarray):
 
@@ -181,21 +174,22 @@ class PosePredictor(PosePredictorInterface):
             model_size=(new_h, new_w),
             source_size=image.shape[:-1]
         )
-        # TODO: Clean humans
+        humans = modify_humans(humans)
+        humans = [Human.from_array(x) for x in humans]
 
-        # TODO: Tracker of humans
-
-        # TODO: Some other stuff
+        humans = self.__human_tracker(humans, image.shape[:-1])
+        humans = self.__human_cleaner(humans)
 
         # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
-        updated_humans = modify_humans(humans)
-        humans_humans = [Human.from_array(x) for x in updated_humans]
-        humans3d = None
+
         if self.__path_to_tb_3d is not None:
-            humans3d = self.__converter3d(humans_humans, image.shape[:-1])
+            # converter need source resolution to perform human normalization
+            print(humans)
+            humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
+            print(humans)
 
         end_time = time.time() - start_time
-        return PosePredictor.pack_data(humans=updated_humans, end_time=end_time, humans3d=humans3d)
+        return PosePredictor.pack_data(humans=humans, end_time=end_time)
 
 
 if __name__ == '__main__':
