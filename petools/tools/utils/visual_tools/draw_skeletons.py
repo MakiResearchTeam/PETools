@@ -29,6 +29,7 @@ def draw_skeletons_on_image(image: np.ndarray, predictions: dict, color=(255, 0,
 
     """
     predictions_humans = predictions[PosePredictorInterface.HUMANS]
-    humans = [list(single_h.values()) for single_h in predictions_humans]
+    # 1 - index for 2d points
+    humans = [list(single_h[1].values()) for single_h in predictions_humans]
     return draw_skeleton(image.copy(), humans, connect_indexes=CONNECT_KP, color=color, thickness=thick)
 
