@@ -55,11 +55,58 @@ class HumanProcessor:
         [9, 16]
     ]
 
+    H16TOH32 = [
+        # (h32, h16)
+        (0, 0),  # 1
+        (1, 1),  # 2
+        (2, 2),  # 3
+
+        (3, 3),  # 4
+        (6, 4),  # 5
+        (7, 5),  # 6
+
+        (8, 6),  # 7
+        (12, 7),  # 8
+        (13, 8),  # 9
+
+        (15, 9),  # 10
+        (17, 10),  # 11
+        (18, 11),  # 12
+
+        (19, 12),  # 13
+        (25, 13),  # 14
+        (26, 14),  # 15
+        (27, 15),  # 16
+    ]
+
     def to_human36_format(self, production_points):
         human36_points = np.zeros((17, 2), dtype='float32')
         for i, j in HumanProcessor.PRODUCTION_TO_HUMAN36:
             human36_points[j] = production_points[i]
         return human36_points[self._select_2d]
+
+    @staticmethod
+    def human16tohuman32(human16points):
+        """
+        Expands 16 points to the original 32. Original ones all equal zeros.
+        It is required for visualization utilities.
+
+        Parameters
+        ----------
+        human16points : np.ndarray of shape [16, d]
+            Points to expand.
+
+        Returns
+        -------
+        np.ndarray of shape [32, d]
+        """
+        assert len(human16points) == 16
+        human16points = np.asarray(human16points)
+        d = human16points.shape[-1]
+        h32 = np.zeros((32, d), dtype='float32')
+        for h32_indx, h16_indx in HumanProcessor.H16TOH32:
+            h32[h32_indx] = human16points[h16_indx]
+        return h32
 
     # noinspection PyMethodMayBeStatic
     def to_production_format(self, human36_points):
