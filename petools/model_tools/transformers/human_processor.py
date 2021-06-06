@@ -103,7 +103,7 @@ class HumanProcessor:
         """
         Converts 23 production points to 16 human 3d points. Can be used only for 3d points.
         """
-        human36_points = np.zeros((17, 2), dtype='float32')
+        human36_points = np.zeros((17, 3), dtype='float32')
         for i, j in HumanProcessor.PRODUCTION_TO_HUMAN36:
             human36_points[j] = production_points[i]
         return human36_points[1:]
