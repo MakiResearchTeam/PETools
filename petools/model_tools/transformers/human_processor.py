@@ -153,8 +153,8 @@ class HumanProcessor:
             h32[h32_indx] = prod[h16_indx]
         return h32
 
-    # noinspection PyMethodMayBeStatic
-    def to_production_format(self, human36_points):
+    @staticmethod
+    def to_production_format(human36_points):
         dim = human36_points.shape[-1]
         # The 3D skeleton does not include central hip point, it is always zero
         t = np.zeros((17, dim))
