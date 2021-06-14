@@ -119,9 +119,9 @@ class PosePredictor(PosePredictorInterface):
         # --- CORRECTOR
         self.__corrector = lambda humans, **kwargs: humans
         if self.__path_to_tb_cor is not None:
-            transformer = Transformer(protobuf_path=self.__path_to_tb_cor, session=self.__sess)
+            corrector_t = Transformer(protobuf_path=self.__path_to_tb_cor, session=self.__sess)
             corrector_fn = lambda: PoseTransformer(
-                transformer=transformer,
+                transformer=corrector_t,
                 seq_buffer=SequenceBuffer(dim=32, seqlen=32),
                 preprocess=Preprocess2D(human_processor),
                 postprocess=Postprocess2D(human_processor)
@@ -131,10 +131,9 @@ class PosePredictor(PosePredictorInterface):
         # --- CONVERTER
         self.__converter3d = lambda humans, **kwargs: humans
         if self.__path_to_tb_3d is not None:
-            # --- INIT CONVERTER3D
-            transformer = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
+            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
             converter_fn = lambda: PoseTransformer(
-                transformer=transformer,
+                transformer=converter_t,
                 seq_buffer=SequenceBuffer(dim=32, seqlen=32),
                 preprocess=Preprocess3D(human_processor),
                 postprocess=Postprocess3D(human_processor)
