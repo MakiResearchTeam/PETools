@@ -30,9 +30,6 @@ class TransformerConverter(Op):
         self._transformer = transformer
         self._buffer = SequenceBuffer(dim=32, seqlen=seq_len)
         self._human_processor = human_processor
-        # The input to the network does not include neck point
-        self._select_2d = [True] * 17
-        self._select_2d[9] = False
 
     def __call__(self, human: Human, **kwargs) -> Human:
         source_resolution = kwargs['source_resolution']
