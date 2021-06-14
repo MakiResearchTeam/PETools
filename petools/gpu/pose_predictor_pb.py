@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 import pathlib
 
+# Miscellaneous pose utilities
 from petools.core import PosePredictorInterface
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, scale_predicted_kp
@@ -14,13 +15,15 @@ from petools.tools.estimate_tools import Human
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
 from .gpu_model import GpuModel
 from petools.model_tools.image_preprocessors import GpuImagePreprocessor
-from .gpu_converter_3d import GpuConverter3D
-from petools.model_tools.transformers import HumanProcessor, TransformerConverter, TransformerCorrector
+
+# Miscellaneous pose transformations
 from petools.model_tools.operation_wrapper import OPWrapper
 from petools.model_tools.human_cleaner import HumanCleaner
 from petools.model_tools.human_tracker import HumanTracker
 from petools.model_tools.one_euro_filter import OneEuroModule
-from petools.model_tools.transformers import Transformer
+# Converter / Corrector
+from petools.model_tools.transformers import HumanProcessor, Transformer, PoseTransformer
+from petools.model_tools.transformers import Postprocess3D, Postprocess2D, Preprocess3D, Preprocess2D, SequenceBuffer
 
 
 class PosePredictor(PosePredictorInterface):
@@ -112,14 +115,16 @@ class PosePredictor(PosePredictorInterface):
         # --- SMOOTHER
         self.__smoother = OPWrapper(lambda: OneEuroModule())
 
+        human_processor = HumanProcessor.init_from_lib()
         # --- CORRECTOR
         self.__corrector = lambda humans, **kwargs: humans
         if self.__path_to_tb_cor is not None:
-            human_processor = HumanProcessor.init_from_lib()
-            t_corrector = Transformer(protobuf_path=self.__path_to_tb_cor, session=self.__sess)
-            corrector_fn = lambda: TransformerCorrector(
-                transformer=t_corrector,
-                human_processor=human_processor
+            transformer = Transformer(protobuf_path=self.__path_to_tb_cor, session=self.__sess)
+            corrector_fn = lambda: PoseTransformer(
+                transformer=transformer,
+                seq_buffer=SequenceBuffer(dim=32, seqlen=32),
+                preprocess=Preprocess2D(human_processor),
+                postprocess=Postprocess2D(human_processor)
             )
             self.__corrector = OPWrapper(corrector_fn)
 
@@ -127,11 +132,12 @@ class PosePredictor(PosePredictorInterface):
         self.__converter3d = lambda humans, **kwargs: humans
         if self.__path_to_tb_3d is not None:
             # --- INIT CONVERTER3D
-            human_processor = HumanProcessor.init_from_lib()
-            t_converter = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
-            converter_fn = lambda: TransformerConverter(
-                transformer=t_converter,
-                human_processor=human_processor
+            transformer = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
+            converter_fn = lambda: PoseTransformer(
+                transformer=transformer,
+                seq_buffer=SequenceBuffer(dim=32, seqlen=32),
+                preprocess=Preprocess3D(human_processor),
+                postprocess=Postprocess3D(human_processor)
             )
             self.__converter3d = OPWrapper(converter_fn)
 

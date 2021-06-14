@@ -5,7 +5,7 @@ from .core import DataProcessor
 from ...tools import Human
 
 
-class Postprocess3D(DataProcessor):
+class Postprocess2D(DataProcessor):
     def __init__(self, human_processor: HumanProcessor):
         """
         A class for preprocessing 2d data before feeding the converter transformer.
