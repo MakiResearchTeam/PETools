@@ -1,4 +1,5 @@
-from petools.model_tools.transformers import Transformer, HumanProcessor, SequenceBuffer
+from .transformer import Transformer
+from .seq_buffer import SequenceBuffer
 from petools.tools import Human
 from .data_processor import DataProcessor
 

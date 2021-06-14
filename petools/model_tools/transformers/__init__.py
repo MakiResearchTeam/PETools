@@ -2,8 +2,8 @@ from .core import PoseTransformer
 from .converter import TransformerConverter
 from .corrector import TransformerCorrector
 from .human_processor import HumanProcessor
-from .seq_buffer import SequenceBuffer
-from .transformer import Transformer
+from petools.model_tools.transformers.core.seq_buffer import SequenceBuffer
+from petools.model_tools.transformers.core.transformer import Transformer
 from .preprocess3d import Preprocess3D
 from .preprocess2d import Preprocess2D
 from .postprocess3d import Postprocess3D

@@ -1,7 +1,5 @@
 import numpy as np
 
-from petools.tools.estimate_tools import Human
-
 
 class SequenceBuffer:
     # Simple buffer to keep poses from previous frames

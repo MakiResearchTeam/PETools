@@ -1,11 +1,10 @@
-import tensorflow as tf
 import numpy as np
 
-from petools.core import Op, ProtobufModel
+from petools.core import Op
 from .human_processor import HumanProcessor
 from ...tools import Human
-from .seq_buffer import SequenceBuffer
-from .transformer import Transformer
+from petools.model_tools.transformers.core.seq_buffer import SequenceBuffer
+from petools.model_tools.transformers.core.transformer import Transformer
 
 
 class TransformerConverter(Op):
