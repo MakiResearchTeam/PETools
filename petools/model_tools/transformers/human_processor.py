@@ -5,10 +5,19 @@ import pathlib
 from petools.tools.estimate_tools import Human
 
 
+def init_selector():
+    # The input to the network does not include neck point
+    select_2d = [True] * 17
+    select_2d[9] = False
+    return select_2d
+
+
 class HumanProcessor:
     """
     This is a utility for normalizing/denormalizing data from Human3.6M dataset.
     """
+    SELECT2D = init_selector()
+    INDICES3DTO32POINTS = [1, 2, 3, 6, 7, 8, 12, 13, 14, 15, 17, 18, 19, 25, 26, 27]
 
     PRODUCTION_TO_HUMAN36 = [
         # LOWER BODY
@@ -55,14 +64,97 @@ class HumanProcessor:
         [9, 16]
     ]
 
-    def to_human36_format(self, production_points):
+    H32TOH16 = [
+        # (h32, h16)
+        (0, 0),  # 1
+        (1, 1),  # 2
+        (2, 2),  # 3
+
+        (3, 3),  # 4
+        (6, 4),  # 5
+        (7, 5),  # 6
+
+        (8, 6),  # 7
+        (12, 7),  # 8
+        (13, 8),  # 9
+
+        (15, 9),  # 10
+        (17, 10),  # 11
+        (18, 11),  # 12
+
+        (19, 12),  # 13
+        (25, 13),  # 14
+        (26, 14),  # 15
+        (27, 15),  # 16
+    ]
+
+    @staticmethod
+    def to_human36_format(production_points):
+        """
+        Converts 23 production points to 16 human points. Can be used only for 2d points.
+        """
         human36_points = np.zeros((17, 2), dtype='float32')
         for i, j in HumanProcessor.PRODUCTION_TO_HUMAN36:
             human36_points[j] = production_points[i]
-        return human36_points[self._select_2d]
+        return human36_points[HumanProcessor.SELECT2D]
 
-    # noinspection PyMethodMayBeStatic
-    def to_production_format(self, human36_points):
+    @staticmethod
+    def to_human36_format3d(production_points):
+        """
+        Converts 23 production points to 16 human 3d points. Can be used only for 3d points.
+        """
+        human36_points = np.zeros((17, 3), dtype='float32')
+        for i, j in HumanProcessor.PRODUCTION_TO_HUMAN36:
+            human36_points[j] = production_points[i]
+        return human36_points[1:]
+
+    @staticmethod
+    def human3d16tohuman32(human16points):
+        """
+        Expands 16 points to the original 32. Original ones all equal zeros.
+        It is required for visualization utilities.
+
+        Parameters
+        ----------
+        human16points : np.ndarray of shape [16, 3]
+            Points to expand.
+
+        Returns
+        -------
+        np.ndarray of shape [32, 3]
+        """
+        assert len(human16points) == 16
+        assert len(human16points[0]) == 3
+        human16points = np.asarray(human16points)
+        h32 = np.zeros((32, 3), dtype='float32')
+        h32[HumanProcessor.INDICES3DTO32POINTS] = human16points
+        return h32
+
+    @staticmethod
+    def prod23tohuman32(prod):
+        """
+        Expands 16 points to the original 32. Original ones all equal zeros.
+        It is required for visualization utilities.
+
+        Parameters
+        ----------
+        prod : np.ndarray of shape [16, d]
+            Points to expand.
+
+        Returns
+        -------
+        np.ndarray of shape [32, d]
+        """
+        assert len(prod) == 16
+        prod = np.asarray(prod)
+        d = prod.shape[-1]
+        h32 = np.zeros((32, d), dtype='float32')
+        for h32_indx, h16_indx in HumanProcessor.H32TOH16:
+            h32[h32_indx] = prod[h16_indx]
+        return h32
+
+    @staticmethod
+    def to_production_format(human36_points):
         dim = human36_points.shape[-1]
         # The 3D skeleton does not include central hip point, it is always zero
         t = np.zeros((17, dim))
@@ -100,10 +192,6 @@ class HumanProcessor:
         self.std2d = std_2d.reshape(-1).astype('float32')
         self.mean3d = mean_3d.reshape(-1).astype('float32')
         self.std3d = std_3d.reshape(-1).astype('float32')
-
-        # The input to the network does not include neck point
-        self._select_2d = [True] * 17
-        self._select_2d[9] = False
 
     def norm2d(self, human):
         if isinstance(human, Human):
