@@ -20,7 +20,8 @@ class Preprocess3D(DataProcessor):
         source_resolution = kwargs['source_resolution']
         human = human.to_np()[:, :2]
         human = self.shift_and_scale(human, source_resolution)
-        human = self.human_processor.to_human36_format(human).reshape(-1)
+        # Skip hip
+        human = self.human_processor.to_human36_format(human)[1:].reshape(-1)
         human = self.human_processor.norm2d(human)
         return human
 
