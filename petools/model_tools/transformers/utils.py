@@ -93,7 +93,7 @@ PRODUCTION_TO_HUMAN36_V2 = [
     # left shoulder
     [4, 13],           # 12
     # right shoulder
-    [5, 19],           # 13
+    [5, 18],           # 13
 
     # neck
     [2, 11],           # 14
@@ -104,19 +104,19 @@ PRODUCTION_TO_HUMAN36_V2 = [
     # left elbow
     [6, 14],           # 16
     # right elbow
-    [7, 20],           # 17
+    [7, 19],           # 17
 
     # left wrist
     [8, 15],           # 18
     # right wrist
-    [9, 21],           # 19
+    [9, 20],           # 19
 
     # left hand fingers
-    [18, 17],          # 20
-    [19, 18],          # 21
+    [18, 16],          # 20
+    [19, 17],          # 21
     # right hand fingers
-    [20, 22],          # 22
-    [21, 23],          # 23
+    [20, 21],          # 22
+    [21, 22],          # 23
 ]
 PRODUCTION_TO_HUMAN36 = PRODUCTION_TO_HUMAN36_V2
 
