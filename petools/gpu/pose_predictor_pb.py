@@ -14,7 +14,6 @@ from petools.tools.estimate_tools import Human
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
 from .gpu_model import GpuModel
 from petools.model_tools.image_preprocessors import GpuImagePreprocessor
-from .gpu_converter_3d import GpuConverter3D
 from petools.model_tools.transformers import HumanProcessor, TransformerConverter, TransformerCorrector
 from petools.model_tools.operation_wrapper import OPWrapper
 from petools.model_tools.human_cleaner import HumanCleaner

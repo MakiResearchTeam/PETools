@@ -5,6 +5,10 @@ from ..core import Converter3D
 from petools.tools.utils.tf_tools import load_graph_def
 from petools.tools.estimate_tools import Human
 
+#
+# DEPRECATED
+#
+
 
 class GpuConverter3D(Converter3D):
     def __init__(self, pb_path, mean_2d, std_2d, mean_3d, std_3d, input_name='input', output_name='Identity',
