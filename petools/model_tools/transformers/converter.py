@@ -4,8 +4,8 @@ import numpy as np
 from petools.core import Op, ProtobufModel
 from .human_processor import HumanProcessor
 from ...tools import Human
-from .seq_buffer import SequenceBuffer
-from .transformer import Transformer
+from .core.seq_buffer import SequenceBuffer
+from .core.transformer import Transformer
 from .utils import init_selector
 
 

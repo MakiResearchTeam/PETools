@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from petools.core import ProtobufModel
-from .utils import H3P6_3D_NUM
+from ..utils import H3P6_3D_NUM
 
 
 class Transformer(ProtobufModel):
