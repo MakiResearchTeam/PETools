@@ -20,7 +20,9 @@ class HumanProcessor:
         """
         Converts 23 production points to 16 human points. Can be used only for 2d points.
         """
-        human36_points = np.zeros((H3P6_2D_NUM, 2), dtype='float32')
+        # TODO: Something wrong
+        # Include hip (???)
+        human36_points = np.zeros((H3P6_2D_NUM+1, 2), dtype='float32')
         for i, j in HumanProcessor.PRODUCTION_TO_HUMAN36:
             human36_points[j] = production_points[i]
         return human36_points[HumanProcessor.SELECT2D]
