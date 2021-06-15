@@ -103,7 +103,8 @@ class HumanProcessor:
     def to_production_format(human36_points):
         dim = human36_points.shape[-1]
         # The 3D skeleton does not include central hip point, it is always zero
-        t = np.zeros((H3P6_2D_NUM_V1, dim))
+        # Add hip size
+        t = np.zeros((H3P6_2D_NUM+1, dim))
         t[1:] = human36_points
         human36_points = t
         production_points = np.zeros((NUM_PROD_POINTS, dim), dtype='float32')
