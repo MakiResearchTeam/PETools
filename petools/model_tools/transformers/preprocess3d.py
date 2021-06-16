@@ -21,6 +21,7 @@ class Preprocess3D(DataProcessor):
         human = human.to_np()[:, :2]
         human = self.shift_and_scale(human, source_resolution)
         human = self.human_processor.to_human36_format(human)
+        human = self.center_around_zero_point(human)
         if skip_hip:
             # Skip hip
             human = human[1:]
@@ -48,3 +49,6 @@ class Preprocess3D(DataProcessor):
             shift = 500 - center
             human[:, 0] += shift
         return human
+
+    def center_around_zero_point(self, human):
+        return human - human[0:1]

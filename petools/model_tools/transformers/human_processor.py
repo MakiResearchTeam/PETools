@@ -20,9 +20,7 @@ class HumanProcessor:
         """
         Converts 23 production points to 16 human points. Can be used only for 2d points.
         """
-        # TODO: Something wrong
-        # Include hip (???)
-        human36_points = np.zeros((H3P6_2D_NUM+1, 2), dtype='float32')
+        human36_points = np.zeros((H3P6_2D_NUM, 2), dtype='float32')
         for i, j in HumanProcessor.PRODUCTION_TO_HUMAN36:
             human36_points[j] = production_points[i]
         return human36_points[HumanProcessor.SELECT2D]
@@ -55,7 +53,7 @@ class HumanProcessor:
         assert len(human_prod_np) == H3P6_2D_NUM-1
         assert len(human_prod_np[0]) == 3
         human_prod_np = np.asarray(human_prod_np)
-        h32 = np.zeros((H3P6_3D_NUM_V1, 3), dtype='float32')
+        h32 = np.zeros((H3P6_3D_NUM, 3), dtype='float32')
         h32[HumanProcessor.INDICES3DTO32POINTS] = human_prod_np
         return h32
 
