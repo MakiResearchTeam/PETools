@@ -197,6 +197,8 @@ H3P6_3D_NUM_V1 = 32
 H3P6_3D_NUM_V2 = 42
 H3P6_3D_NUM = H3P6_3D_NUM_V2
 
+H36_NUM_POINTS = 32
+
 
 def init_selector_v1():
     # The input to the network does not include neck point

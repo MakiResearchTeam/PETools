@@ -53,7 +53,7 @@ class HumanProcessor:
         assert len(human_prod_np) == H3P6_2D_NUM-1
         assert len(human_prod_np[0]) == 3
         human_prod_np = np.asarray(human_prod_np)
-        h32 = np.zeros((H3P6_3D_NUM, 3), dtype='float32')
+        h32 = np.zeros((H36_NUM_POINTS, 3), dtype='float32')
         h32[HumanProcessor.INDICES3DTO32POINTS] = human_prod_np
         return h32
 
