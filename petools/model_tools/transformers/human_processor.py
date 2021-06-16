@@ -38,7 +38,7 @@ class HumanProcessor:
     @staticmethod
     def human3d_prod_to_human32(human_prod_np):
         """
-        Expands 16 points to the original 32. Original ones all equal zeros.
+        Expands 22 points to the original 32. Original ones all equal zeros.
         It is required for visualization utilities.
 
         Parameters
@@ -77,7 +77,7 @@ class HumanProcessor:
         return HumanProcessor.human3d_prod_to_human32(human16points)
 
     @staticmethod
-    def prod23tohuman32(prod):
+    def prodtohuman32(prod):
         """
         Expands 23 points to the original 32. Original ones all equal zeros.
         It is required for visualization utilities.
@@ -91,12 +91,12 @@ class HumanProcessor:
         -------
         np.ndarray of shape [32, d]
         """
-        assert len(prod) == H3P6_2D_NUM-1
+        assert len(prod) == H3P6_2D_NUM
         prod = np.asarray(prod)
         d = prod.shape[-1]
         h32 = np.zeros((H3P6_3D_NUM_V1, d), dtype='float32')
-        for h32_indx, h16_indx in HumanProcessor.H32_TO_HPROD_3D:
-            h32[h32_indx] = prod[h16_indx]
+        for h32_indx, h23_indx in HumanProcessor.H32_TO_HPROD_3D:
+            h32[h32_indx] = prod[h23_indx]
         return h32
 
     @staticmethod
