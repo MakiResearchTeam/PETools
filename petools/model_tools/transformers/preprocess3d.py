@@ -16,11 +16,16 @@ class Preprocess3D(DataProcessor):
         """
         self.human_processor = human_processor
 
-    def __call__(self, human: Human, **kwargs):
+    def __call__(self, human: Human, skip_hip=False, **kwargs):
         source_resolution = kwargs['source_resolution']
         human = human.to_np()[:, :2]
         human = self.shift_and_scale(human, source_resolution)
-        human = self.human_processor.to_human36_format(human).reshape(-1)
+        human = self.human_processor.to_human36_format(human)
+        human = self.center_around_zero_point(human)
+        if skip_hip:
+            # Skip hip
+            human = human[1:]
+        human = human.reshape(-1)
         human = self.human_processor.norm2d(human)
         return human
 
@@ -44,3 +49,6 @@ class Preprocess3D(DataProcessor):
             shift = 500 - center
             human[:, 0] += shift
         return human
+
+    def center_around_zero_point(self, human):
+        return human - human[0:1]
