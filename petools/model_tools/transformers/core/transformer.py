@@ -1,4 +1,4 @@
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from petools.core import ProtobufModel
 from ..utils import H36_2DPOINTS_DIM_FLAT

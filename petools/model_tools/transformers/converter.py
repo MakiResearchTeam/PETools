@@ -1,7 +1,6 @@
-import tensorflow as tf
 import numpy as np
 
-from petools.core import Op, ProtobufModel
+from petools.core import Op
 from .human_processor import HumanProcessor
 from ...tools import Human
 from .core.seq_buffer import SequenceBuffer
