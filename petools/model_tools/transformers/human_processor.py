@@ -94,7 +94,7 @@ class HumanProcessor:
         assert len(prod) == H3P6_2D_NUM
         prod = np.asarray(prod)
         d = prod.shape[-1]
-        h32 = np.zeros((H3P6_3D_NUM_V1, d), dtype='float32')
+        h32 = np.zeros((H36_2DPOINTS_DIM_FLAT_V1, d), dtype='float32')
         for h32_indx, h23_indx in HumanProcessor.H32_TO_HPROD_3D:
             h32[h32_indx] = prod[h23_indx]
         return h32
