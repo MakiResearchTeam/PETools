@@ -1,5 +1,5 @@
 from ..core import Model
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 
 class CpuModel(Model):

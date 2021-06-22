@@ -2,7 +2,7 @@ import json
 import os
 import time
 import pathlib
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import numpy as np
 
 from petools.core import PosePredictorInterface

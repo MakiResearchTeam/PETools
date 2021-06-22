@@ -1,4 +1,4 @@
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from ..core import Model
 from petools.tools.utils.tf_tools import load_graph_def
