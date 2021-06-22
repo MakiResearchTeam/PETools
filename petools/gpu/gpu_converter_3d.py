@@ -1,9 +1,11 @@
-import tensorflow as tf
-import numpy as np
+import tensorflow.compat.v1 as tf
 
 from ..core import Converter3D
 from petools.tools.utils.tf_tools import load_graph_def
-from petools.tools.estimate_tools import Human
+
+#
+# DEPRECATED
+#
 
 
 class GpuConverter3D(Converter3D):

@@ -1,11 +1,11 @@
-import tensorflow as tf
 import numpy as np
 
-from petools.core import Op, ProtobufModel
+from petools.core import Op
 from .human_processor import HumanProcessor
 from ...tools import Human
-from .seq_buffer import SequenceBuffer
-from .transformer import Transformer
+from .core.seq_buffer import SequenceBuffer
+from .core.transformer import Transformer
+from .utils import init_selector
 
 
 class TransformerConverter(Op):
@@ -31,8 +31,7 @@ class TransformerConverter(Op):
         self._buffer = SequenceBuffer(dim=32, seqlen=seq_len)
         self._human_processor = human_processor
         # The input to the network does not include neck point
-        self._select_2d = [True] * 17
-        self._select_2d[9] = False
+        self._select_2d = init_selector()
 
     def __call__(self, human: Human, **kwargs) -> Human:
         source_resolution = kwargs['source_resolution']
