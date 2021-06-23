@@ -205,6 +205,8 @@ H36_2DPOINTS_DIM_FLAT = H36_2DPOINTS_DIM_FLAT_V2
 
 H36_NUM_POINTS = 32
 
+# Index of the Hip point in production pose
+HIP_ID = 22
 
 def init_selector_v1():
     # The input to the network does not include neck point
