@@ -1,5 +1,3 @@
-import tensorflow.compat.v1 as tf
-
 from ..core import Model, ProtobufModel
 
 
@@ -7,18 +5,12 @@ class GpuModel(ProtobufModel, Model):
     def __init__(
             self,
             pb_path, input_name,
-            paf_name, ind_name, peaks_score_name, upsample_size_name='upsample_size',
+            paf_name, ind_name, peaks_score_name, upsample_size_name='upsample_size:0',
             session=None
     ):
-        self.__in_x = tf.placeholder(dtype=tf.float32, shape=[1, None, None, 3], name='in_x')
-        self.__upsample_size = tf.placeholder(dtype=tf.int32, shape=(2), name='upsample')
-
         super(GpuModel, self).__init__(
             protobuf_path=pb_path,
-            input_map={
-                input_name: self.__in_x,
-                upsample_size_name: self.__upsample_size
-            },
+            input_map=[input_name, upsample_size_name],
             output_tensors=[paf_name, ind_name, peaks_score_name],
             session=session
         )
@@ -39,8 +31,5 @@ class GpuModel(ProtobufModel, Model):
             Single element of this list is a List of classes Human which were detected.
         """
         resize_to = norm_img[0].shape[:2]
-        batched_paf, indices, peaks = super(GpuModel, self).predict(feed_dict={
-                self.__in_x: norm_img,
-                self.__upsample_size: resize_to
-        })
+        batched_paf, indices, peaks = super(GpuModel, self).predict(norm_img, resize_to)
         return batched_paf, indices, peaks

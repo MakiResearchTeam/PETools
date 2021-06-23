@@ -2,8 +2,6 @@ import json
 import os
 import time
 import numpy as np
-import tensorflow.compat.v1 as tf
-import pathlib
 
 # Miscellaneous pose utilities
 from petools.core import PosePredictorInterface
@@ -88,15 +86,12 @@ class PosePredictor(PosePredictorInterface):
         with open(self.__path_to_config, 'r') as f:
             config = json.load(f)
 
-        self.__sess = tf.Session()
-
         self.__model = GpuModel(
             pb_path=self.__path_to_tb,
             input_name=config[PosePredictor.INPUT_NAME],
             paf_name=config[PosePredictor.PAF_NAME],
             ind_name=config[PosePredictor.IND_TENSOR_NAME],
-            peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME],
-            session=self.__sess
+            peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME]
         )
 
         self.__image_preprocessor = GpuImagePreprocessor(
@@ -118,7 +113,7 @@ class PosePredictor(PosePredictorInterface):
         # --- CORRECTOR
         self.__corrector = lambda humans, **kwargs: humans
         if self.__path_to_tb_cor is not None:
-            corrector_t = Transformer(protobuf_path=self.__path_to_tb_cor, session=self.__sess)
+            corrector_t = Transformer(protobuf_path=self.__path_to_tb_cor)
             corrector_fn = lambda: PoseTransformer(
                 transformer=corrector_t,
                 seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
@@ -130,7 +125,7 @@ class PosePredictor(PosePredictorInterface):
         # --- CONVERTER
         self.__converter3d = lambda humans, **kwargs: humans
         if self.__path_to_tb_3d is not None:
-            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
+            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d)
             converter_fn = lambda: PoseTransformer(
                 transformer=converter_t,
                 seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),

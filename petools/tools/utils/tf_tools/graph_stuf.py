@@ -1,8 +1,7 @@
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 def load_graph_def(path):
-    with tf.gfile.GFile(path, 'rb') as f:
-        frozen_graph = tf.GraphDef()
-        frozen_graph.ParseFromString(f.read())
-    return frozen_graph
+    graph_def = tf.compat.v1.GraphDef()
+    loaded = graph_def.ParseFromString(open(path, 'rb').read())
+    return graph_def
