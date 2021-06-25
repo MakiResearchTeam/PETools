@@ -210,11 +210,14 @@ HIP_ID = 22
 
 #
 # Indx of hands in Human3.6M skeleton
+# Take in a count - indx without neck and hip points,
+# So, True position of hands - +2 from which present
 #
-INDX_HANDS_HUMAN36 = [16, 17, 21, 22]
+INDX_HANDS_HUMAN36 = [14, 15, 19, 20]
 INDX_NON_HANDS_HUMAN36 = []
 
-for i in range(H36_2DPOINTS_DIM_FLAT):
+# Minus neck and hip
+for i in range(H3P6_2D_NUM - 2):
     if i not in INDX_HANDS_HUMAN36:
         INDX_NON_HANDS_HUMAN36 += [i * 2, i * 2 + 1]
 
