@@ -212,7 +212,7 @@ class PosePredictor(PosePredictorInterface):
         # One Euro algorithm for smoothing keypoints movement
         humans = self.__smoother(humans)
         # Corrector need source resolution to perform human normalization
-        humans = self.__corrector(humans, source_resolution=image.shape[:-1])
+        humans = self.__corrector(humans, source_resolution=image.shape[:-1], skip_hands=True)
         # Converter need source resolution to perform human normalization
         humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
 

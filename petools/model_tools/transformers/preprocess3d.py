@@ -1,6 +1,7 @@
 import numpy as np
 
 from . import HumanProcessor
+from .utils import INDX_NON_HANDS_HUMAN36
 from .core import DataProcessor
 from ...tools import Human
 
@@ -16,7 +17,7 @@ class Preprocess3D(DataProcessor):
         """
         self.human_processor = human_processor
 
-    def __call__(self, human: Human, skip_hip=False, **kwargs):
+    def __call__(self, human: Human, skip_hip=False, skip_hands=False, **kwargs):
         source_resolution = kwargs['source_resolution']
         human_np = human.to_np()
         human, p = human_np[:, :2], human_np[:, 2:]
@@ -30,6 +31,8 @@ class Preprocess3D(DataProcessor):
             human = human[1:]
         human = human.reshape(-1)
         human = self.human_processor.norm2d(human)
+        if skip_hands:
+            human = human[INDX_NON_HANDS_HUMAN36]
         return human
 
     def shift_and_scale(self, human: np.ndarray, source_resolution):

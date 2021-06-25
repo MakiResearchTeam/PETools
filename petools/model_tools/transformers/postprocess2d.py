@@ -3,7 +3,7 @@ import numpy as np
 from . import HumanProcessor
 from .core import DataProcessor
 from ...tools import Human
-from .utils import HIP_ID
+from .utils import HIP_ID, H36_2DPOINTS_DIM_FLAT, INDX_NON_HANDS_HUMAN36, INDX_HANDS_HUMAN36
 
 
 class Postprocess2D(DataProcessor):
@@ -17,8 +17,14 @@ class Postprocess2D(DataProcessor):
         """
         self.human_processor = human_processor
 
-    def __call__(self, transformed_data: np.ndarray, source_human: Human, **kwargs):
-        coords2d = self.human_processor.denorm2d(transformed_data).reshape(-1, 2)
+    def __call__(self, transformed_data: np.ndarray, source_human: Human, skip_hands=False, **kwargs):
+        if skip_hands:
+            coords2d = np.zeros(H36_2DPOINTS_DIM_FLAT, dtype=np.float32)
+            coords2d[INDX_NON_HANDS_HUMAN36] = transformed_data
+        else:
+            coords2d = transformed_data
+
+        coords2d = self.human_processor.denorm2d(coords2d).reshape(-1, 2)
         h, w = kwargs['source_resolution']
         coords2d *= h / 700
         # Add fake neck point because corrector does not regress it
@@ -33,10 +39,14 @@ class Postprocess2D(DataProcessor):
         coords2d += source_human.to_np()[HIP_ID:HIP_ID+1, :2]
         coords2d *= 1 - np.expand_dims(mask, axis=-1)
         # Replace only those points that are not presents in coords2d
-        coords2d = coords2d + source_human.to_np()[:, :2] * np.expand_dims(mask, axis=-1)
+        source_h_np = source_human.to_np()
+        coords2d = coords2d + source_h_np[:, :2] * np.expand_dims(mask, axis=-1)
         # Concatenate probabilities of converted points
         p = source_human.to_np()[:, -1:]
         coords2d = np.concatenate([coords2d, p], axis=-1)
+
+        if skip_hands:
+            coords2d[INDX_HANDS_HUMAN36] = source_h_np[INDX_HANDS_HUMAN36]
 
         human = Human.from_array(coords2d)
         human.id = source_human.id

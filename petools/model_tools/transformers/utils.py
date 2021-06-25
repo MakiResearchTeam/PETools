@@ -200,13 +200,24 @@ H3P6_2D_NUM = H3P6_2D_NUM_V2
 
 # Dimensionality of flattened 2d points
 H36_2DPOINTS_DIM_FLAT_V1 = 32     # 16x2
-H36_2DPOINTS_DIM_FLAT_V2 = 42     # 23x2
+H36_2DPOINTS_DIM_FLAT_V2 = 42     # 21x2
 H36_2DPOINTS_DIM_FLAT = H36_2DPOINTS_DIM_FLAT_V2
 
 H36_NUM_POINTS = 32
 
 # Index of the Hip point in production pose
 HIP_ID = 22
+
+#
+# Indx of hands in Human3.6M skeleton
+#
+INDX_HANDS_HUMAN36 = [16, 17, 21, 22]
+INDX_NON_HANDS_HUMAN36 = []
+
+for i in range(H36_2DPOINTS_DIM_FLAT):
+    if i not in INDX_HANDS_HUMAN36:
+        INDX_NON_HANDS_HUMAN36 += [i * 2, i * 2 + 1]
+
 
 def init_selector_v1():
     # The input to the network does not include neck point
