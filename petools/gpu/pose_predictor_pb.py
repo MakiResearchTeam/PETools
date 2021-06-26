@@ -22,7 +22,7 @@ from petools.model_tools.one_euro_filter import OneEuroModule
 # Converter / Corrector
 from petools.model_tools.transformers import HumanProcessor, Transformer, PoseTransformer
 from petools.model_tools.transformers import Postprocess3D, Postprocess2D, Preprocess3D, Preprocess2D, SequenceBuffer
-from petools.model_tools.transformers.utils import H36_2DPOINTS_DIM_FLAT
+from petools.model_tools.transformers.utils import H36_2DPOINTS_DIM_FLAT, H36_CORRECTOR_2DPOINTS
 
 
 class PosePredictor(PosePredictorInterface):
@@ -118,10 +118,14 @@ class PosePredictor(PosePredictorInterface):
         # --- CORRECTOR
         self.__corrector = lambda humans, **kwargs: humans
         if self.__path_to_tb_cor is not None:
-            corrector_t = Transformer(protobuf_path=self.__path_to_tb_cor, session=self.__sess)
+            corrector_t = Transformer(
+                protobuf_path=self.__path_to_tb_cor, session=self.__sess,
+                input_sequence_shape=[1, 32, H36_CORRECTOR_2DPOINTS]
+            )
+            
             corrector_fn = lambda: PoseTransformer(
                 transformer=corrector_t,
-                seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
+                seq_buffer=SequenceBuffer(dim=H36_CORRECTOR_2DPOINTS, seqlen=32),
                 preprocess=Preprocess2D(human_processor),
                 postprocess=Postprocess2D(human_processor)
             )
