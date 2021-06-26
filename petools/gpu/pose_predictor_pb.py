@@ -122,7 +122,7 @@ class PosePredictor(PosePredictorInterface):
                 protobuf_path=self.__path_to_tb_cor, session=self.__sess,
                 input_sequence_shape=[1, 32, H36_CORRECTOR_2DPOINTS]
             )
-            
+
             corrector_fn = lambda: PoseTransformer(
                 transformer=corrector_t,
                 seq_buffer=SequenceBuffer(dim=H36_CORRECTOR_2DPOINTS, seqlen=32),

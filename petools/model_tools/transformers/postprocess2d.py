@@ -3,7 +3,7 @@ import numpy as np
 from . import HumanProcessor
 from .core import DataProcessor
 from ...tools import Human
-from .utils import HIP_ID, H36_2DPOINTS_DIM_FLAT, INDX_NON_HANDS_HUMAN36, INDX_HANDS_HUMAN36
+from .utils import HIP_ID, H36_2DPOINTS_DIM_FLAT, INDX_NON_HANDS_HUMAN36, INDX_NON_HANDS_PROD, INDX_HANDS_PROD
 
 
 class Postprocess2D(DataProcessor):
@@ -46,7 +46,7 @@ class Postprocess2D(DataProcessor):
         coords2d = np.concatenate([coords2d, p], axis=-1)
 
         if skip_hands:
-            coords2d[INDX_HANDS_HUMAN36] = source_h_np[INDX_HANDS_HUMAN36]
+            coords2d[INDX_NON_HANDS_PROD] = source_h_np[INDX_HANDS_PROD]
 
         human = Human.from_array(coords2d)
         human.id = source_human.id

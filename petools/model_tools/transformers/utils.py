@@ -217,12 +217,18 @@ HIP_ID = 22
 # So, True position of hands - +2 from which present
 #
 INDX_HANDS_HUMAN36 = [14, 15, 19, 20]
+INDX_HANDS_PROD = [18, 19, 20, 21]
 INDX_NON_HANDS_HUMAN36 = []
+INDX_NON_HANDS_PROD = []
 
 # Minus neck and hip
 for i in range(H3P6_2D_NUM - 2):
     if i not in INDX_HANDS_HUMAN36:
         INDX_NON_HANDS_HUMAN36 += [i * 2, i * 2 + 1]
+
+for i in range(H3P6_2D_NUM):
+    if i not in INDX_HANDS_PROD:
+        INDX_NON_HANDS_PROD += [i * 2, i * 2 + 1]
 
 
 def init_selector_v1():
