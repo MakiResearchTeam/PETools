@@ -1,9 +1,9 @@
 import numpy as np
 
-from .core import DataProcessor, SequenceBuffer
-from .human_processor import HumanProcessor
+from petools.model_tools.transformers.core import DataProcessor, SequenceBuffer
+from petools.model_tools.transformers.human_processor import HumanProcessor
 from petools.tools.estimate_tools import Human
-from .preprocess3d import Preprocess3D
+from petools.model_tools.transformers.preprocess3d import Preprocess3D
 
 
 class DiffPreprocess2D(Preprocess3D):
