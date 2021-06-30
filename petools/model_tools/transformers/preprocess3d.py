@@ -37,22 +37,6 @@ class Preprocess3D(DataProcessor):
         assert len(human.shape) == 2
         h, w = source_resolution
         human *= 700 / h
-        # Shift the skeleton into the center of 1000x1000 square image
-        """
-        selected_x = human[:, 0][human[:, 0] != 0]
-        left_x = 0
-        if len(selected_x) != 0:
-            left_x = np.min(selected_x)
-        right_x = np.max(human[:, 0])
-        width = right_x - left_x
-        center = left_x + width / 2
-        if np.max(human[:, 0]) > 900:
-            shift = center - 500
-            human[:, 0] -= shift
-        elif np.min(human[:, 0]) < 100:
-            shift = 500 - center
-            human[:, 0] += shift
-        """
         return human
 
     def center_around_zero_point(self, human, probabilities):

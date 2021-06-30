@@ -30,9 +30,9 @@ class PoseTransformer:
         self.postprocess = postprocess
 
     def __call__(self, human: Human, **kwargs):
-        preproc_data = self.preprocess(human, skip_hip=True, **kwargs)
+        preproc_data, postproc_params = self.preprocess(human, skip_hip=True, **kwargs)
         transfo_data = self.transform(preproc_data)
-        human = self.postprocess(transfo_data, source_human=human, **kwargs)
+        human = self.postprocess(transfo_data, source_human=human, postproc_params=postproc_params, **kwargs)
         return human
 
     def transform(self, human):
