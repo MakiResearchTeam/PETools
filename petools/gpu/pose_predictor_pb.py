@@ -22,6 +22,7 @@ from petools.model_tools.one_euro_filter import OneEuroModule
 # Converter / Corrector
 from petools.model_tools.transformers import HumanProcessor, Transformer, PoseTransformer
 from petools.model_tools.transformers import Postprocess3D, Postprocess2D, Preprocess3D, Preprocess2D, SequenceBuffer
+from petools.model_tools.transformers.diff_correction import DiffPreprocess2D, DiffPostprocess2D
 from petools.model_tools.transformers.utils import H36_2DPOINTS_DIM_FLAT
 
 
@@ -42,7 +43,8 @@ class PosePredictor(PosePredictorInterface):
             min_h=320,
             expected_w=600,
             norm_mode=CAFFE,
-            gpu_id=0
+            gpu_id=0,
+            mask_tolerance=0.5
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -67,6 +69,9 @@ class PosePredictor(PosePredictorInterface):
         gpu_id : int or str
             Number of GPU, which must be used to run estimate_tools on it,
             If CPU is needed - enter any symbol (expect digits), for example: ";"
+        mask_tolerance : float
+            Used only if the difference correction is provided. Defines the tolerance interval: the closer the
+            tolerance to zero, the more points will be masked out.
 
         """
 
@@ -78,6 +83,7 @@ class PosePredictor(PosePredictorInterface):
         self.__path_to_tb_3d = path_to_pb_3d
         self.__path_to_tb_cor = path_to_pb_cor
         self.__path_to_config = path_to_config
+        self.__tolerance = mask_tolerance
         self._init_model()
 
     def _init_model(self):
@@ -122,8 +128,13 @@ class PosePredictor(PosePredictorInterface):
             corrector_fn = lambda: PoseTransformer(
                 transformer=corrector_t,
                 seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
-                preprocess=Preprocess2D(human_processor),
-                postprocess=Postprocess2D(human_processor)
+                preprocess=DiffPreprocess2D(
+                    human_processor, buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=34)
+                ),
+                postprocess=DiffPostprocess2D(
+                    human_processor, buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=2),
+                    tolerance=self.__tolerance
+                )
             )
             self.__corrector = OPWrapper(corrector_fn)
 
