@@ -16,30 +16,29 @@ class DiffPostprocess2D(DataProcessor):
         human_processor : HumanProcessor
         buffer : SequenceBuffer
         tolerance : float
-            A float in range [0, +inf]
+            A positive float that defines the tolerance interval for the difference between corrector's
+            predictions and actual values. If the difference too large, the corresponding points are being masked.
         """
         self.human_processor = human_processor
         self.buffer = buffer
         self.tolerance = tolerance
 
     def __call__(self, transformed_data: np.ndarray, source_human: Human, **kwargs):
-        coords2d = self.denorm_data(transformed_data, **kwargs)
+        predicted_diff = self.denorm_data(transformed_data, **kwargs)
         # Add fake neck point because corrector does not regress it
-        coords2d = self.add_fake_neck_point(coords2d)
-        coords2d = self.human_processor.to_production_format(coords2d)
-        prev_human, diff = self.get_prev_human(source_human)
-        mask = (np.abs(diff - coords2d) / diff) > self.tolerance
-        # Move the hip point to its original position and nullify points that were previously absent
-        mask = (coords2d[:, 0] == 0.0).astype('float32')
-        coords2d += source_human.to_np()[HIP_ID:HIP_ID+1, :2]
-        coords2d *= 1 - np.expand_dims(mask, axis=-1)
-        # Replace only those points that are not presents in coords2d
-        coords2d = coords2d + source_human.to_np()[:, :2] * np.expand_dims(mask, axis=-1)
-        # Concatenate probabilities of converted points
-        p = source_human.to_np()[:, -1:]
-        coords2d = np.concatenate([coords2d, p], axis=-1)
+        predicted_diff = self.add_fake_neck_point(predicted_diff)
+        predicted_diff = self.human_processor.to_production_format(predicted_diff)
+        mask = self.generate_mask(source_human, predicted_diff)
+        source_data = source_human.to_np()
+        p, coords = source_data[:, -1:], source_data[:, :2]
+        # Update mask
+        mask = (p > 0).astype('float32') * mask
+        # Update human data (coords, probs)
+        p = p * mask
+        coords = coords * mask
+        new_human_data = np.concatenate([coords, p], axis=-1)
 
-        human = Human.from_array(coords2d)
+        human = Human.from_array(new_human_data)
         human.id = source_human.id
         return human
 
@@ -56,6 +55,27 @@ class DiffPostprocess2D(DataProcessor):
         t[:11] = coords[:11]
         t[12:] = coords[11:]
         return t
+
+    def generate_mask(self, cur_human, predicted_diff):
+        """
+        Generates a binary mask for masking the erroneous points.
+
+        Parameters
+        ----------
+        cur_human : Human
+
+        Returns
+        -------
+        np.ndarray of shape [n_points, 1]
+            Binary mask.
+        """
+        cur_human = cur_human.to_np().reshape(-1)
+        _, diff = self.get_prev_human(cur_human)
+        mask = (np.abs(diff - predicted_diff) / predicted_diff) < self.tolerance
+        mask = mask.astype('float32')
+        mask = mask.reshape(-1, 2)
+        mask = mask[:, 0] * mask[:, 1]
+        return np.expand_dims(mask, -1)
 
     def get_prev_human(self, human) -> (np.ndarray, np.ndarray):
         """
