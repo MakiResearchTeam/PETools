@@ -8,7 +8,7 @@ from connect_two_videos import VideoReader, VideoWriter
 def create_video_w_model(
         path_to_pb: str, path_to_config: str,
         path_to_pb_cor: str, gpu_id: str,
-        video_read_path: str, video_save_path: str):
+        video_read_path: str, video_save_path: str, **kwargs):
     """
 
     Parameters
@@ -25,13 +25,16 @@ def create_video_w_model(
         Path to read video at which human will be estimated by model
     video_save_path : str
         Path to save final video
+    kwargs : dict
+        Additional parameters for PosePredictor
 
     """
     pose_predictor = PosePredictor(
         path_to_pb=path_to_pb,
         path_to_config=path_to_config,
         path_to_pb_cor=path_to_pb_cor,
-        gpu_id=str(gpu_id)
+        gpu_id=str(gpu_id),
+        **kwargs
     )
 
     v_r = VideoReader(video_read_path)
