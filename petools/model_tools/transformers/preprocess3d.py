@@ -30,7 +30,7 @@ class Preprocess3D(DataProcessor):
             human = human[1:]
         human = human.reshape(-1)
         human = self.human_processor.norm2d(human)
-        return human
+        return human, 1.
 
     def shift_and_scale(self, human: np.ndarray, source_resolution):
         # Centers skeleton in a 700x700 square
