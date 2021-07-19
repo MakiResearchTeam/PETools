@@ -2,7 +2,7 @@ from petools.gpu import PosePredictor
 from petools.tools.utils.visual_tools import draw_skeletons_on_image
 
 from tqdm import tqdm
-from connect_two_videos import VideoReader, VideoWriter
+from .connect_two_videos import VideoReader, VideoWriter
 
 
 def create_video_w_model(
