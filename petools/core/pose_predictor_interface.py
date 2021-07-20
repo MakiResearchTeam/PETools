@@ -59,13 +59,14 @@ class PosePredictorInterface(ABC):
         pass
 
     @staticmethod
-    def pack_data(humans, end_time):
+    def pack_data(humans, end_time, **kwargs):
         data = {
             PosePredictorInterface.HUMANS: [
                 (single_human.id, single_human.to_dict(prepend_p=True), single_human.to_dict_from3d(prepend_p=True))
                 for single_human in humans
             ],
             PosePredictorInterface.TIME: end_time,
+            **kwargs
         }
         return data
 

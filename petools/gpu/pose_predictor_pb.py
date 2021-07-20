@@ -193,31 +193,73 @@ class PosePredictor(PosePredictorInterface):
 
         # Measure time of prediction
         start_time = time.time()
+
+        start_time_preprocess = time.time()
         norm_img, new_h, new_w, original_in_size = self.__image_preprocessor(image)
+        end_time_preprocess = time.time() - start_time_preprocess
+
+        start_time_predict = time.time()
         batched_paf, indices, peaks = self.__model.predict(norm_img)
+        end_time_predict = time.time() - start_time_predict
+
+        start_time_pafprocess = time.time()
         humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
+        end_time_pafprocess = time.time() - start_time_pafprocess
+
+        start_time_scale_pred = time.time()
         # Scale prediction to original image
         scale_predicted_kp(
             predictions=[humans],
             model_size=(new_h, new_w),
             source_size=image.shape[:-1]
         )
+        end_time_scale_pred = time.time() - start_time_scale_pred
+
         # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
+        start_time_modify = time.time()
         humans = modify_humans(humans)
         humans = [Human.from_array(x) for x in humans]
+        end_time_modify = time.time() - start_time_modify
 
+        start_time_cleaner = time.time()
         humans = self.__human_cleaner(humans)
+        end_time_cleaner = time.time() - start_time_cleaner
 
+        start_time_treacker = time.time()
         humans = self.__human_tracker(humans, image.shape[:-1])
+        end_time_tracker = time.time() - start_time_treacker
+
         # One Euro algorithm for smoothing keypoints movement
+        start_time_euro = time.time()
         humans = self.__smoother(humans)
+        end_time_euro = time.time() - start_time_euro
+
         # Corrector need source resolution to perform human normalization
+        start_time_corrector = time.time()
         humans = self.__corrector(humans, source_resolution=image.shape[:-1])
+        end_time_corrector = time.time() - start_time_corrector
+
         # Converter need source resolution to perform human normalization
+        start_time_converter = time.time()
         humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
+        end_time_converter = time.time() - start_time_converter
 
         end_time = time.time() - start_time
-        return PosePredictor.pack_data(humans=humans, end_time=end_time)
+
+        data_time_logs = {
+            'preprocess': end_time_preprocess,
+            'predict': end_time_predict,
+            'pafprocess': end_time_pafprocess,
+            'scale kp': end_time_scale_pred,
+            'modify': end_time_modify,
+            'clean': end_time_cleaner,
+            'tracker': end_time_tracker,
+            'euro': end_time_euro,
+            'corrector': end_time_corrector,
+            'converter3d': end_time_converter
+        }
+
+        return PosePredictor.pack_data(humans=humans, end_time=end_time, **data_time_logs)
 
 
 if __name__ == '__main__':
