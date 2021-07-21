@@ -1,7 +1,8 @@
 from numba import njit
 
+
 @njit
-def scale_predicted_kp(predictions: list, model_size: tuple, source_size: tuple):
+def scale_predicted_kp(predictions: list, model_size: list, source_size: list):
     # predictions shape - (N, num_detected_people)
     # scale predictions
     x_scale, y_scale = [float(source_size[1]) / float(model_size[1]), float(source_size[0]) / float(model_size[0])]
