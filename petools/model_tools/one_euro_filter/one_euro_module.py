@@ -54,7 +54,7 @@ class OneEuroModule:
 
         for i in range(len(single_human)):
             # Its better to drop filtering value, if its disappear or pop-up often
-            if single_human[i, -1] < OneEuroModule.EPSILONE:
+            if single_human[i, -1] < 1e-5:
                 self._euro_list[i * 2].reset_values()       # X
                 self._euro_list[i * 2 + 1].reset_values()   # Y
             else:
