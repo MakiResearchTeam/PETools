@@ -226,8 +226,8 @@ class PosePredictor(PosePredictorInterface):
         end_time_cleaner = time.time() - start_time_cleaner
 
         start_time_treacker = time.time()
-        humans = self.__human_tracker(humans, image.shape[:-1])
         humans = [Human.from_array(x) for x in humans]
+        humans = self.__human_tracker(humans, image.shape[:-1])
         end_time_tracker = time.time() - start_time_treacker
 
         # One Euro algorithm for smoothing keypoints movement
