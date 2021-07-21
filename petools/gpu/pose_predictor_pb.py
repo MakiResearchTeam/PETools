@@ -218,11 +218,12 @@ class PosePredictor(PosePredictorInterface):
         # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
         start_time_modify = time.time()
         #humans = [human_s.to_np() for human_s in humans]
-        humans = modify_humans(humans)
+        humans = modify_humans(humans) # return as np
         end_time_modify = time.time() - start_time_modify
 
         start_time_cleaner = time.time()
         humans = self.__human_cleaner(humans)
+        humans = [Human.from_array(x) for x in humans] # back to human
         end_time_cleaner = time.time() - start_time_cleaner
 
         start_time_treacker = time.time()
