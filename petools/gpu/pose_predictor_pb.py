@@ -204,7 +204,6 @@ class PosePredictor(PosePredictorInterface):
 
         start_time_pafprocess = time.time()
         humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
-        humans = [Human.from_array(x) for x in humans]
         end_time_pafprocess = time.time() - start_time_pafprocess
 
         start_time_scale_pred = time.time()
