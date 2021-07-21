@@ -15,6 +15,11 @@ def c__cutoff(mincutoff, beta, edx):
     return mincutoff + beta * math.fabs(edx)
 
 
+@njit
+def c__freq(timestamp, lasttime):
+    return 1.0 / (timestamp - lasttime)
+
+
 class OneEuroFilter(object):
     def __init__(self, freq, mincutoff=1.0, beta=0.0, dcutoff=1.0):
         if freq <= 0:
@@ -34,7 +39,7 @@ class OneEuroFilter(object):
     def __call__(self, x, timestamp=None):
         # ---- update the sampling frequency based on timestamps
         if self.__lasttime and timestamp:
-            self.__freq = 1.0 / (timestamp - self.__lasttime)
+            self.__freq = c__freq(timestamp, self.__lasttime)
         self.__lasttime = timestamp
         # ---- estimate the current variation per second
         prev_x = self.__x.lastValue()
