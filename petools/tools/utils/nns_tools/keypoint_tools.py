@@ -13,7 +13,7 @@ def scale_predicted_kp(predictions: list, model_size: tuple, source_size: tuple)
             single_human_np = single_image_pr[h_indx]
             # multiply
             single_human_np[:, 0] *= scale[0]
-            single_human_np[:, 0] *= scale[1]
+            single_human_np[:, 1] *= scale[1]
 
     return predictions
 
