@@ -13,6 +13,7 @@ class OneEuroModule:
     This correction module is based in 1 euro algorithm
     For mode details refer to: https://hal.inria.fr/hal-00670496/document
     """
+    EPSILONE = 1e-5
 
     def __init__(self, freq=1.0, mincutoff=0.4, beta=0.001, dcutoff=0.7, mode=MODE_2D):
         self._euro_list = None
@@ -21,6 +22,9 @@ class OneEuroModule:
         self._beta = beta
         self._dcutoff = dcutoff
         self._mode = mode
+        # Some parameters as buffer
+        # In order to speed up work of this class
+        self._prev_points = None
 
     def __call__(self, human: Human) -> Human:
         if self._mode == MODE_2D:
@@ -33,15 +37,21 @@ class OneEuroModule:
     def __filter_2d(self, human: Human):
         # (N, 3)
         single_human = human.to_np()
-        points_xy = np.zeros(single_human[:, :-1].shape).astype(np.float32)
+        if self._prev_points is not None and len(single_human) == len(self._prev_points):
+            # Clear previous results and save it
+            self._prev_points *= 0
+            points_xy = self._prev_points
+        else:
+            points_xy = np.zeros(single_human[:, :-1].shape, dtype=np.float32)
+            self._prev_points = points_xy
 
         if self._euro_list is None:
-            # 2 - X and Y axis
+            # 2 because of - X and Y axis
             self.__setup_filter(len(points_xy) * 2)
 
         for i in range(len(single_human)):
             # Its better to drop filtering value, if its disappear or pop-up often
-            if single_human[i][-1] < 1e-3:
+            if single_human[i][-1] < OneEuroModule.EPSILONE:
                 self._euro_list[i * 2].reset_values()       # X
                 self._euro_list[i * 2 + 1].reset_values()   # Y
             else:
@@ -53,7 +63,14 @@ class OneEuroModule:
     def __filter_3d(self, human: Human):
         # (N, 4)
         single_human = human.to_np_from3d()
-        points_xyz = np.zeros(single_human[:, :-1].shape).astype(np.float32)
+
+        if self._prev_points is not None and len(single_human) == len(self._prev_points):
+            # Clear previous results and save it
+            self._prev_points *= 0
+            points_xyz = self._prev_points
+        else:
+            points_xyz = np.zeros(single_human[:, :-1].shape, dtype=np.float32)
+            self._prev_points = points_xyz
 
         if self._euro_list is None:
             # 3 - X, Y and Z axis

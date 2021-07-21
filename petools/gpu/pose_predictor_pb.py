@@ -211,7 +211,7 @@ class PosePredictor(PosePredictorInterface):
         scale_predicted_kp(
             predictions=[humans],
             model_size=(new_h, new_w),
-            source_size=image.shape[:-1]
+            source_size=original_in_size
         )
         end_time_scale_pred = time.time() - start_time_scale_pred
 
