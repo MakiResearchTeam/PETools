@@ -34,7 +34,7 @@ class GpuImagePreprocessor(ImagePreprocessor):
                     self._saved_padding_w.shape[2] != 3:
                 # Pad image with zeros,
                 # In order to image be divided by PosePredictor.SCALE (in most cases equal to 8) without reminder
-                single_img_input = np.zeros((new_h, new_w + padding, 3), dtype=np.unt8)
+                single_img_input = np.zeros((new_h, new_w + padding, 3), dtype=np.uint8)
                 self._saved_padding_w = single_img_input
             else:
                 single_img_input = self._saved_padding_w
