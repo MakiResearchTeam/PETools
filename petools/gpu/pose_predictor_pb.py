@@ -204,8 +204,7 @@ class PosePredictor(PosePredictorInterface):
 
         start_time_pafprocess = time.time()
         humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
-        # Convert to np
-        humans = [human_s.to_np() for human_s in humans]
+        humans = [Human.from_array(x) for x in humans]
         end_time_pafprocess = time.time() - start_time_pafprocess
 
         start_time_scale_pred = time.time()
@@ -219,6 +218,7 @@ class PosePredictor(PosePredictorInterface):
 
         # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
         start_time_modify = time.time()
+        humans = [human_s.to_np() for human_s in humans]
         humans = modify_humans(humans)
         end_time_modify = time.time() - start_time_modify
 
@@ -227,8 +227,8 @@ class PosePredictor(PosePredictorInterface):
         end_time_cleaner = time.time() - start_time_cleaner
 
         start_time_treacker = time.time()
-        humans = [Human.from_array(x) for x in humans]
         humans = self.__human_tracker(humans, image.shape[:-1])
+        humans = [Human.from_array(x) for x in humans]
         end_time_tracker = time.time() - start_time_treacker
 
         # One Euro algorithm for smoothing keypoints movement

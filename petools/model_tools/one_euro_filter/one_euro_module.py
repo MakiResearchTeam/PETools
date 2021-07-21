@@ -42,6 +42,8 @@ class OneEuroModule:
             self._prev_points *= 0
             points_xy = self._prev_points
         else:
+            # TODO: Delete debug print
+            print('Created euro')
             points_xy = np.zeros(single_human[:, :-1].shape, dtype=np.float32)
             self._prev_points = points_xy
 
@@ -51,7 +53,7 @@ class OneEuroModule:
 
         for i in range(len(single_human)):
             # Its better to drop filtering value, if its disappear or pop-up often
-            if single_human[i][-1] < OneEuroModule.EPSILONE:
+            if single_human[i, -1] < OneEuroModule.EPSILONE:
                 self._euro_list[i * 2].reset_values()       # X
                 self._euro_list[i * 2 + 1].reset_values()   # Y
             else:
