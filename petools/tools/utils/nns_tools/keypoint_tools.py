@@ -1,21 +1,15 @@
 from numba import njit
 
-
 @njit
-def scale_predicted_kp(predictions: list, model_size: list, source_size: list):
+def scale_predicted_kp(single_image_pr: list, model_size: tuple, source_size: tuple):
     # predictions shape - (N, num_detected_people)
     # scale predictions
-    x_scale, y_scale = [float(source_size[1]) / float(model_size[1]), float(source_size[0]) / float(model_size[0])]
+    scale = [source_size[1] / model_size[1], source_size[0] / model_size[0]]
+    for h_indx in range(len(single_image_pr)):
+        single_human_np = single_image_pr[h_indx]
+        # multiply
+        single_human_np[:, 0] *= scale[0]
+        single_human_np[:, 1] *= scale[1]
 
-    # each detection
-    for i in range(len(predictions)):
-        single_image_pr = predictions[i]
-        # each person
-        for h_indx in range(len(single_image_pr)):
-            single_human_np = single_image_pr[h_indx]
-            # multiply
-            single_human_np[:, 0] *= x_scale
-            single_human_np[:, 1] *= y_scale
-
-    return predictions
+    return single_image_pr
 
