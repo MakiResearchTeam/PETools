@@ -1,5 +1,4 @@
 import numpy as np
-from numba import njit
 
 from .one_euro_filter import OneEuroFilter
 from petools.tools import Human
@@ -29,15 +28,15 @@ class OneEuroModule:
 
     def __call__(self, human: Human) -> Human:
         if self._mode == MODE_2D:
-            return Human.from_array(self.__filter_2d(human.to_np()))
+            return self.__filter_2d(human)
         elif self._mode == MODE_3D:
-            return Human.from_array_3d(self.__filter_3d(human.to_np()))
+            return self.__filter_3d(human)
 
         raise ValueError(f"Unknown type of filter mode, can be: {MODE_3D} or {MODE_3D},\nbut {self._mode} was given.")
 
-    @njit
-    def __filter_2d(self, single_human: np.ndarray):
+    def __filter_2d(self, human: Human):
         # (N, 3)
+        single_human = human.to_np()
         if self._prev_points is not None and len(single_human) == len(self._prev_points):
             # Clear previous results and save it
             self._prev_points *= 0
@@ -54,17 +53,19 @@ class OneEuroModule:
 
         for i in range(len(single_human)):
             # Its better to drop filtering value, if its disappear or pop-up often
-            if single_human[i, -1] < 1e-5:
+            if single_human[i, -1] < OneEuroModule.EPSILONE:
                 self._euro_list[i * 2].reset_values()       # X
                 self._euro_list[i * 2 + 1].reset_values()   # Y
             else:
                 points_xy[i, 0] = self._euro_list[i * 2](single_human[i, 0])        # X
                 points_xy[i, 1] = self._euro_list[i * 2 + 1](single_human[i, 1])    # Y
 
-        return np.concatenate([points_xy, single_human[:, 2:3]], axis=-1)
+        return Human.from_array(np.concatenate([points_xy, single_human[:, 2:3]], axis=-1))
 
-    @njit
-    def __filter_3d(self, single_human: np.ndarray):
+    def __filter_3d(self, human: Human):
+        # (N, 4)
+        single_human = human.to_np_from3d()
+
         if self._prev_points is not None and len(single_human) == len(self._prev_points):
             # Clear previous results and save it
             self._prev_points *= 0
@@ -88,7 +89,7 @@ class OneEuroModule:
                 points_xyz[i, 1] = self._euro_list[i * 3 + 1](single_human[i, 1])    # Y
                 points_xyz[i, 2] = self._euro_list[i * 3 + 2](single_human[i, 2])    # Z
 
-        return np.concatenate([points_xyz, single_human[:, 3:4]], axis=-1)
+        return Human.from_array_3d(np.concatenate([points_xyz, single_human[:, 3:4]], axis=-1))
 
     def __setup_filter(self, num_elements):
         self._euro_list = [

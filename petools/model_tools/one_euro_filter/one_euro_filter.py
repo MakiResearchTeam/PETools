@@ -1,4 +1,5 @@
 import math
+from numba import njit
 from .low_pass_filter import LowPassFilter
 
 
@@ -18,10 +19,15 @@ class OneEuroFilter(object):
         self.__dx = LowPassFilter(self.__alpha(self.__dcutoff))
         self.__lasttime = None
 
-    def __alpha(self, cutoff):
-        te = 1.0 / self.__freq
+    @njit
+    def __alpha(self, cutoff, freq):
+        te = 1.0 / freq
         tau = 1.0 / (2 * math.pi * cutoff)
         return 1.0 / (1.0 + tau / te)
+
+    @njit
+    def __cutoff(self, mincutoff, beta, edx):
+        return mincutoff + beta * math.fabs(edx)
 
     def __call__(self, x, timestamp=None):
         # ---- update the sampling frequency based on timestamps
@@ -31,9 +37,9 @@ class OneEuroFilter(object):
         # ---- estimate the current variation per second
         prev_x = self.__x.lastValue()
         dx = 0.0 if prev_x is None else (x - prev_x) * self.__freq  # FIXME: 0.0 or value?
-        edx = self.__dx(dx, timestamp, alpha=self.__alpha(self.__dcutoff))
+        edx = self.__dx(dx, timestamp, alpha=self.__alpha(self.__dcutoff, self.__freq))
         # ---- use it to update the cutoff frequency
-        cutoff = self.__mincutoff + self.__beta * math.fabs(edx)
+        cutoff = self.__cutoff(self.__mincutoff, self.__beta, math.fabs(edx))
         # ---- filter the given value
         return self.__x(x, timestamp, alpha=self.__alpha(cutoff))
 
