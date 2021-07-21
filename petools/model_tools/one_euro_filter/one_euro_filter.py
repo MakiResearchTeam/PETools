@@ -3,19 +3,19 @@ from numba import njit
 from .low_pass_filter import LowPassFilter
 
 
-@njit
+@njit(fastmath=True)
 def c__alpha(cutoff, freq):
     te = 1.0 / freq
     tau = 1.0 / (2 * math.pi * cutoff)
     return 1.0 / (1.0 + tau / te)
 
 
-@njit
+@njit(fastmath=True)
 def c__cutoff(mincutoff, beta, edx):
     return mincutoff + beta * math.fabs(edx)
 
 
-@njit
+@njit(fastmath=True)
 def c__freq(timestamp, lasttime):
     return 1.0 / (timestamp - lasttime)
 
