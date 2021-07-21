@@ -3,7 +3,7 @@ import numpy as np
 
 def modify_humans(humans: list, thr=0.1) -> list:
     return [
-        interp_points(single_human, thr)
+        interp_points(single_human.to_np(), thr)
         for i, single_human in enumerate(humans)
     ]
 
