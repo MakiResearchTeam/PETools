@@ -31,7 +31,7 @@ except ModuleNotFoundError as e:
 class SkeletBuilder:
 
     @staticmethod
-    def get_humans_by_PIF(peaks, indices, paf_mat, th_hold_x=0.5, th_hold_y=0.5):
+    def get_humans_by_PIF(peaks, indices, paf_mat, th_hold_x=10.0, th_hold_y=10.0):
         """
         This method consistently calls estimate_paf and merge_similar_skelets methods
         PIF - (Peaks, Indices, Paf_mat)
@@ -46,10 +46,10 @@ class SkeletBuilder:
             Numpy array of the PAF (Party affinity fields) which is usually prediction of the network
         th_hold_x : float
             Threshold from what value do we count keypoints similar by axis X,
-            By default equal to 0.04
+            By default equal to 10.0
         th_hold_y : float
             Threshold from what value do we count keypoints similar by axis Y,
-            By default equal to 0.04
+            By default equal to 10.0
 
         Returns
         -------

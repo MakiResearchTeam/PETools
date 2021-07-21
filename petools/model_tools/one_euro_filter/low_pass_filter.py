@@ -1,7 +1,7 @@
 from numba import njit
 
 
-@njit(fastmath=True)
+@njit
 def calc_filter(alpha, value, s):
     return alpha * value + (1.0 - alpha) * s
 
