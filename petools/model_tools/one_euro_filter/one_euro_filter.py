@@ -15,8 +15,8 @@ class OneEuroFilter(object):
         self.__mincutoff = float(mincutoff)
         self.__beta = float(beta)
         self.__dcutoff = float(dcutoff)
-        self.__x = LowPassFilter(self.__alpha(self.__mincutoff))
-        self.__dx = LowPassFilter(self.__alpha(self.__dcutoff))
+        self.__x = LowPassFilter(self.__alpha(self.__mincutoff, self.__freq))
+        self.__dx = LowPassFilter(self.__alpha(self.__dcutoff, self.__freq))
         self.__lasttime = None
 
     @njit
@@ -41,7 +41,7 @@ class OneEuroFilter(object):
         # ---- use it to update the cutoff frequency
         cutoff = self.__cutoff(self.__mincutoff, self.__beta, math.fabs(edx))
         # ---- filter the given value
-        return self.__x(x, timestamp, alpha=self.__alpha(cutoff))
+        return self.__x(x, timestamp, alpha=self.__alpha(cutoff, self.__freq))
 
     def reset_values(self):
         self.__x.reset_values()

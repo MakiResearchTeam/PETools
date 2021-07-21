@@ -1,3 +1,5 @@
+from numba import njit
+
 
 class LowPassFilter(object):
 
@@ -20,10 +22,14 @@ class LowPassFilter(object):
         if self.__y is None:
             s = value
         else:
-            s = self.__alpha * value + (1.0 - self.__alpha) * self.__s
+            s = self.__calc_filter(self.__alpha, value, self.__s)
         self.__y = value
         self.__s = s
         return s
+
+    @njit
+    def __calc_filter(self, alpha, value, s):
+        return alpha * value + (1.0 - alpha) * s
 
     def lastValue(self):
         return self.__y
