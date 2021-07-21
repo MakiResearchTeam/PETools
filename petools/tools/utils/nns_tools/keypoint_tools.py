@@ -1,6 +1,5 @@
-from numba import njit
 
-@njit
+
 def scale_predicted_kp(predictions, model_size, source_size):
     # predictions shape - (N, num_detected_people)
     # scale predictions
