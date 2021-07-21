@@ -20,6 +20,11 @@ def c__freq(timestamp, lasttime):
     return 1.0 / (timestamp - lasttime)
 
 
+@njit(fastmath=True)
+def c_dx(x, prev_x, freq):
+    return (x - prev_x) * freq
+
+
 class OneEuroFilter(object):
     def __init__(self, freq, mincutoff=1.0, beta=0.0, dcutoff=1.0):
         if freq <= 0:
@@ -43,7 +48,7 @@ class OneEuroFilter(object):
         self.__lasttime = timestamp
         # ---- estimate the current variation per second
         prev_x = self.__x.lastValue()
-        dx = 0.0 if prev_x is None else (x - prev_x) * self.__freq  # FIXME: 0.0 or value?
+        dx = 0.0 if prev_x is None else c_dx(x, prev_x, self.__freq)  # FIXME: 0.0 or value?
         edx = self.__dx(dx, timestamp, alpha=c__alpha(self.__dcutoff, self.__freq))
         # ---- use it to update the cutoff frequency
         cutoff = c__cutoff(self.__mincutoff, self.__beta, edx)
