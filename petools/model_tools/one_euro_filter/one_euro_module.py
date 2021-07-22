@@ -13,7 +13,7 @@ class OneEuroModule:
     This correction module is based in 1 euro algorithm
     For mode details refer to: https://hal.inria.fr/hal-00670496/document
     """
-    EPSILONE = 1e-5
+    THR = 0.2
 
     def __init__(self, freq=1.0, mincutoff=0.4, beta=0.001, dcutoff=0.7, mode=MODE_2D):
         self._euro_list = None
@@ -35,33 +35,24 @@ class OneEuroModule:
         raise ValueError(f"Unknown type of filter mode, can be: {MODE_3D} or {MODE_3D},\nbut {self._mode} was given.")
 
     def __filter_2d(self, human: Human):
-        # (N, 3)
-        single_human = human.to_np()
-        if self._prev_points is not None and len(single_human) == len(self._prev_points):
-            # Clear previous results and save it
-            self._prev_points *= 0
-            points_xy = self._prev_points
-        else:
-            # TODO: Delete debug print
-            print('Created euro')
-            points_xy = np.zeros(single_human[:, :-1].shape, dtype=np.float32)
-            self._prev_points = points_xy
+        num_points = len(human.np)
 
         if self._euro_list is None:
             # 2 because of - X and Y axis
-            self.__setup_filter(len(points_xy) * 2)
+            self.__setup_filter(num_points * 2)
 
-        for i in range(len(single_human)):
+        for i in range(num_points):
             # Its better to drop filtering value, if its disappear or pop-up often
-            if single_human[i, -1] < OneEuroModule.EPSILONE:
+            if human.np[i, -1] < OneEuroModule.THR:
                 self._euro_list[i * 2].reset_values()       # X
                 self._euro_list[i * 2 + 1].reset_values()   # Y
             else:
-                points_xy[i, 0] = self._euro_list[i * 2](single_human[i, 0])        # X
-                points_xy[i, 1] = self._euro_list[i * 2 + 1](single_human[i, 1])    # Y
+                human.np[i, 0] = self._euro_list[i * 2](human.np[i, 0])        # X
+                human.np[i, 1] = self._euro_list[i * 2 + 1](human.np[i, 1])    # Y
 
-        return Human.from_array(np.concatenate([points_xy, single_human[:, 2:3]], axis=-1))
+        return human
 
+    # TODO: Update as 2d filter
     def __filter_3d(self, human: Human):
         # (N, 4)
         single_human = human.to_np_from3d()

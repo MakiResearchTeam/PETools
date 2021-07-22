@@ -70,8 +70,7 @@ class HumanTracker:
         Calculate avg point from human
 
         """
-        h_np = human.to_np()
-        visible_h_np = h_np[h_np[:, -1] > 1e-3]
+        visible_h_np = human.np[human.np[:, -1] > 1e-3]
         if len(visible_h_np) == 0:
             return None
         return np.mean(visible_h_np[:, :-1], axis=0)

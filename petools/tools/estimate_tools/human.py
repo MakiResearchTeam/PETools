@@ -8,7 +8,7 @@ class Human:
     Store keypoints of the single human
 
     """
-    __slots__ = ('body_parts_3d', 'body_parts', 'score', 'id', 'count_kp')
+    __slots__ = ('body_parts_3d', 'body_parts', 'score', 'id', 'count_kp', 'np')
 
     def __init__(self, count_kp=NUMBER_OF_KEYPOINTS):
         """
@@ -25,12 +25,18 @@ class Human:
         self.score = 0.0
         self.id = -1
         self.count_kp = count_kp
+        self.np = None
 
     def part_count(self):
         return len(self.body_parts.keys())
 
     def get_max_score(self):
         return max([x.score for _, x in self.body_parts.items()])
+
+    def compile_np(self):
+        if self.np is not None:
+            print('human already have np')
+        self.np = self.to_np()
 
     def set_3d(self, array_3d):
         """
@@ -252,6 +258,9 @@ class Human:
             Where N - number of points
 
         """
+        if self.np is not None:
+            return self.np
+
         list_points = self.to_list(th_hold=th_hold)
         # (N, 3)
         return np.array(list_points, dtype=np.float32).reshape(-1, 3)
@@ -272,6 +281,9 @@ class Human:
             Array of keypoints with shape (N, 4),
             Where N - number of points
         """
+        if self.np is not None:
+            return self.np
+
         list_points = self.to_list_from3d(th_hold=th_hold)
         # (N, 4)
         return np.array(list_points, dtype=np.float32).reshape(-1, 4)
@@ -305,6 +317,7 @@ class Human:
         human_class = Human(count_kp=len(human_array))
         human_id = 0
         sum_probs = 0.0
+        human_class.np = np.array(human_array, dtype=np.float32)
 
         for part_idx in range(len(human_array)):
             human_class.body_parts[part_idx] = [
@@ -346,6 +359,7 @@ class Human:
         human_class = Human(count_kp=len(human_array))
         human_id = 0
         sum_probs = 0.0
+        human_class.np = np.array(human_array, dtype=np.float32)
 
         for part_idx in range(len(human_array)):
             human_class.body_parts_3d[part_idx] = [

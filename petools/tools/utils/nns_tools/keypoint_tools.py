@@ -11,10 +11,8 @@ def scale_predicted_kp(predictions: list, model_size: tuple, source_size: tuple)
         # each person
         for h_indx in range(len(single_image_pr)):
             single_human = single_image_pr[h_indx]
-            # each keypoint
-            for kp_indx in single_human.body_parts:
-                single_human.body_parts[kp_indx][0] *= scale[0]
-                single_human.body_parts[kp_indx][1] *= scale[1]
+            # each keypoint, except last dim
+            single_human.np[:, :-1] *= scale
 
     return predictions
 

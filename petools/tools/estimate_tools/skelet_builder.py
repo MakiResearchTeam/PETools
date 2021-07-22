@@ -63,7 +63,10 @@ class SkeletBuilder:
             indices.astype(np.int32, copy=False),
             paf_mat.astype(np.float32, copy=False)
         )
-        return SkeletBuilder.merge_similar_skelets(humans_list, th_hold_x=th_hold_x, th_hold_y=th_hold_y)
+        humans_merged_l = SkeletBuilder.merge_similar_skelets(humans_list, th_hold_x=th_hold_x, th_hold_y=th_hold_y)
+        # Compile np inside human
+        _ = [human.compile_np() for human in humans_merged_l]
+        return humans_merged_l
 
     @staticmethod
     def estimate_paf(peaks, indices, paf_mat) -> list:
