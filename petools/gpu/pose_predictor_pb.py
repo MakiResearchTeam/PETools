@@ -221,11 +221,11 @@ class PosePredictor(PosePredictorInterface):
         start_time_modify = time.time()
         #humans = [human_s.to_np() for human_s in humans]
         humans = modify_humans(humans) # return as np
+        humans = [Human.from_array(x) for x in humans]  # back to human
         end_time_modify = time.time() - start_time_modify
 
         start_time_cleaner = time.time()
         humans = self.__human_cleaner(humans)
-        humans = [Human.from_array(x) for x in humans] # back to human
         #[x.compile_np() for x in humans]  # compile np inside
         end_time_cleaner = time.time() - start_time_cleaner
 
