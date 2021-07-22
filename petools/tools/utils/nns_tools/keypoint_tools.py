@@ -12,8 +12,7 @@ def scale_predicted_kp(predictions: list, model_size: tuple, source_size: tuple)
         for h_indx in range(len(single_image_pr)):
             single_human = single_image_pr[h_indx]
             # each keypoint, except last dim
-            single_human.np[:, 0] *= scale[0]
-            single_human.np[:, 1] *= scale[1]
+            single_human.np[:, :-1] *= scale
 
     return predictions
 
