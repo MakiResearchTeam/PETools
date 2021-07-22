@@ -246,7 +246,11 @@ class PosePredictor(PosePredictorInterface):
 
         # Converter need source resolution to perform human normalization
         start_time_converter = time.time()
-        db_info = {}
+        db_info = {
+            'end_preprocess': 0.0,
+            'end_transform': 0.0,
+            'end_postprocess': 0.0,
+        }
         humans = self.__converter3d(humans, source_resolution=image.shape[:-1], debug_info=db_info)
         end_time_converter = time.time() - start_time_converter
 

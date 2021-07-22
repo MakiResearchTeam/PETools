@@ -44,11 +44,9 @@ class PoseTransformer:
         start_postprocess = time.time()
         human = self.postprocess(transfo_data, source_human=human, **kwargs)
         end_postprocess = time.time() - start_postprocess
-        kwargs['debug_info'].update({
-            'end_preprocess': end_preprocess,
-            'end_transform': end_transform,
-            'end_postprocess': end_postprocess,
-        })
+        kwargs['debug_info']['end_preprocess'] += end_preprocess
+        kwargs['debug_info']['end_transform'] += end_transform
+        kwargs['debug_info']['end_postprocess'] += end_postprocess
         return human
 
     def transform(self, human):
