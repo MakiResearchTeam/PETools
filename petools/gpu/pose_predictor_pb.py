@@ -201,19 +201,16 @@ class PosePredictor(PosePredictorInterface):
             source_size=original_in_size
         )
         # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
-        humans = modify_humans(humans) # return as np
-
-        humans = self.__human_cleaner(humans)
+        humans = modify_humans(humans)                 # returns as np
         humans = [Human.from_array(x) for x in humans] # back to human
 
-        humans = self.__human_tracker(humans, image.shape[:-1])
+        humans = self.__human_cleaner(humans)
 
+        humans = self.__human_tracker(humans, image.shape[:-1])
         # One Euro algorithm for smoothing keypoints movement
         humans = self.__smoother(humans)
-
         # Corrector need source resolution to perform human normalization
         humans = self.__corrector(humans, source_resolution=image.shape[:-1])
-
         # Converter need source resolution to perform human normalization
         humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
         end_time = time.time() - start_time

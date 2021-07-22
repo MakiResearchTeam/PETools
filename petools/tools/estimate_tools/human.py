@@ -34,10 +34,6 @@ class Human:
         return max([x.score for _, x in self.body_parts.items()])
 
     def compile_np(self):
-        if self.np is not None:
-            print('human already have np')
-            # TODO: Is this good?
-            return
         self.np = self.to_np()
 
     def set_3d(self, array_3d):
