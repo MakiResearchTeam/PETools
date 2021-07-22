@@ -227,7 +227,7 @@ def preprocess_symbolic_input(x, mode, use_rgb2bgr=False):
 
 #@njit
 def caffe_numba(x: np.ndarray, dtype=np.float32) -> np.ndarray:
-    x = x.astype(dtype)
+    x = x.astype(dtype, copy=False)
     # Vgg like normalization
     #         B        G        R
     mean = [103.939, 116.779, 123.68]
