@@ -230,7 +230,7 @@ def caffe_numba(x: np.ndarray, dtype=np.float32) -> np.ndarray:
     x = x.astype(dtype)
     # Vgg like normalization
     #         B        G        R
-    mean = [103.939, 116.779, 123.68]
+    mean = np.array([103.939, 116.779, 123.68], dtype=dtype)
 
     # Zero-center by mean pixel
     x -= mean
