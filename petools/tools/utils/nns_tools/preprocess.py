@@ -227,7 +227,7 @@ from numba import njit
 
 @njit
 def caffe_numba(x: np.ndarray, dtype=np.float32) -> np.ndarray:
-    x = x.astype(dtype, copy=False)
+    x = x.astype(dtype)
     # Vgg like normalization
     #         B        G        R
     mean = [103.939, 116.779, 123.68]
@@ -235,4 +235,4 @@ def caffe_numba(x: np.ndarray, dtype=np.float32) -> np.ndarray:
     # Zero-center by mean pixel
     x -= mean
 
-    return x.astype(dtype, copy=False)
+    return x
