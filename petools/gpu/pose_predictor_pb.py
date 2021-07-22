@@ -224,7 +224,7 @@ class PosePredictor(PosePredictorInterface):
         start_time_cleaner = time.time()
         humans = self.__human_cleaner(humans)
         humans = [Human.from_array(x) for x in humans] # back to human
-        [x.compile_np() for x in humans]  # compile np inside
+        #[x.compile_np() for x in humans]  # compile np inside
         end_time_cleaner = time.time() - start_time_cleaner
 
         start_time_treacker = time.time()
