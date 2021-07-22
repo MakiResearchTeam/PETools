@@ -223,9 +223,9 @@ def preprocess_symbolic_input(x, mode, use_rgb2bgr=False):
     return x
 
 
-from numba import njit
+#from numba import njit
 
-@njit
+#@njit
 def caffe_numba(x: np.ndarray, dtype=np.float32) -> np.ndarray:
     x = x.astype(dtype)
     # Vgg like normalization
