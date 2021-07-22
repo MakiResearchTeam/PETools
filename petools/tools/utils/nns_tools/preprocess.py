@@ -223,21 +223,20 @@ def preprocess_symbolic_input(x, mode, use_rgb2bgr=False):
     return x
 
 
-#from numba import njit
-
-#@njit
+from numba import njit
 
 mean_vgg = np.array([103.939, 116.779, 123.68], dtype=np.float32)
 
+@njit
 def caffe_numba(x: np.ndarray, dtype=np.float32) -> np.ndarray:
-    x = x.astype(dtype, copy=False)
+    x = x.astype(dtype)
     # Vgg like normalization
     #         B        G        R
-    #mean = [103.939, 116.779, 123.68]
+    #mean = np.array([103.939, 116.779, 123.68], dtype=dtype)
 
     # Zero-center by mean pixel
-    #x[..., 0] -= mean_vgg[0]
-    #x[..., 1] -= mean_vgg[1]
-    #x[..., 2] -= mean_vgg[2]
-    x -= mean_vgg
+    #x -= mean
+    x[..., 0] -= mean_vgg[0]
+    x[..., 1] -= mean_vgg[1]
+    x[..., 2] -= mean_vgg[2]
     return x
