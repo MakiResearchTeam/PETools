@@ -3,7 +3,7 @@ import numpy as np
 
 from petools.core import ImagePreprocessor
 from petools.tools.utils.video_tools import scales_image_single_dim_keep_dims
-from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp
+from petools.tools.utils import CAFFE, preprocess_input, scale_predicted_kp, caffe_numba
 
 
 class GpuImagePreprocessor(ImagePreprocessor):
@@ -46,7 +46,9 @@ class GpuImagePreprocessor(ImagePreprocessor):
         # Add batch dimension
         img = np.expand_dims(single_img_input, axis=0)
         # Normalize image
-        norm_img = preprocess_input(img, mode=self.__norm_mode)
+        # TODO: test
+        norm_img = caffe_numba(img)
+        #norm_img = preprocess_input(img, mode=self.__norm_mode)
         return norm_img, new_h, new_w, original_in_size
 
     def __get_image_info(self, image_size: list):

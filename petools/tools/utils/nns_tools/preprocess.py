@@ -221,3 +221,18 @@ def preprocess_symbolic_input(x, mode, use_rgb2bgr=False):
     if std is not None:
         x /= std
     return x
+
+
+from numba import njit
+
+@njit
+def caffe_numba(x: np.ndarray, dtype=np.float32) -> np.ndarray:
+    x = x.astype(dtype, copy=False)
+    # Vgg like normalization
+    #         B        G        R
+    mean = [103.939, 116.779, 123.68]
+
+    # Zero-center by mean pixel
+    x -= mean
+
+    return x.astype(dtype, copy=False)

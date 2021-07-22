@@ -38,15 +38,11 @@ class OPWrapper:
                 mod = self.op_init_fn()
                 self.register[str(human.id)] = mod
             # Apply mod on human
-            # TODO: Remove prints
-            #print(human)
             updated_human = mod(human, **op_kwargs)
             # Restore id
             # Some modules recreate human class
             # In order to keep id through different modules, apply old id
             updated_human.id = old_id
-            # TODO: Remove prints
-            #print(updated_human)
             # Store updated human
             updated_humans.append(updated_human)
 
