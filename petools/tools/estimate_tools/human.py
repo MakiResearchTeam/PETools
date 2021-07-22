@@ -49,13 +49,12 @@ class Human:
         self.body_parts_3d = dict()
 
         for part_idx in range(self.count_kp):
-            self.body_parts_3d[part_idx] = BodyPart(
-                '0-%d' % part_idx, part_idx,
-                x=float(array_3d[part_idx][0]),
-                y=float(array_3d[part_idx][1]),
-                z=float(array_3d[part_idx][2]),
-                score=float(array_3d[part_idx][-1])
-            )
+            self.body_parts_3d[part_idx] = [
+                float(array_3d[part_idx][0]),
+                float(array_3d[part_idx][1]),
+                float(array_3d[part_idx][2]),
+                float(array_3d[part_idx][-1])
+            ]
 
     def to_list(self, th_hold=0.2) -> list:
         """
@@ -77,13 +76,13 @@ class Human:
         list_data = []
         for i in range(self.count_kp):
             take_single = self.body_parts.get(i)
-            if take_single is None or take_single.score < th_hold:
+            if take_single is None or take_single[-1] < th_hold:
                 list_data += [0.0, 0.0, 0.0]
             else:
                 list_data += [
-                    self.body_parts[i].x,
-                    self.body_parts[i].y,
-                    self.body_parts[i].score,
+                    self.body_parts[i][0],
+                    self.body_parts[i][1],
+                    self.body_parts[i][-1],
                 ]
 
         return list_data
@@ -115,14 +114,14 @@ class Human:
         list_data = []
         for i in range(self.count_kp):
             take_single = self.body_parts_3d.get(i)
-            if take_single is None or take_single.score < th_hold:
+            if take_single is None or take_single[-1] < th_hold:
                 list_data += [0.0, 0.0, 0.0, 0.0]
             else:
                 list_data += [
-                    self.body_parts[i].x,
-                    self.body_parts[i].y,
-                    self.body_parts[i].z,
-                    self.body_parts[i].score,
+                    self.body_parts[i][0],
+                    self.body_parts[i][1],
+                    self.body_parts[i][2],
+                    self.body_parts[i][-1],
                 ]
 
         return list_data
@@ -167,9 +166,9 @@ class Human:
 
         for i in range(self.count_kp):
             take_single = self.body_parts.get(i)
-            if take_single is not None and take_single.score >= th_hold:
+            if take_single is not None and take_single[-1] >= th_hold:
                 dict_data.update({
-                    key_tr(i): [take_single.x, take_single.y, take_single.score]
+                    key_tr(i): [take_single[0], take_single[1], take_single[-1]]
                 })
             elif not skip_not_visible:
                 dict_data.update({
@@ -225,9 +224,9 @@ class Human:
 
         for i in range(self.count_kp):
             take_single = self.body_parts_3d.get(i)
-            if take_single is not None and take_single.score >= th_hold:
+            if take_single is not None and take_single[-1] >= th_hold:
                 dict_data.update({
-                    key_tr(i): [take_single.x, take_single.y, take_single.z, take_single.score]
+                    key_tr(i): [take_single[0], take_single[1], take_single[2], take_single[-1]]
                 })
             elif not skip_not_visible:
                 dict_data.update({
@@ -308,12 +307,11 @@ class Human:
         sum_probs = 0.0
 
         for part_idx in range(len(human_array)):
-            human_class.body_parts[part_idx] = BodyPart(
-                '%d-%d' % (human_id, part_idx), part_idx,
+            human_class.body_parts[part_idx] = [
                 float(human_array[part_idx][0]),
                 float(human_array[part_idx][1]),
                 float(human_array[part_idx][-1])
-            )
+            ]
             sum_probs += float(human_array[part_idx][-1])
 
         human_class.score = sum_probs / len(human_array)
@@ -350,13 +348,12 @@ class Human:
         sum_probs = 0.0
 
         for part_idx in range(len(human_array)):
-            human_class.body_parts_3d[part_idx] = BodyPart(
-                '%d-%d' % (human_id, part_idx), part_idx,
-                x=float(human_array[part_idx][0]),
-                y=float(human_array[part_idx][1]),
-                z=float(human_array[part_idx][2]),
-                score=float(human_array[part_idx][-1])
-            )
+            human_class.body_parts_3d[part_idx] = [
+                float(human_array[part_idx][0]),
+                float(human_array[part_idx][1]),
+                float(human_array[part_idx][2]),
+                float(human_array[part_idx][-1])
+            ]
             sum_probs += float(human_array[part_idx][-1])
 
         human_class.score = sum_probs / len(human_array)
@@ -390,12 +387,11 @@ class Human:
         human_class.score = 0.0
 
         for part_idx, v_arr in human_dict.items():
-            human_class.body_parts[part_idx] = BodyPart(
-                '%d-%d' % (human_id, part_idx), part_idx,
+            human_class.body_parts[part_idx] = [
                 float(v_arr[0]),
                 float(v_arr[1]),
                 float(v_arr[-1])
-            )
+            ]
             sum_probs += float(v_arr[-1])
         if len(human_dict) >= 1:
             human_class.score = sum_probs / len(human_dict)
@@ -428,13 +424,12 @@ class Human:
         human_class.score = 0.0
 
         for part_idx, v_arr in human_dict.items():
-            human_class.body_parts_3d[part_idx] = BodyPart(
-                '%d-%d' % (human_id, part_idx), part_idx,
-                x=float(v_arr[0]),
-                y=float(v_arr[1]),
-                z=float(v_arr[2]),
-                score=float(v_arr[-1])
-            )
+            human_class.body_parts_3d[part_idx] = [
+                float(v_arr[0]),
+                float(v_arr[1]),
+                float(v_arr[2]),
+                float(v_arr[-1])
+            ]
             sum_probs += float(v_arr[-1])
         if len(human_dict) >= 1:
             human_class.score = sum_probs / len(human_dict)
@@ -446,38 +441,3 @@ class Human:
     def __repr__(self):
         return self.__str__()
 
-
-class BodyPart:
-    """
-    Store single keypoints with certain coordinates and score
-    """
-    __slots__ = ('uidx', 'part_idx', 'x', 'y', 'score', 'z')
-
-    def __init__(self, uidx, part_idx, x, y, score, z=None):
-        """
-        Init
-        Parameters
-        ----------
-        uidx : str
-            String stored number of the human and number of this keypoint
-        part_idx :
-        x : float
-            Coordinate of the keypoint at the x-axis
-        y : float
-            Coordinate of the keypoint at the y-axis
-        score : float
-            Confidence score from neural network
-        z : float
-            Coordinate of the keypoint at the z-axis. By default equal to None
-
-        """
-        self.uidx = uidx
-        self.part_idx = part_idx
-        self.x, self.y, self.z = x, y, z
-        self.score = score
-
-    def __str__(self):
-        return 'BodyPart:%d-(%.2f, %.2f) score=%.2f' % (self.part_idx, self.x, self.y, self.score)
-
-    def __repr__(self):
-        return self.__str__()
