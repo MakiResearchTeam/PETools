@@ -274,7 +274,7 @@ class Human:
 
         return dict_data
 
-    def to_np(self, th_hold=0.2):
+    def to_np(self, th_hold=0.2, copy_if_cached=False):
         """
         Transform keypoints stored in this class to numpy array with shape (N, 3),
         Where N - number of points
@@ -283,6 +283,9 @@ class Human:
         ----------
         th_hold : float
             Threshold to store keypoints, by default equal to 0.2
+        copy_if_cached : bool
+            If True, then if array of keypoints are cached, it will be copied,
+            In order to safe original (saved in this class) array
 
         Returns
         -------
@@ -292,6 +295,8 @@ class Human:
 
         """
         if self.np is not None:
+            if copy_if_cached:
+                return self.np.copy()
             return self.np
 
         list_points = self.to_list(th_hold=th_hold)

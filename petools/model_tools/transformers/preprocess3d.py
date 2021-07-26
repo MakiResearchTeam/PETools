@@ -18,7 +18,7 @@ class Preprocess3D(DataProcessor):
 
     def __call__(self, human: Human, skip_hip=False, **kwargs):
         source_resolution = kwargs['source_resolution']
-        human_np = human.to_np()
+        human_np = human.to_np(copy_if_cached=True)
         human, p = human_np[:, :2], human_np[:, 2:]
         p = np.concatenate([p]*2, axis=-1)
         human = self.shift_and_scale(human, source_resolution)
