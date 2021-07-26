@@ -8,7 +8,7 @@ class Human:
     Store keypoints of the single human
 
     """
-    __slots__ = ('body_parts_3d', 'body_parts', 'score', 'id', 'count_kp', 'np')
+    __slots__ = ('body_parts_3d', 'body_parts', 'score', 'id', 'count_kp', 'np', 'np3d')
 
     def __init__(self, count_kp=NUMBER_OF_KEYPOINTS):
         """
@@ -25,7 +25,7 @@ class Human:
         self.score = 0.0
         self.id = -1
         self.count_kp = count_kp
-        self.np = None
+        self.np = self.np3d = None
 
     def part_count(self):
         return len(self.body_parts.keys())
@@ -35,6 +35,9 @@ class Human:
 
     def compile_np(self):
         self.np = self.to_np()
+
+    def compile_np_3d(self):
+        self.np3d = self.to_np_from3d()
 
     def set_3d(self, array_3d):
         """
@@ -51,6 +54,7 @@ class Human:
                             f"\nExpected size: {self.count_kp}, but {len(array_3d)} was received."
             )
         self.body_parts_3d = dict()
+        self.np3d = array_3d.astype(np.float32, copy=False)
 
         for part_idx in range(self.count_kp):
             self.body_parts_3d[part_idx] = [
@@ -168,16 +172,30 @@ class Human:
         if prepend_p:
             key_tr = lambda x: f'p{x}'
 
-        for i in range(self.count_kp):
-            take_single = self.body_parts.get(i)
-            if take_single is not None and take_single[-1] >= th_hold:
-                dict_data.update({
-                    key_tr(i): [take_single[0], take_single[1], take_single[-1]]
-                })
-            elif not skip_not_visible:
-                dict_data.update({
-                    key_tr(i): [0.0, 0.0, 0.0]
-                })
+        if self.np is not None:
+            # If array was cached, then use it in order to create dict representation
+            # Thats because cached array can be changed while body_parts - not
+            for i in range(self.count_kp):
+                take_single = self.np[i]
+                if take_single[-1] >= th_hold:
+                    dict_data.update({
+                        key_tr(i): [float(take_single[0]), float(take_single[1]), float(take_single[-1])]
+                    })
+                elif not skip_not_visible:
+                    dict_data.update({
+                        key_tr(i): [0.0, 0.0, 0.0]
+                    })
+        else:
+            for i in range(self.count_kp):
+                take_single = self.body_parts.get(i)
+                if take_single is not None and take_single[-1] >= th_hold:
+                    dict_data.update({
+                        key_tr(i): [take_single[0], take_single[1], take_single[-1]]
+                    })
+                elif not skip_not_visible:
+                    dict_data.update({
+                        key_tr(i): [0.0, 0.0, 0.0]
+                    })
 
         return dict_data
 
@@ -226,16 +244,33 @@ class Human:
         if len(self.body_parts_3d) == 0:
             return dict([(key_tr(i), [0.0, 0.0, 0.0, 0.0]) for i in range(self.count_kp)])
 
-        for i in range(self.count_kp):
-            take_single = self.body_parts_3d.get(i)
-            if take_single is not None and take_single[-1] >= th_hold:
-                dict_data.update({
-                    key_tr(i): [take_single[0], take_single[1], take_single[2], take_single[-1]]
-                })
-            elif not skip_not_visible:
-                dict_data.update({
-                    key_tr(i): [0.0, 0.0, 0.0, 0.0]
-                })
+        if self.np3d is not None:
+            # If array was cached, then use it in order to create dict representation
+            # Thats because cached array can be changed while body_parts - not
+            for i in range(self.count_kp):
+                take_single = self.np3d[i]
+                if take_single[-1] >= th_hold:
+                    dict_data.update({
+                        key_tr(i): [
+                            float(take_single[0]), float(take_single[1]),
+                            float(take_single[2]), float(take_single[-1])
+                        ]
+                    })
+                elif not skip_not_visible:
+                    dict_data.update({
+                        key_tr(i): [0.0, 0.0, 0.0, 0.0]
+                    })
+        else:
+            for i in range(self.count_kp):
+                take_single = self.body_parts_3d.get(i)
+                if take_single is not None and take_single[-1] >= th_hold:
+                    dict_data.update({
+                        key_tr(i): [take_single[0], take_single[1], take_single[2], take_single[-1]]
+                    })
+                elif not skip_not_visible:
+                    dict_data.update({
+                        key_tr(i): [0.0, 0.0, 0.0, 0.0]
+                    })
 
         return dict_data
 
@@ -279,8 +314,8 @@ class Human:
             Array of keypoints with shape (N, 4),
             Where N - number of points
         """
-        if self.np is not None:
-            return self.np
+        if self.np3d is not None:
+            return self.np3d
 
         list_points = self.to_list_from3d(th_hold=th_hold)
         # (N, 4)
@@ -357,7 +392,7 @@ class Human:
         human_class = Human(count_kp=len(human_array))
         human_id = 0
         sum_probs = 0.0
-        human_class.np = np.array(human_array, dtype=np.float32)
+        human_class.np3d = np.array(human_array, dtype=np.float32)
 
         for part_idx in range(len(human_array)):
             human_class.body_parts_3d[part_idx] = [

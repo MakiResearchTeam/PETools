@@ -26,6 +26,9 @@ def c_dx(x, prev_x, freq):
 
 
 class OneEuroFilter(object):
+
+    __slots__ = ('__freq', '__mincutoff', '__beta', '__dcutoff', '__x', '__dx', '__lasttime')
+
     def __init__(self, freq, mincutoff=1.0, beta=0.0, dcutoff=1.0):
         if freq <= 0:
             raise ValueError("freq should be >0")
