@@ -8,7 +8,7 @@ class Human:
     Store keypoints of the single human
 
     """
-    __slots__ = ('body_parts_3d', 'body_parts', 'score', 'id', 'count_kp', 'np', 'np3d')
+    __slots__ = ('body_parts', 'score', 'id', 'count_kp', 'np', 'np3d')
 
     def __init__(self, count_kp=NUMBER_OF_KEYPOINTS):
         """
@@ -20,7 +20,6 @@ class Human:
             Number of keypoint of full human. By default equal to 24
 
         """
-        self.body_parts_3d = {}
         self.body_parts = {}
         self.score = 0.0
         self.id = -1
@@ -53,20 +52,15 @@ class Human:
             raise TypeError(f"Wrong size of array `z_data`. " +
                             f"\nExpected size: {self.count_kp}, but {len(array_3d)} was received."
             )
-        self.body_parts_3d = dict()
         self.np3d = array_3d.astype(np.float32, copy=False)
-
-        for part_idx in range(self.count_kp):
-            self.body_parts_3d[part_idx] = [
-                float(array_3d[part_idx][0]),
-                float(array_3d[part_idx][1]),
-                float(array_3d[part_idx][2]),
-                float(array_3d[part_idx][-1])
-            ]
 
     def to_list(self, th_hold=0.2) -> list:
         """
         Transform keypoints stored in this class to list
+        NOTICE! This method ussaly used in order to init values of Human class
+        After getting prediction from pafprocess module
+        In order to take array of keypoins, use `to_np`
+
         Parameters
         ----------
         th_hold : float
@@ -116,23 +110,20 @@ class Human:
             If keypoint is not visible or below `th_hold`, this keypoint will be filled with zeros
 
         """
-        if len(self.body_parts_3d) == 0:
+        if self.np3d is None:
+            # TODO: Delete debug print
+            print('Create 3d preds as zero array')
             return np.zeros((self.count_kp * 4), dtype=np.float32).tolist()
 
-        list_data = []
-        for i in range(self.count_kp):
-            take_single = self.body_parts_3d.get(i)
-            if take_single is None or take_single[-1] < th_hold:
-                list_data += [0.0, 0.0, 0.0, 0.0]
-            else:
-                list_data += [
-                    self.body_parts[i][0],
-                    self.body_parts[i][1],
-                    self.body_parts[i][2],
-                    self.body_parts[i][-1],
-                ]
+        new_arr_3d = self.np3d.copy()
 
-        return list_data
+        # If some points below th_hold - this keypoints are not visible
+        # Make them equal to 0.0
+        kp_3d_good = self.np3d[:, -1] < th_hold
+        new_arr_3d[kp_3d_good] = 0.0
+        # Flatten
+        new_arr_3d = new_arr_3d.reshape(-1)
+        return new_arr_3d.tolist()
 
     def to_dict(self, th_hold=0.2, skip_not_visible=False, key_as_int=False, prepend_p=False) -> dict:
         """
@@ -172,30 +163,22 @@ class Human:
         if prepend_p:
             key_tr = lambda x: f'p{x}'
 
-        if self.np is not None:
-            # If array was cached, then use it in order to create dict representation
-            # Thats because cached array can be changed while body_parts - not
-            for i in range(self.count_kp):
-                take_single = self.np[i]
-                if take_single[-1] >= th_hold:
-                    dict_data.update({
-                        key_tr(i): [float(take_single[0]), float(take_single[1]), float(take_single[-1])]
-                    })
-                elif not skip_not_visible:
-                    dict_data.update({
-                        key_tr(i): [0.0, 0.0, 0.0]
-                    })
-        else:
-            for i in range(self.count_kp):
-                take_single = self.body_parts.get(i)
-                if take_single is not None and take_single[-1] >= th_hold:
-                    dict_data.update({
-                        key_tr(i): [take_single[0], take_single[1], take_single[-1]]
-                    })
-                elif not skip_not_visible:
-                    dict_data.update({
-                        key_tr(i): [0.0, 0.0, 0.0]
-                    })
+        if self.np is None:
+            # TODO: Delete debug print
+            print('Recompile')
+            self.compile_np()
+        # If array was cached, then use it in order to create dict representation
+        # Thats because cached array can be changed while body_parts - not
+        for i in range(self.count_kp):
+            take_single = self.np[i]
+            if take_single[-1] >= th_hold:
+                dict_data.update({
+                    key_tr(i): [float(take_single[0]), float(take_single[1]), float(take_single[-1])]
+                })
+            elif not skip_not_visible:
+                dict_data.update({
+                    key_tr(i): [0.0, 0.0, 0.0]
+                })
 
         return dict_data
 
@@ -241,36 +224,24 @@ class Human:
         if prepend_p:
             key_tr = lambda x: f'p{x}'
 
-        if len(self.body_parts_3d) == 0:
+        if self.np3d is None:
             return dict([(key_tr(i), [0.0, 0.0, 0.0, 0.0]) for i in range(self.count_kp)])
 
-        if self.np3d is not None:
-            # If array was cached, then use it in order to create dict representation
-            # Thats because cached array can be changed while body_parts - not
-            for i in range(self.count_kp):
-                take_single = self.np3d[i]
-                if take_single[-1] >= th_hold:
-                    dict_data.update({
-                        key_tr(i): [
-                            float(take_single[0]), float(take_single[1]),
-                            float(take_single[2]), float(take_single[-1])
-                        ]
-                    })
-                elif not skip_not_visible:
-                    dict_data.update({
-                        key_tr(i): [0.0, 0.0, 0.0, 0.0]
-                    })
-        else:
-            for i in range(self.count_kp):
-                take_single = self.body_parts_3d.get(i)
-                if take_single is not None and take_single[-1] >= th_hold:
-                    dict_data.update({
-                        key_tr(i): [take_single[0], take_single[1], take_single[2], take_single[-1]]
-                    })
-                elif not skip_not_visible:
-                    dict_data.update({
-                        key_tr(i): [0.0, 0.0, 0.0, 0.0]
-                    })
+        # If array was cached, then use it in order to create dict representation
+        # Thats because cached array can be changed while body_parts - not
+        for i in range(self.count_kp):
+            take_single = self.np3d[i]
+            if take_single[-1] >= th_hold:
+                dict_data.update({
+                    key_tr(i): [
+                        float(take_single[0]), float(take_single[1]),
+                        float(take_single[2]), float(take_single[-1])
+                    ]
+                })
+            elif not skip_not_visible:
+                dict_data.update({
+                    key_tr(i): [0.0, 0.0, 0.0, 0.0]
+                })
 
         return dict_data
 
@@ -353,19 +324,8 @@ class Human:
             )
 
         human_class = Human(count_kp=len(human_array))
-        human_id = 0
-        sum_probs = 0.0
         human_class.np = np.array(human_array, dtype=np.float32)
-
-        for part_idx in range(len(human_array)):
-            human_class.body_parts[part_idx] = [
-                float(human_array[part_idx][0]),
-                float(human_array[part_idx][1]),
-                float(human_array[part_idx][-1])
-            ]
-            sum_probs += float(human_array[part_idx][-1])
-
-        human_class.score = sum_probs / len(human_array)
+        human_class.score = float(np.sum(human_array[:, -1], axis=0)) / len(human_array)
         return human_class
 
     @staticmethod
@@ -395,20 +355,8 @@ class Human:
             )
 
         human_class = Human(count_kp=len(human_array))
-        human_id = 0
-        sum_probs = 0.0
-        human_class.np3d = np.array(human_array, dtype=np.float32)
-
-        for part_idx in range(len(human_array)):
-            human_class.body_parts_3d[part_idx] = [
-                float(human_array[part_idx][0]),
-                float(human_array[part_idx][1]),
-                float(human_array[part_idx][2]),
-                float(human_array[part_idx][-1])
-            ]
-            sum_probs += float(human_array[part_idx][-1])
-
-        human_class.score = sum_probs / len(human_array)
+        human_class.np3d = np.asarray(human_array, dtype=np.float32)
+        human_class.score = float(np.sum(human_array[:, -1], axis=0)) / len(human_array)
         return human_class
 
     @staticmethod
@@ -433,21 +381,8 @@ class Human:
             Created Human object with points in `human_dict`
 
         """
-        human_class = Human()
-        human_id = 0
-        sum_probs = 0.0
-        human_class.score = 0.0
-
-        for part_idx, v_arr in human_dict.items():
-            human_class.body_parts[part_idx] = [
-                float(v_arr[0]),
-                float(v_arr[1]),
-                float(v_arr[-1])
-            ]
-            sum_probs += float(v_arr[-1])
-        if len(human_dict) >= 1:
-            human_class.score = sum_probs / len(human_dict)
-        return human_class
+        # TODO: Implement or delete method
+        raise NotImplementedError()
 
     @staticmethod
     def from_dict_3d(human_dict):
@@ -470,22 +405,8 @@ class Human:
         Human
             Created Human object with points in `human_dict`
         """
-        human_class = Human()
-        human_id = 0
-        sum_probs = 0.0
-        human_class.score = 0.0
-
-        for part_idx, v_arr in human_dict.items():
-            human_class.body_parts_3d[part_idx] = [
-                float(v_arr[0]),
-                float(v_arr[1]),
-                float(v_arr[2]),
-                float(v_arr[-1])
-            ]
-            sum_probs += float(v_arr[-1])
-        if len(human_dict) >= 1:
-            human_class.score = sum_probs / len(human_dict)
-        return human_class
+        # TODO: Implement or delete method
+        raise NotImplementedError()
 
     def __str__(self):
         return ' '.join([str(x) for x in self.body_parts.values()])
