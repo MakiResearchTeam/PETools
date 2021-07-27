@@ -16,7 +16,7 @@
 # along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
 
 from .constants import NUMBER_OF_KEYPOINTS
-from .human import Human, BodyPart
+from .human import Human
 import itertools
 import numpy as np
 
@@ -63,7 +63,10 @@ class SkeletBuilder:
             indices.astype(np.int32, copy=False),
             paf_mat.astype(np.float32, copy=False)
         )
-        return SkeletBuilder.merge_similar_skelets(humans_list, th_hold_x=th_hold_x, th_hold_y=th_hold_y)
+        humans_merged_l = SkeletBuilder.merge_similar_skelets(humans_list, th_hold_x=th_hold_x, th_hold_y=th_hold_y)
+        # Compile np inside human
+        _ = [human.compile_np() for human in humans_merged_l]
+        return humans_merged_l
 
     @staticmethod
     def estimate_paf(peaks, indices, paf_mat) -> list:
@@ -106,12 +109,11 @@ class SkeletBuilder:
 
                 # Add point to human body_parts array
                 is_added = True
-                human.body_parts[part_idx] = BodyPart(
-                    '%d-%d' % (human_id, part_idx), part_idx,
+                human.body_parts[part_idx] = [
                     float(pafprocess.get_part_x(c_idx)),
                     float(pafprocess.get_part_y(c_idx)),
                     pafprocess.get_part_score(c_idx)
-                )
+                ]
             # if at least one keypoint was visible add `human` to all humans
             # Otherwise skip
             if is_added:
@@ -164,8 +166,8 @@ class SkeletBuilder:
                     single_keypoints_2 = humans[h2].body_parts[c2]
 
                     # If any keypoints very close to other, just merge all skeleton and quit from this loop
-                    if (abs(single_keypoints_1.x - single_keypoints_2.x) < th_hold_x and
-                        abs(single_keypoints_1.y - single_keypoints_2.y) < th_hold_y
+                    if (abs(single_keypoints_1[0] - single_keypoints_2[0]) < th_hold_x and
+                        abs(single_keypoints_1[1] - single_keypoints_2[1]) < th_hold_y
                     ):
 
                         is_merge = True

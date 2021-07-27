@@ -140,6 +140,8 @@ class PosePredictor(PosePredictorInterface):
             self.__converter3d = OPWrapper(converter_fn)
 
     def __human_tracker(self, humans, im_size):
+        # TODO: When im_size changes, tracker is not updated
+        #       So, points can be wrong because of it
         if self.__tracker is None:
             self.__tracker = HumanTracker(image_size=im_size)
         return self.__tracker(humans)
@@ -195,14 +197,20 @@ class PosePredictor(PosePredictorInterface):
         start_time = time.time()
 
         start_time_preprocess = time.time()
+        # Process image, norm_img feeds into NN
+        # new_h, new_w - size of the image `norm_img`
+        # origin_in_size - size of the original image
         norm_img, new_h, new_w, original_in_size = self.__image_preprocessor(image)
         end_time_preprocess = time.time() - start_time_preprocess
 
         start_time_predict = time.time()
+        # Take predition
         batched_paf, indices, peaks = self.__model.predict(norm_img)
         end_time_predict = time.time() - start_time_predict
 
         start_time_pafprocess = time.time()
+        # Peaks returns as batch of single matrix
+        # Peaks and indices do not have batch dimension
         humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
         end_time_pafprocess = time.time() - start_time_pafprocess
 
@@ -215,37 +223,47 @@ class PosePredictor(PosePredictorInterface):
         )
         end_time_scale_pred = time.time() - start_time_scale_pred
 
-        # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
         start_time_modify = time.time()
-        #humans = [human_s.to_np() for human_s in humans]
-        humans = modify_humans(humans) # return as np
+        # Transform points from training format to the inference one.
+        # Returns a numpy of shape [n_humans, n_points, 3]
+        humans = modify_humans(humans)
+        # Transfer numpy array into Human class
+        humans = [Human.from_array(x) for x in humans]
         end_time_modify = time.time() - start_time_modify
 
         start_time_cleaner = time.time()
+        # Remove skeletons with low number of keypoints
         humans = self.__human_cleaner(humans)
-        humans = [Human.from_array(x) for x in humans] # back to human
         end_time_cleaner = time.time() - start_time_cleaner
 
         start_time_treacker = time.time()
-        #humans = [Human.from_array(x) for x in humans]
+        # Track humans and give them unique id
         humans = self.__human_tracker(humans, image.shape[:-1])
         end_time_tracker = time.time() - start_time_treacker
 
-        # One Euro algorithm for smoothing keypoints movement
         start_time_euro = time.time()
+        # One Euro algorithm for smoothing keypoints movement
         humans = self.__smoother(humans)
         end_time_euro = time.time() - start_time_euro
 
-        # Corrector need source resolution to perform human normalization
         start_time_corrector = time.time()
+        # Correct predictions with another NN
+        # Corrector need source resolution to perform human normalization
         humans = self.__corrector(humans, source_resolution=image.shape[:-1])
         end_time_corrector = time.time() - start_time_corrector
 
-        # Converter need source resolution to perform human normalization
         start_time_converter = time.time()
-        humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
+        db_info = {
+            'end_preprocess': 0.0,
+            'end_transform': 0.0,
+            'end_postprocess': 0.0,
+        }
+        # Create 3d predictions with another NN
+        # Converter need source resolution to perform human normalization
+        humans = self.__converter3d(humans, source_resolution=image.shape[:-1], debug_info=db_info)
         end_time_converter = time.time() - start_time_converter
 
+        # Time of the overall prediction pipeline
         end_time = time.time() - start_time
 
         data_time_logs = {
@@ -258,9 +276,10 @@ class PosePredictor(PosePredictorInterface):
             'tracker': end_time_tracker,
             'euro': end_time_euro,
             'corrector': end_time_corrector,
-            'converter3d': end_time_converter
+            'converter3d': end_time_converter,
+            **db_info
         }
-
+        # Pack data into suitable for other APIs form
         return PosePredictor.pack_data(humans=humans, end_time=end_time, **data_time_logs)
 
 

@@ -8,7 +8,10 @@ def calc_filter(alpha, value, s):
 
 class LowPassFilter(object):
 
+    __slots__ = ('__alpha', '__y', '__s', )
+
     def __init__(self, alpha):
+        self.__alpha = self.__s = self.__y = None
         self.__setAlpha(alpha)
         self.reset_values()
 
