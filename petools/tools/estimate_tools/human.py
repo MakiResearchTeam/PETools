@@ -49,8 +49,9 @@ class Human:
 
         """
         if self.count_kp != len(array_3d):
-            raise TypeError(f"Wrong size of array `z_data`. " +
-                            f"\nExpected size: {self.count_kp}, but {len(array_3d)} was received."
+            raise TypeError(
+                f"Wrong size of array `z_data`. " +
+                f"\nExpected size: {self.count_kp}, but {len(array_3d)} was received."
             )
         self.np3d = array_3d.astype(np.float32, copy=False)
 
@@ -157,16 +158,16 @@ class Human:
         dict_data = {}
         if key_as_int:
             key_tr = lambda x: int(x)
+        elif prepend_p:
+            key_tr = lambda x: f'p{x}'
         else:
             key_tr = lambda x: str(x)
 
-        if prepend_p:
-            key_tr = lambda x: f'p{x}'
-
         if self.np is None:
-            # TODO: Delete debug print
-            print('Recompile')
-            self.compile_np()
+            raise ValueError(
+                "Error! np array in Human is not compiled. \n"
+                "Compile np before call method `to_dict`."
+            )
         # If array was cached, then use it in order to create dict representation
         # Thats because cached array can be changed while body_parts - not
         for i in range(self.count_kp):
@@ -218,13 +219,14 @@ class Human:
         dict_data = {}
         if key_as_int:
             key_tr = lambda x: int(x)
+        elif prepend_p:
+            key_tr = lambda x: f'p{x}'
         else:
             key_tr = lambda x: str(x)
 
-        if prepend_p:
-            key_tr = lambda x: f'p{x}'
-
         if self.np3d is None:
+            # TODO: Delete debug print
+            print("return zeros in `to_dict_from3d'")
             return dict([(key_tr(i), [0.0, 0.0, 0.0, 0.0]) for i in range(self.count_kp)])
 
         # If array was cached, then use it in order to create dict representation
@@ -274,7 +276,7 @@ class Human:
         # (N, 3)
         return np.array(list_points, dtype=np.float32).reshape(-1, 3)
 
-    def to_np_from3d(self, th_hold=0.2):
+    def to_np_from3d(self, th_hold=0.2, copy_if_cached=False):
         """
         Transform 3d keypoints stored in this class to numpy array with shape (N, 3),
         Where N - number of points
@@ -283,6 +285,9 @@ class Human:
         ----------
         th_hold : float
             Threshold to store keypoints, by default equal to 0.2
+        copy_if_cached : bool
+            If True, then if array of keypoints are cached, it will be copied,
+            In order to safe original (saved in this class) array
 
         Returns
         -------
@@ -291,6 +296,8 @@ class Human:
             Where N - number of points
         """
         if self.np3d is not None:
+            if copy_if_cached:
+                return self.np3d.copy()
             return self.np3d
 
         list_points = self.to_list_from3d(th_hold=th_hold)
@@ -358,55 +365,6 @@ class Human:
         human_class.np3d = np.asarray(human_array, dtype=np.float32)
         human_class.score = float(np.sum(human_array[:, -1], axis=0)) / len(human_array)
         return human_class
-
-    @staticmethod
-    def from_dict(human_dict):
-        """
-        Take points from `human_dict` and create Human class with this points
-
-        Parameters
-        ----------
-        human_dict : dict
-            Dict of input points
-            Example:
-            {
-                0: [22.0, 23.0, 1.0],
-                1: [10, 20, 0.2],
-                ....
-            }
-
-        Returns
-        -------
-        Human
-            Created Human object with points in `human_dict`
-
-        """
-        # TODO: Implement or delete method
-        raise NotImplementedError()
-
-    @staticmethod
-    def from_dict_3d(human_dict):
-        """
-        Take points from `human_dict` and create Human class with this points
-
-        Parameters
-        ----------
-        human_dict : dict
-            Dict of input points
-            Example:
-            {
-                0: [22.0, 23.0, 1.0],
-                1: [10, 20, 0.2],
-                ....
-            }
-
-        Returns
-        -------
-        Human
-            Created Human object with points in `human_dict`
-        """
-        # TODO: Implement or delete method
-        raise NotImplementedError()
 
     def __str__(self):
         return ' '.join([str(x) for x in self.body_parts.values()])
