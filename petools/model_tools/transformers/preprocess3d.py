@@ -18,6 +18,7 @@ class Preprocess3D(DataProcessor):
 
     def __call__(self, human: Human, skip_hip=False, **kwargs):
         source_resolution = kwargs['source_resolution']
+        # Copy array in order to keep original array safe
         human_np = human.to_np(copy_if_cached=True)
         human, p = human_np[:, :2], human_np[:, 2:]
         p = np.concatenate([p]*2, axis=-1)
@@ -56,6 +57,6 @@ class Preprocess3D(DataProcessor):
         return human
 
     def center_around_zero_point(self, human, probabilities):
-        mask = (probabilities > 1e-3).astype('float32')
+        mask = (probabilities > 1e-3).astype('float32', copy=False)
         # Mask out absent points
         return (human - human[0:1]) * mask

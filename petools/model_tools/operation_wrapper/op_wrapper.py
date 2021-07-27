@@ -25,7 +25,9 @@ class OPWrapper:
         """
         updated_humans = []
         for human in humans:
-            # Todo: think about this case
+            # If id == -1, then human not tracked for somehow
+            # Its more safety to skip this human (skeleton),
+            # i.e. delete from final predictions
             if human.id == -1:
                 continue
             # Save id
@@ -39,9 +41,8 @@ class OPWrapper:
                 self.register[str(human.id)] = mod
             # Apply mod on human
             updated_human = mod(human, **op_kwargs)
-            # Restore id
-            # Some modules recreate human class
-            # In order to keep id through different modules, apply old id
+            # Restore `id`, because some modules can recreate human class (so id in human will be dropped)
+            # In order to keep `id` through different modules, assign old `id` to new class
             updated_human.id = old_id
             # Store updated human
             updated_humans.append(updated_human)

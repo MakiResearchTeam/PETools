@@ -29,7 +29,7 @@ class Postprocess2D(DataProcessor):
         coords2d = t
         coords2d = self.human_processor.to_production_format(coords2d)
         # Move the hip point to its original position and nullify points that were previously absent
-        mask = (coords2d[:, 0] == 0.0).astype('float32')
+        mask = (coords2d[:, 0] == 0.0).astype('float32', copy=False)
         coords2d += source_human.to_np()[HIP_ID:HIP_ID+1, :2]
         coords2d *= 1 - np.expand_dims(mask, axis=-1)
         # Replace only those points that are not presents in coords2d

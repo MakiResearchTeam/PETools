@@ -21,7 +21,7 @@ class Postprocess3D(DataProcessor):
         coords3d = self.human_processor.to_production_format(coords3d)
         # Concatenate probabilities of converted points
         present_points = (coords3d[:, 0] != 0.0).astype('float32', copy=False)
-        p = np.expand_dims(source_human.to_np()[:, -1] * present_points, axis=-1)
+        p = np.expand_dims(source_human.np[:, -1] * present_points, axis=-1)
         coords3d = np.concatenate([coords3d, p], axis=-1)
 
         source_human.set_3d(coords3d)
