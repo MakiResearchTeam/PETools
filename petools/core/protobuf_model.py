@@ -21,10 +21,10 @@ class ProtobufModel:
         """
         assert len(input_map) != 0
         assert len(output_tensors) != 0
-        self._graph_def = load_graph_def(protobuf_path)
-        self._input_map = input_map
-        self.__protobuf_graph = graph
         with self.__protobuf_graph.as_default():
+            self._graph_def = load_graph_def(protobuf_path)
+            self._input_map = input_map
+            self.__protobuf_graph = graph
             self._output_tensors = tf.import_graph_def(
                 self._graph_def,
                 input_map=input_map,
