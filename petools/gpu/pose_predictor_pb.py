@@ -135,7 +135,7 @@ class PosePredictor(PosePredictorInterface):
             config_c = tf.ConfigProto()
             config_c.gpu_options.allow_growth = True
             self.__sess_converter = tf.Session(config=config_c)
-            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
+            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess_converter)
             converter_fn = lambda: PoseTransformer(
                 transformer=converter_t,
                 seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
