@@ -136,6 +136,7 @@ _pafprocess.Connection_swigregister(Connection)
 
 
 def process_paf(size_score_from_peaks, p1, f1):
+    # args - peaks, indices, paf_mat
     return _pafprocess.process_paf(size_score_from_peaks, p1, f1)
 
 def get_num_humans():
