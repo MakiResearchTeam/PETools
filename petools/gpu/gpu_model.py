@@ -10,8 +10,10 @@ class GpuModel(ProtobufModel, Model):
             paf_name, ind_name, peaks_score_name, upsample_size_name='upsample_size',
             session=None
     ):
-        self.__in_x = tf.placeholder(dtype=tf.float32, shape=[1, None, None, 3], name='in_x')
-        self.__upsample_size = tf.placeholder(dtype=tf.int32, shape=(2), name='upsample')
+        graph = tf.Graph()
+        with graph.as_default():
+            self.__in_x = tf.placeholder(dtype=tf.float32, shape=[1, None, None, 3], name='in_x')
+            self.__upsample_size = tf.placeholder(dtype=tf.int32, shape=(2), name='upsample')
 
         super(GpuModel, self).__init__(
             protobuf_path=pb_path,
@@ -20,6 +22,7 @@ class GpuModel(ProtobufModel, Model):
                 upsample_size_name: self.__upsample_size
             },
             output_tensors=[paf_name, ind_name, peaks_score_name],
+            graph=graph,
             session=session
         )
 

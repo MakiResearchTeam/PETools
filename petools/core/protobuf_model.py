@@ -4,7 +4,7 @@ from petools.tools.utils.tf_tools import load_graph_def
 
 
 class ProtobufModel:
-    def __init__(self, protobuf_path: str, input_map: dict, output_tensors: list, session: tf.Session = None):
+    def __init__(self, protobuf_path: str, input_map: dict, output_tensors: list, graph: tf.Graph, session: tf.Session = None):
         """
         A utility for using models stored in a protobuf file.
 
@@ -23,7 +23,7 @@ class ProtobufModel:
         assert len(output_tensors) != 0
         self._graph_def = load_graph_def(protobuf_path)
         self._input_map = input_map
-        self.__protobuf_graph = tf.Graph()
+        self.__protobuf_graph = graph
         with self.__protobuf_graph.as_default():
             self._output_tensors = tf.import_graph_def(
                 self._graph_def,
