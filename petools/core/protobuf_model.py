@@ -23,15 +23,16 @@ class ProtobufModel:
         assert len(output_tensors) != 0
         self._graph_def = load_graph_def(protobuf_path)
         self._input_map = input_map
-        self._output_tensors = tf.import_graph_def(
-            self._graph_def,
-            input_map=input_map,
-            return_elements=output_tensors
-        )
-
-        if session is None:
-            session = tf.Session()
-        self._sess = session
+        self.__protobuf_graph = tf.Graph()
+        with self.__protobuf_graph.as_default():
+            self._output_tensors = tf.import_graph_def(
+                self._graph_def,
+                input_map=input_map,
+                return_elements=output_tensors
+            )
+            if session is None:
+                session = tf.Session()
+            self._sess = session
 
     def predict(self, feed_dict):
         """
@@ -54,7 +55,8 @@ class ProtobufModel:
             else:
                 assert input_map in self._input_map.values(), f'Unknown tensor: {input_map}. Expected one of those:' \
                                                             f'{self._input_map.values()}'
-        return self._sess.run(
-            self._output_tensors,
-            feed_dict=feed_dict
-        )
+        with self.__protobuf_graph.as_default():
+            return self._sess.run(
+                self._output_tensors,
+                feed_dict=feed_dict
+            )

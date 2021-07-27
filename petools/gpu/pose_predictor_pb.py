@@ -88,9 +88,7 @@ class PosePredictor(PosePredictorInterface):
         with open(self.__path_to_config, 'r') as f:
             config = json.load(f)
 
-        config_gpu = tf.ConfigProto()
-        config_gpu.gpu_options.allow_growth = True
-        self.__sess = tf.Session(config=config_gpu)
+        self.__sess = tf.Session()
 
         self.__model = GpuModel(
             pb_path=self.__path_to_tb,
@@ -132,10 +130,7 @@ class PosePredictor(PosePredictorInterface):
         # --- CONVERTER
         self.__converter3d = lambda humans, **kwargs: humans
         if self.__path_to_tb_3d is not None:
-            config_c = tf.ConfigProto()
-            config_c.gpu_options.allow_growth = True
-            self.__sess_converter = tf.Session(config=config_c)
-            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess_converter)
+            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
             converter_fn = lambda: PoseTransformer(
                 transformer=converter_t,
                 seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
