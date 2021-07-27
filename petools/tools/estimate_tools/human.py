@@ -50,7 +50,7 @@ class Human:
         """
         if self.count_kp != len(array_3d):
             raise TypeError(
-                f"Wrong size of array `z_data`. " +
+                f"Wrong size of array `array_3d`. " +
                 f"\nExpected size: {self.count_kp}, but {len(array_3d)} was received."
             )
         self.np3d = array_3d.astype(np.float32, copy=False)
@@ -90,7 +90,7 @@ class Human:
 
         return list_data
 
-    def to_list_from3d(self, th_hold=0.2) -> list:
+    def to_list_from3d(self, th_hold=0.2, convert_to_list=False) -> list:
         """
         Transform 3d keypoints stored in this class to list
 
@@ -98,9 +98,22 @@ class Human:
         ----------
         th_hold : float
             Threshold to store keypoints, by default equal to 0.2
+        convert_to_list : bool
+            Final array will be created from numpy array, at the end of function array is converted to list.
+            If false, then conversion will be not applied, otherwise it will be converted to list.
 
         Returns
         -------
+        np.ndarray
+            If `convert_to_list` is true,
+            Shape - (N, 4)
+            where:
+                N - number of keypoints
+                0 indx of final axis - x axis
+                1 indx of final axis - y axis
+                2 indx of final axis - z axis
+                3 indx of final axis - v (visibility) axis
+
         list
             List with lenght NK * 4, where NK - Number of Keypoints,
             Where each:
@@ -112,18 +125,22 @@ class Human:
 
         """
         if self.np3d is None:
-            # TODO: Delete debug print
-            print('Create 3d preds as zero array')
-            return np.zeros((self.count_kp * 4), dtype=np.float32).tolist()
-
+            raise ValueError(
+                "Error! np3d array in Human is not compiled. Call `compile_np_3d` in order to compile 3d array. \n"
+                "Compile it before call method `to_list_from3d`."
+            )
+        # In order to avoid interactions on np3d from outside
         new_arr_3d = self.np3d.copy()
-
         # If some points below th_hold - this keypoints are not visible
         # Make them equal to 0.0
         kp_3d_good = self.np3d[:, -1] < th_hold
         new_arr_3d[kp_3d_good] = 0.0
-        # Flatten
+        # Return np array if it needed
+        if not convert_to_list:
+            return new_arr_3d
+        # Flatten array into vector
         new_arr_3d = new_arr_3d.reshape(-1)
+        # Return list
         return new_arr_3d.tolist()
 
     def to_dict(self, th_hold=0.2, skip_not_visible=False, key_as_int=False, prepend_p=False) -> dict:
@@ -165,8 +182,8 @@ class Human:
 
         if self.np is None:
             raise ValueError(
-                "Error! np array in Human is not compiled. \n"
-                "Compile np before call method `to_dict`."
+                "Error! np3в array in Human is not compiled. Call `compile_np` in order to compile 3d array. \n"
+                "Compile it before call method `to_dict`."
             )
         # If array was cached, then use it in order to create dict representation
         # Thats because cached array can be changed while body_parts - not
@@ -225,9 +242,10 @@ class Human:
             key_tr = lambda x: str(x)
 
         if self.np3d is None:
-            # TODO: Delete debug print
-            print("return zeros in `to_dict_from3d'")
-            return dict([(key_tr(i), [0.0, 0.0, 0.0, 0.0]) for i in range(self.count_kp)])
+            raise ValueError(
+                "Error! np3d array in Human is not compiled. Call `compile_np_3d` in order to compile 3d array. \n"
+                "Compile it before call method `to_dict_from3d`."
+            )
 
         # If array was cached, then use it in order to create dict representation
         # Thats because cached array can be changed while body_parts - not
