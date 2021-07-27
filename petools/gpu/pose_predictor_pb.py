@@ -88,7 +88,7 @@ class PosePredictor(PosePredictorInterface):
         with open(self.__path_to_config, 'r') as f:
             config = json.load(f)
 
-        self.__sess = tf.Session()
+        self.__sess = None #tf.Session()
 
         self.__model = GpuModel(
             pb_path=self.__path_to_tb,
