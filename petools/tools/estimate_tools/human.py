@@ -349,7 +349,7 @@ class Human:
             )
 
         human_class = Human(count_kp=len(human_array))
-        human_class.np = np.array(human_array, dtype=np.float32)
+        human_class.np = np.asarray(human_array, dtype=np.float32)
         human_class.score = float(np.sum(human_array[:, -1], axis=0)) / len(human_array)
         return human_class
 
