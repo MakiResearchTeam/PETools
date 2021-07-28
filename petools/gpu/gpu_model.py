@@ -10,8 +10,10 @@ class GpuModel(ProtobufModel, Model):
             paf_name, ind_name, peaks_score_name, upsample_size_name='upsample_size',
             session=None
     ):
+        # Create graph for GPU model
         graph = tf.Graph()
         with graph.as_default():
+            # Create some placeholders inside created graph
             self.__in_x = tf.placeholder(dtype=tf.float32, shape=[1, None, None, 3], name='in_x')
             self.__upsample_size = tf.placeholder(dtype=tf.int32, shape=(2), name='upsample')
 
