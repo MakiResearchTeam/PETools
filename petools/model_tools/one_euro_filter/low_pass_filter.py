@@ -1,7 +1,17 @@
+from numba import njit
+
+
+@njit
+def calc_filter(alpha, value, s):
+    return alpha * value + (1.0 - alpha) * s
+
 
 class LowPassFilter(object):
 
+    __slots__ = ('__alpha', '__y', '__s', )
+
     def __init__(self, alpha):
+        self.__alpha = self.__s = self.__y = None
         self.__setAlpha(alpha)
         self.reset_values()
 
@@ -20,7 +30,7 @@ class LowPassFilter(object):
         if self.__y is None:
             s = value
         else:
-            s = self.__alpha * value + (1.0 - self.__alpha) * self.__s
+            s = calc_filter(self.__alpha, value, self.__s)
         self.__y = value
         self.__s = s
         return s

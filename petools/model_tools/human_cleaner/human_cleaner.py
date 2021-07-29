@@ -32,7 +32,7 @@ class HumanCleaner:
         """
         good_humans = []
         for human in humans:
-            num_visible = np.sum(human.to_np()[:, -1] > 1e-3)
+            num_visible = np.sum(human.np[:, -1] > 1e-3)
             if num_visible > self._min_visible:
                 good_humans.append(human)
 

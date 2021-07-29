@@ -88,15 +88,12 @@ class PosePredictor(PosePredictorInterface):
         with open(self.__path_to_config, 'r') as f:
             config = json.load(f)
 
-        self.__sess = tf.Session()
-
         self.__model = GpuModel(
             pb_path=self.__path_to_tb,
             input_name=config[PosePredictor.INPUT_NAME],
             paf_name=config[PosePredictor.PAF_NAME],
             ind_name=config[PosePredictor.IND_TENSOR_NAME],
             peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME],
-            session=self.__sess
         )
 
         self.__image_preprocessor = GpuImagePreprocessor(
@@ -118,7 +115,7 @@ class PosePredictor(PosePredictorInterface):
         # --- CORRECTOR
         self.__corrector = lambda humans, **kwargs: humans
         if self.__path_to_tb_cor is not None:
-            corrector_t = Transformer(protobuf_path=self.__path_to_tb_cor, session=self.__sess)
+            corrector_t = Transformer(protobuf_path=self.__path_to_tb_cor)
             corrector_fn = lambda: PoseTransformer(
                 transformer=corrector_t,
                 seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
@@ -130,7 +127,7 @@ class PosePredictor(PosePredictorInterface):
         # --- CONVERTER
         self.__converter3d = lambda humans, **kwargs: humans
         if self.__path_to_tb_3d is not None:
-            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d, session=self.__sess)
+            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d)
             converter_fn = lambda: PoseTransformer(
                 transformer=converter_t,
                 seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
@@ -140,6 +137,8 @@ class PosePredictor(PosePredictorInterface):
             self.__converter3d = OPWrapper(converter_fn)
 
     def __human_tracker(self, humans, im_size):
+        # TODO: When im_size changes, tracker is not updated
+        #       So, points can be wrong because of it
         if self.__tracker is None:
             self.__tracker = HumanTracker(image_size=im_size)
         return self.__tracker(humans)
@@ -189,61 +188,90 @@ class PosePredictor(PosePredictorInterface):
             }
             Where PosePredictor.HUMANS and PosePredictor.TIME - are strings ('humans' and 'time')
         """
-        # Get final image size and padding value
+        # Pipeline:
+        # 1. Preprocess image;
+        # 2. Predict with NN;
+        # 3. Get skeletons by prediction from NN;
+        # 4. Scale prediction on original image;
+        # 5. Modify skeletons in production style;
+        # 6. Clean humans (aka predictions), delete skeletons with low number of keypoints;
+        # 7. Track humans, assign unique id for every prediction and track human further;
+        # 8. Smoother, smooth predictions;
+        # 9. Corrector (not used, yet), correct predictions;
+        # 10. Converter 3d, convert 2d predictions into 3d.
+        # At the end - pack results (2d, 3d and time of overall pipeline) into dict
 
-        # Measure time of prediction
+        # Measure time of overall pipeline
         start_time = time.time()
-
+        # TODO: Delete debug prints
         start_time_preprocess = time.time()
+        # 1. Process image, norm_img feeds into NN
+        # new_h, new_w - size of the image `norm_img`
+        # origin_in_size - size of the original image
         norm_img, new_h, new_w, original_in_size = self.__image_preprocessor(image)
         end_time_preprocess = time.time() - start_time_preprocess
 
         start_time_predict = time.time()
+        # 2. Take prediction
         batched_paf, indices, peaks = self.__model.predict(norm_img)
         end_time_predict = time.time() - start_time_predict
 
         start_time_pafprocess = time.time()
+        # 3. Peaks returns as batch of single matrix
+        # Peaks and indices do not have batch dimension
         humans = SkeletBuilder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
         end_time_pafprocess = time.time() - start_time_pafprocess
 
         start_time_scale_pred = time.time()
-        # Scale prediction to original image
+        # 4. Scale prediction to original image
         scale_predicted_kp(
             predictions=[humans],
             model_size=(new_h, new_w),
-            source_size=image.shape[:-1]
+            source_size=original_in_size
         )
         end_time_scale_pred = time.time() - start_time_scale_pred
 
-        # Transform points from training format to the inference one. Returns a list of shape [n_humans, n_points, 3]
         start_time_modify = time.time()
+        # 5. Transform points from training format to the inference one.
+        # Returns a numpy of shape [n_humans, n_points, 3]
         humans = modify_humans(humans)
+        # Transfer numpy array into Human class
         humans = [Human.from_array(x) for x in humans]
         end_time_modify = time.time() - start_time_modify
 
         start_time_cleaner = time.time()
+        # 6. Remove skeletons with low number of keypoints
         humans = self.__human_cleaner(humans)
         end_time_cleaner = time.time() - start_time_cleaner
 
         start_time_treacker = time.time()
+        # 7. Track humans and give them unique id
         humans = self.__human_tracker(humans, image.shape[:-1])
         end_time_tracker = time.time() - start_time_treacker
 
-        # One Euro algorithm for smoothing keypoints movement
         start_time_euro = time.time()
+        # 8. One Euro algorithm which smooth keypoints movement
         humans = self.__smoother(humans)
         end_time_euro = time.time() - start_time_euro
 
-        # Corrector need source resolution to perform human normalization
         start_time_corrector = time.time()
+        # 9. Correct predictions with another NN
+        # Corrector need source resolution to perform human normalization
         humans = self.__corrector(humans, source_resolution=image.shape[:-1])
         end_time_corrector = time.time() - start_time_corrector
 
-        # Converter need source resolution to perform human normalization
         start_time_converter = time.time()
-        humans = self.__converter3d(humans, source_resolution=image.shape[:-1])
+        db_info = {
+            'end_preprocess': 0.0,
+            'end_transform': 0.0,
+            'end_postprocess': 0.0,
+        }
+        # 10. Create 3d predictions with another NN
+        # Converter need source resolution to perform human normalization
+        humans = self.__converter3d(humans, source_resolution=image.shape[:-1], debug_info=db_info)
         end_time_converter = time.time() - start_time_converter
 
+        # Time of the overall prediction pipeline
         end_time = time.time() - start_time
 
         data_time_logs = {
@@ -256,9 +284,10 @@ class PosePredictor(PosePredictorInterface):
             'tracker': end_time_tracker,
             'euro': end_time_euro,
             'corrector': end_time_corrector,
-            'converter3d': end_time_converter
+            'converter3d': end_time_converter,
+            **db_info
         }
-
+        # Pack data into suitable for other APIs form
         return PosePredictor.pack_data(humans=humans, end_time=end_time, **data_time_logs)
 
 
