@@ -30,8 +30,58 @@ except ModuleNotFoundError as e:
 
 class SkeletBuilder:
 
-    @staticmethod
-    def get_humans_by_PIF(peaks, indices, paf_mat, th_hold_x=10.0, th_hold_y=10.0):
+    _DEFAULT_VALUE_X = 30.0
+    _DEFAULT_VALUE_Y = 30.0
+
+    def __init__(self, th_hold_perc_x=7.0, th_hold_perc_y=7.0):
+        """
+
+        Parameters
+        ----------
+        th_hold_perc_x : float
+            Threshold from what value do we count keypoints similar by axis X,
+            which is measured in percent of the width of a processed image
+            By default equal to 7.0 % of the width of a processed image
+        th_hold_perc_y : float
+            Threshold from what value do we count keypoints similar by axis Y,
+            which is measured in percent of the height of a processed image
+            By default equal to 7.0 % of the height of a processed image
+
+        """
+        if not (isinstance(th_hold_perc_x, float) or isinstance(th_hold_perc_x, int)) or th_hold_perc_x < 0.0:
+            raise ValueError(f"Error! Wrong value for `th_hold_perc_x` = {th_hold_perc_x}, "
+                             f"should be float/int with value bigger than zero"
+            )
+
+        if not (isinstance(th_hold_perc_y, float) or isinstance(th_hold_perc_y, int)) or th_hold_perc_y < 0.0:
+            raise ValueError(f"Error! Wrong value for `th_hold_perc_y` = {th_hold_perc_y}, "
+                             f"should be float/int with value bigger than zero"
+            )
+
+        self._th_hold_perc_x = th_hold_perc_x
+        self._th_hold_perc_y = th_hold_perc_y
+
+        self._img_size = None
+        self._calc_th_hold_x = None
+        self._calc_th_hold_y = None
+
+    def set_img_size(self, img_size: tuple):
+        """
+        Parameters
+        ----------
+        img_size : tuple
+            (H, W) of processed image
+
+        """
+
+        if self._img_size is not None and self._img_size[0] == img_size[0] and self._img_size[1] == img_size[1]:
+            # Back from function, because this value already calculated
+            return
+
+        self._calc_th_hold_y = self._th_hold_perc_y * img_size[0]
+        self._calc_th_hold_x = self._th_hold_perc_x * img_size[1]
+
+    def get_humans_by_PIF(self, peaks, indices, paf_mat):
         """
         This method consistently calls estimate_paf and merge_similar_skelets methods
         PIF - (Peaks, Indices, Paf_mat)
@@ -44,12 +94,6 @@ class SkeletBuilder:
             [N, 3], first 2 dimensions - yx coord, last dimension - keypoint class
         paf_mat : np.ndarray
             Numpy array of the PAF (Party affinity fields) which is usually prediction of the network
-        th_hold_x : float
-            Threshold from what value do we count keypoints similar by axis X,
-            By default equal to 10.0
-        th_hold_y : float
-            Threshold from what value do we count keypoints similar by axis Y,
-            By default equal to 10.0
 
         Returns
         -------
@@ -63,13 +107,22 @@ class SkeletBuilder:
             indices.astype(np.int32, copy=False),
             paf_mat.astype(np.float32, copy=False)
         )
-        humans_merged_l = SkeletBuilder.merge_similar_skelets(humans_list, th_hold_x=th_hold_x, th_hold_y=th_hold_y)
+
+        if self._calc_th_hold_x is None or self._calc_th_hold_y is None:
+            raise ValueError("Error! `_calc_th_hold_x` or `_calc_th_hold_y` were equal to None.\n"
+                             "May be you forget to set img size using `set_img_size` method?"
+            )
+
+        humans_merged_l = SkeletBuilder.merge_similar_skelets(
+            humans_list,
+            th_hold_x=self._calc_th_hold_x,
+            th_hold_y=self._calc_th_hold_y
+        )
         # Compile np inside human
         _ = [human.compile_np() for human in humans_merged_l]
         return humans_merged_l
 
-    @staticmethod
-    def estimate_paf(peaks, indices, paf_mat) -> list:
+    def estimate_paf(self, peaks, indices, paf_mat) -> list:
         """
         Estimate paff by using heatmap and peaks
 
@@ -124,8 +177,7 @@ class SkeletBuilder:
 
         return humans
 
-    @staticmethod
-    def merge_similar_skelets(humans: list, th_hold_x=0.5, th_hold_y=0.5) -> list:
+    def merge_similar_skelets(self, humans: list, th_hold_x=0.5, th_hold_y=0.5) -> list:
         """
         Merge similar skeletons into one skelet
 
