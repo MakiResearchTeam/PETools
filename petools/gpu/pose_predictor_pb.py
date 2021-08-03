@@ -254,7 +254,7 @@ class PosePredictor(PosePredictorInterface):
 
         start_time_treacker = time.time()
         # 7. Track humans, assign unique id for every prediction and track human further;
-        humans = self.__human_tracker(humans, image.shape[:-1])
+        humans = self.__human_tracker(humans, original_in_size)
         end_time_tracker = time.time() - start_time_treacker
 
         start_time_euro = time.time()
