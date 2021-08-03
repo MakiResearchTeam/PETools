@@ -17,7 +17,8 @@ class HumanTracker:
         self._img_size = image_size
         self._square_percent = square_percent
 
-        self.reset(new_image_size=image_size, square_percent=square_percent)
+        # First creation must be with forced update
+        self.reset(new_image_size=image_size, square_percent=square_percent, force_update=True)
 
     def __call__(self, humans: list) -> list:
         # This array show, which element from `humans` was used
@@ -78,7 +79,7 @@ class HumanTracker:
             return None
         return np.mean(visible_h_np[:, :-1], axis=0)
 
-    def reset(self, new_image_size, square_percent=0.3):
+    def reset(self, new_image_size, square_percent=0.3, force_update=False):
         """
         Reset parameters of the tracker, if `new_image_size` is different than
         assigned before, otherwise reset will be not applied
@@ -91,9 +92,12 @@ class HumanTracker:
             If `new_image_size` will be equal to previous image size, then reset will be not performed
         square_percent : float
             Threshold for movement of the avg point. By default equal to 0.3
+        force_update : bool
+            If True, tracker will be forced to update all variables, i.e if new_image_size is equal to cache one
+            however all variables inside class will be reset
 
         """
-        if self._img_size is not None and \
+        if not force_update and self._img_size is not None and \
                 new_image_size[0] == self._img_size[0] and new_image_size[1] == self._img_size[1]:
             return
 
