@@ -231,6 +231,7 @@ class Human:
             z_coord - coordinate of the keypoint on Z axis
             score - confidence of the neural network
             If keypoint is not visible or below `th_hold`, this keypoint will be filled with zeros
+
         """
 
         dict_data = {}
@@ -242,13 +243,9 @@ class Human:
             key_tr = lambda x: str(x)
 
         if self.np3d is None:
-            raise ValueError(
-                "Error! np3d array in Human is not compiled. Call `compile_np_3d` in order to compile 3d array. \n"
-                "Compile it before call method `to_dict_from3d`."
-            )
+            return dict([(key_tr(i), [0.0, 0.0, 0.0, 0.0]) for i in range(self.count_kp)])
 
-        # If array was cached, then use it in order to create dict representation
-        # Thats because cached array can be changed while body_parts - not
+        # Array np3d to dict with certain key
         for i in range(self.count_kp):
             take_single = self.np3d[i]
             if take_single[-1] >= th_hold:
