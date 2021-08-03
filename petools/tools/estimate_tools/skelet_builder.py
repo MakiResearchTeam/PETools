@@ -102,7 +102,7 @@ class SkeletBuilder:
             Single element is a Human class
 
         """
-        humans_list = SkeletBuilder.estimate_paf(
+        humans_list = self.estimate_paf(
             peaks.astype(np.float32, copy=False),
             indices.astype(np.int32, copy=False),
             paf_mat.astype(np.float32, copy=False)
@@ -113,7 +113,7 @@ class SkeletBuilder:
                              "May be you forget to set img size using `set_img_size` method?"
             )
 
-        humans_merged_l = SkeletBuilder.merge_similar_skelets(
+        humans_merged_l = self.merge_similar_skelets(
             humans_list,
             th_hold_x=self._calc_th_hold_x,
             th_hold_y=self._calc_th_hold_y
