@@ -33,7 +33,7 @@ class SkeletBuilder:
     _DEFAULT_VALUE_X = 30.0
     _DEFAULT_VALUE_Y = 30.0
 
-    def __init__(self, th_hold_perc_x=2.5, th_hold_perc_y=2.5):
+    def __init__(self, th_hold_perc_x=1.5, th_hold_perc_y=1.5):
         """
 
         Parameters
