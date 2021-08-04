@@ -4,6 +4,9 @@ from petools.tools import Human
 from .data_processor import DataProcessor
 
 
+import time
+
+
 class PoseTransformer:
     def __init__(
             self,

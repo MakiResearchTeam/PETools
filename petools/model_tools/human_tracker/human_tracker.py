@@ -14,7 +14,11 @@ class HumanTracker:
             Threshold for movement of the avg point
 
         """
-        self.reset(new_image_size=image_size, square_percent=square_percent)
+        self._img_size = image_size
+        self._square_percent = square_percent
+
+        # First creation must be with forced update
+        self.reset(new_image_size=image_size, square_percent=square_percent, force_update=True)
 
     def __call__(self, humans: list) -> list:
         # This array show, which element from `humans` was used
@@ -70,25 +74,33 @@ class HumanTracker:
         Calculate avg point from human
 
         """
-        h_np = human.to_np()
-        visible_h_np = h_np[h_np[:, -1] > 1e-3]
+        visible_h_np = human.np[human.np[:, -1] > 1e-3]
         if len(visible_h_np) == 0:
             return None
         return np.mean(visible_h_np[:, :-1], axis=0)
 
-    def reset(self, new_image_size, square_percent=0.3):
+    def reset(self, new_image_size, square_percent=0.3, force_update=False):
         """
-        Reset parameters of the tracker
+        Reset parameters of the tracker, if `new_image_size` is different than
+        assigned before, otherwise reset will be not applied
 
         Parameters
         ----------
         new_image_size : list or tuple
             New image size at this must be used tracker stuf.
             List/tuple of (H, W), i.e. Height and Width of the image at which human will be appear
+            If `new_image_size` will be equal to previous image size, then reset will be not performed
         square_percent : float
             Threshold for movement of the avg point. By default equal to 0.3
+        force_update : bool
+            If True, tracker will be forced to update all variables, i.e if new_image_size is equal to cache one
+            however all variables inside class will be reset
 
         """
+        if not force_update and self._img_size is not None and \
+                new_image_size[0] == self._img_size[0] and new_image_size[1] == self._img_size[1]:
+            return
+
         self._threash_hold_x, self._threash_hold_y = (
             new_image_size[1] * square_percent / 2,
             new_image_size[0] * square_percent / 2
@@ -96,3 +108,4 @@ class HumanTracker:
         # Store { human_id : avg_point }
         self._id2mean_point = dict()
         self._id_counter = 0
+

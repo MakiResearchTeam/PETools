@@ -44,8 +44,10 @@ def create_video_w_model(
 
     for _ in iterator:
         s_img, is_there_more = v_r.read_frames(n=1)
+        # If no more frames left - exit from loop
         if not is_there_more:
             break
+        # read_frames return batched data, in our case batch_size = 1
         s_img = s_img[0]
         predictions = pose_predictor.predict(s_img)
         s_img_skeletons = draw_skeletons_on_image(s_img, predictions)
