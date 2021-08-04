@@ -1,9 +1,11 @@
+from typing import Tuple
 import cv2
 import numpy as np
 from tqdm import tqdm
 
 
 class VideoReader:
+
     def __init__(self, video_path):
         """
         A utility for batching frames from a video file.
@@ -71,7 +73,7 @@ class VideoReader:
         """
         self._video.release()
 
-    def read_frames(self, n=1, transform=None) -> (list, bool):
+    def read_frames(self, n=1, transform=None) -> Tuple[list, bool]:
         """
         Reads a batch of frames and returns them packed in list.
         If there are not enough enough frames for the batch,
@@ -152,6 +154,7 @@ class VideoReader:
 
 
 class VideoWriter:
+    
     def __init__(
             self, video_path, fps=20):
         """
@@ -194,38 +197,38 @@ class VideoWriter:
 
 class ConnectTwoVideos:
 
-	def __init__(self, path_video_1, path_video_2, text_1="", text_2="", pos1=(120, 400), pos2=(120, 400)):
-		self._path1 = path_video_1
-		self._path2 = path_video_2
-		self._video_r_1 = VideoReader(self._path1)
-		self._video_r_2 = VideoReader(self._path2)
-		self._text1 = str(text_1)
-		self._text2 = str(text_2)
+    def __init__(self, path_video_1, path_video_2, text_1="", text_2="", pos1=(120, 400), pos2=(120, 400)):
+        self._path1 = path_video_1
+        self._path2 = path_video_2
+        self._video_r_1 = VideoReader(self._path1)
+        self._video_r_2 = VideoReader(self._path2)
+        self._text1 = str(text_1)
+        self._text2 = str(text_2)
 
-		self._pos1 = pos1
-		self._pos2 = pos2
+        self._pos1 = pos1
+        self._pos2 = pos2
 
-	def connect(self, path_save_to, fps=20, axis=1):
+    def connect(self, path_save_to, fps=20, axis=1):
 
-		video_wr = VideoWriter(path_save_to, fps)
+        video_wr = VideoWriter(path_save_to, fps)
 
-		iterator = tqdm(
-			range(
-				min(self._video_r_1.get_length(), self._video_r_2.get_length())
-			)
-		)
+        iterator = tqdm(
+            range(
+                min(self._video_r_1.get_length(), self._video_r_2.get_length())
+            )
+        )
 
-		for _ in iterator:
-			# Take single image
-			img1 = self._video_r_1.read_frames()[0][0]
-			cv2.putText(img1, self._text1, self._pos1, cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 6)
+        for _ in iterator:
+            # Take single image
+            img1 = self._video_r_1.read_frames()[0][0]
+            cv2.putText(img1, self._text1, self._pos1, cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 6)
 
-			img2 = self._video_r_2.read_frames()[0][0]
-			cv2.putText(img2, self._text2, self._pos2, cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 6)
+            img2 = self._video_r_2.read_frames()[0][0]
+            cv2.putText(img2, self._text2, self._pos2, cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 6)
 
-			concat_img = np.concatenate([img1, img2], axis=axis).astype(np.uint8)
-			video_wr.write([concat_img])
+            concat_img = np.concatenate([img1, img2], axis=axis).astype(np.uint8)
+            video_wr.write([concat_img])
 
-		iterator.close()
-		print('all done!')
+        iterator.close()
+        print('all done!')
 
