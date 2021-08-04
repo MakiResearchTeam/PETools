@@ -228,7 +228,123 @@ class PosePredictor(PosePredictorInterface):
 
         # Measure time of overall pipeline
         start_time = time.time()
-        # TODO: Delete debug prints
+        # 1. Process image, norm_img feeds into NN
+        # new_h, new_w - size of the image `norm_img`
+        # origin_in_size - size of the original image
+        norm_img, new_h, new_w, original_in_size = self.__image_preprocessor(image)
+        # 2. Take prediction
+        batched_paf, indices, peaks = self.__model.predict(norm_img)
+        # 3. Get skeletons by prediction from NN
+        # Keep input size into model fresh for builder
+        self.__skeleton_builder.set_img_size((new_h, new_w))
+        # Take humans (skeletons)
+        humans = self.__skeleton_builder.get_humans_by_PIF(peaks=peaks, indices=indices, paf_mat=batched_paf[0])
+        # 4. Scale prediction to original image
+        scale_predicted_kp(
+            predictions=[humans],
+            model_size=(new_h, new_w),
+            source_size=original_in_size
+        )
+        # 5. Modify skeletons in production style
+        # Transform points from training format to the inference one.
+        # Returns a numpy of shape [n_humans, n_points, 3]
+        humans = modify_humans(humans)
+        # Transfer numpy array into Human class
+        humans = [Human.from_array(x) for x in humans]
+        # 6. Clean humans (aka predictions), delete skeletons with low number of keypoints
+        # Remove skeletons with low number of keypoints
+        humans = self.__human_cleaner(humans)
+        # 7. Track humans, assign unique id for every prediction and track human further;
+        humans = self.__human_tracker(humans, original_in_size)
+        # 8. One Euro algorithm which smooth keypoints movement
+        humans = self.__smoother(humans)
+        # 9. Corrector, correct predictions;
+        # Corrector need source resolution to perform human normalization
+        humans = self.__corrector(humans, source_resolution=original_in_size)
+        # 10. Converter 3d, convert 2d predictions into 3d.
+        # Converter need source resolution to perform human normalization
+        humans = self.__converter3d(humans, source_resolution=original_in_size)
+
+        # Time of the overall prediction pipeline
+        end_time = time.time() - start_time
+        # Pack data into suitable for other APIs form
+        return PosePredictor.pack_data(humans=humans, end_time=end_time)
+
+    def predict_debug(self, image: np.ndarray):
+        """
+        Estimate poses on single image
+        !NOTICE
+        This methods only for debug purposes. it can produce different result compare to `predict` method,
+        In order to take predictions, call `predict`
+
+        Parameters
+        ----------
+        image : np.ndarray
+            Input image, with shape (H, W, 3): H - Height, W - Width (H and W can have any values)
+            For mose models - input image must be in bgr order
+
+        Returns
+        -------
+        dict
+            Single predictions as dict object contains of:
+                {
+                    PosePredictor.HUMANS: [
+                            (
+                                human_id_1,
+                                {   # 2D predictions
+                                    'p0': [h1_x_1, h1_y_1, h1_v_1],
+                                    'p1': [h1_x_2, h1_y_2, h1_v_2],
+                                    ...
+                                    'pn': [h1_x_n, h1_y_n, h1_v_n],
+                                },
+
+                                {
+                                    # 3D predictions
+                                    'p0': [h1_x_1, h1_y_1, h1_z_1, h1_v_1],
+                                    'p1': [h1_x_2, h1_y_2, h1_z_2, h1_v_2],
+                                    ...
+                                    'pn': [h1_x_n, h1_y_n, h1_z_n, h1_v_n],
+                                },
+                            ),
+                            ...
+                            ...
+
+                            (
+                                human_id_N,
+                                {
+                                    'p0': [hN_x_1, hN_y_1, hN_v_1],
+                                    'p1': [hN_x_2, hN_y_2, hN_v_2],
+                                    ...
+                                    'pn': [hN_x_n, hN_y_n, hN_v_n],
+                                },
+
+                                {
+                                    'p0': [hN_x_1, hN_y_1, hN_z_1, hN_v_1],
+                                    'p1': [hN_x_2, hN_y_2, hN_z_2, hN_v_2],
+                                    ...
+                                    'pn': [hN_x_n, hN_y_n, hN_z_n, hN_v_n],
+                                },
+                            ),
+                    ],
+                    PosePredictor.TIME: some_float_number
+                }
+            Where PosePredictor.HUMANS and PosePredictor.TIME - are strings ('humans' and 'time')
+        """
+        # Summary of overall pipeline:
+        # 1. Preprocess image;
+        # 2. Predict with NN;
+        # 3. Get skeletons by prediction from NN;
+        # 4. Scale prediction on original image;
+        # 5. Modify skeletons in production style;
+        # 6. Clean humans (aka predictions), delete skeletons with low number of keypoints;
+        # 7. Track humans, assign unique id for every prediction and track human further;
+        # 8. Smoother, smooth predictions;
+        # 9. Corrector, correct predictions;
+        # 10. Converter 3d, convert 2d predictions into 3d.
+        # At the end - pack results (2d, 3d and time of overall pipeline) into dict
+
+        # Measure time of overall pipeline
+        start_time = time.time()
         start_time_preprocess = time.time()
         # 1. Process image, norm_img feeds into NN
         # new_h, new_w - size of the image `norm_img`
@@ -290,14 +406,9 @@ class PosePredictor(PosePredictorInterface):
         end_time_corrector = time.time() - start_time_corrector
 
         start_time_converter = time.time()
-        db_info = {
-            'end_preprocess': 0.0,
-            'end_transform': 0.0,
-            'end_postprocess': 0.0,
-        }
         # 10. Converter 3d, convert 2d predictions into 3d.
         # Converter need source resolution to perform human normalization
-        humans = self.__converter3d(humans, source_resolution=original_in_size, debug_info=db_info)
+        humans = self.__converter3d(humans, source_resolution=original_in_size)
         end_time_converter = time.time() - start_time_converter
 
         # Time of the overall prediction pipeline
@@ -313,8 +424,7 @@ class PosePredictor(PosePredictorInterface):
             'tracker': end_time_tracker,
             'euro': end_time_euro,
             'corrector': end_time_corrector,
-            'converter3d': end_time_converter,
-            **db_info
+            'converter3d': end_time_converter
         }
         # Pack data into suitable for other APIs form
         return PosePredictor.pack_data(humans=humans, end_time=end_time, **data_time_logs)
