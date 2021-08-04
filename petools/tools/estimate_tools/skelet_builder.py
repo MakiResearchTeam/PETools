@@ -30,9 +30,6 @@ except ModuleNotFoundError as e:
 
 class SkeletBuilder:
 
-    _DEFAULT_VALUE_X = 30.0
-    _DEFAULT_VALUE_Y = 30.0
-
     def __init__(self, th_hold_perc_x=5.0, th_hold_perc_y=5.0):
         """
 
@@ -118,7 +115,7 @@ class SkeletBuilder:
             th_hold_x=self._calc_th_hold_x,
             th_hold_y=self._calc_th_hold_y
         )
-        # Compile np inside human
+        # Compile numpy arrays inside human class
         _ = [human.compile_np() for human in humans_merged_l]
         return humans_merged_l
 

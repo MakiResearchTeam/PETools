@@ -2,8 +2,6 @@ import json
 import os
 import time
 import numpy as np
-import tensorflow.compat.v1 as tf
-import pathlib
 
 # Miscellaneous pose utilities
 from petools.core import PosePredictorInterface
@@ -139,6 +137,17 @@ class PosePredictor(PosePredictorInterface):
             self.__converter3d = OPWrapper(converter_fn)
 
     def __human_tracker(self, humans, im_size):
+        """
+        Init tracker and keep update image size
+
+        Parameters
+        ----------
+        humans: list
+            List of class Human with predidction of NN
+        im_size : tuple
+            (Height, Wight) - of the image where prediction was taken
+
+        """
         if self.__tracker is None:
             self.__tracker = HumanTracker(image_size=im_size)
         else:
@@ -148,7 +157,6 @@ class PosePredictor(PosePredictorInterface):
         return self.__tracker(humans)
 
     def predict(self, image: np.ndarray):
-
         """
         Estimate poses on single image
 
@@ -162,37 +170,50 @@ class PosePredictor(PosePredictorInterface):
         -------
         dict
             Single predictions as dict object contains of:
-            {
-                PosePredictor.HUMANS: [
-                        [
-                            [h1_x_1, h1_y_1, h1_v_1],
-                            [h1_x_2, h1_y_2, h1_v_2],
-                            ...
-                            [h1_x_n, h1_y_n, h1_v_n],
-                        ],
+                {
+                    PosePredictor.HUMANS: [
+                            (
+                                human_id_1,
+                                {   # 2D predictions
+                                    'p0': [h1_x_1, h1_y_1, h1_v_1],
+                                    'p1': [h1_x_2, h1_y_2, h1_v_2],
+                                    ...
+                                    'pn': [h1_x_n, h1_y_n, h1_v_n],
+                                },
 
-                        [
-                            [h2_x_1, h2_y_1, h2_v_1],
-                            [h2_x_2, h2_y_2, h2_v_2],
+                                {
+                                    # 3D predictions
+                                    'p0': [h1_x_1, h1_y_1, h1_z_1, h1_v_1],
+                                    'p1': [h1_x_2, h1_y_2, h1_z_2, h1_v_2],
+                                    ...
+                                    'pn': [h1_x_n, h1_y_n, h1_z_n, h1_v_n],
+                                },
+                            ),
                             ...
-                            [h2_x_n, h2_y_n, h2_v_n],
-                        ]
-
-                        ...
-                        ...
-
-                        [
-                            [hN_x_1, hN_y_1, hN_v_1],
-                            [hN_x_2, hN_y_2, hN_v_2],
                             ...
-                            [hN_x_n, hN_y_n, hN_v_n],
-                        ]
-                ],
-                PosePredictor.TIME: some_float_number
-            }
+
+                            (
+                                human_id_N,
+                                {
+                                    'p0': [hN_x_1, hN_y_1, hN_v_1],
+                                    'p1': [hN_x_2, hN_y_2, hN_v_2],
+                                    ...
+                                    'pn': [hN_x_n, hN_y_n, hN_v_n],
+                                },
+
+                                {
+                                    'p0': [hN_x_1, hN_y_1, hN_z_1, hN_v_1],
+                                    'p1': [hN_x_2, hN_y_2, hN_z_2, hN_v_2],
+                                    ...
+                                    'pn': [hN_x_n, hN_y_n, hN_z_n, hN_v_n],
+                                },
+                            ),
+                    ],
+                    PosePredictor.TIME: some_float_number
+                }
             Where PosePredictor.HUMANS and PosePredictor.TIME - are strings ('humans' and 'time')
         """
-        # Pipeline:
+        # Summary of overall pipeline:
         # 1. Preprocess image;
         # 2. Predict with NN;
         # 3. Get skeletons by prediction from NN;
