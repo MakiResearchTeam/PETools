@@ -11,7 +11,7 @@ setup(
         'cpu/3d_converter_stats/*',
         'model_tools/transformers/3d_converter_stats/*'
     ]},
-    version='1.3.4',
+    version='1.3.5',
     description='A set of tools to use pose estimation models',
     long_description='...',
     author='Kilbas Igor, Gribanov Danil',
