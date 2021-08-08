@@ -30,7 +30,7 @@ except ModuleNotFoundError as e:
 
 class SkeletBuilder:
 
-    def __init__(self, th_hold_perc_x=5.0, th_hold_perc_y=5.0):
+    def __init__(self, th_hold_perc_x=0.05, th_hold_perc_y=0.05):
         """
 
         Parameters
@@ -38,11 +38,11 @@ class SkeletBuilder:
         th_hold_perc_x : float
             Threshold from what value do we count keypoints similar by axis X,
             which is measured in percent of the width of a processed image
-            By default equal to 5.0 % of the width of a processed image
+            By default equal to 0.05 % of the width of a processed image
         th_hold_perc_y : float
             Threshold from what value do we count keypoints similar by axis Y,
             which is measured in percent of the height of a processed image
-            By default equal to 5.0 % of the height of a processed image
+            By default equal to 0.05 % of the height of a processed image
 
         """
         if not (isinstance(th_hold_perc_x, float) or isinstance(th_hold_perc_x, int)) or th_hold_perc_x < 0.0:
