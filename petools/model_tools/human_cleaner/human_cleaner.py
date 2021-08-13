@@ -7,7 +7,7 @@ class HumanCleaner:
 
     """
 
-    def __init__(self, min_visible=2):
+    def __init__(self, min_visible=2, threshold_visibility=0.2):
         """
 
         Parameters
@@ -16,9 +16,14 @@ class HumanCleaner:
             Minimum values of visible keypoints,
             if input human class have more visible keypoints then its good,
             otherwise human class will be ignored (i.e. deleted)
+        threshold_visibility : float
+            If point bigger than `threshold_visibility` then this point will be visible,
+            otherwise this point will be as not visible
+            By default equal to 0.2
 
         """
         self._min_visible = min_visible
+        self._threshold_visibility = threshold_visibility
 
     def __call__(self, humans: list) -> list:
         """
@@ -32,7 +37,7 @@ class HumanCleaner:
         """
         good_humans = []
         for human in humans:
-            num_visible = np.sum(human.np[:, -1] > 1e-3)
+            num_visible = np.sum(human.np[:, -1] > self._threshold_visibility)
             if num_visible > self._min_visible:
                 good_humans.append(human)
 
