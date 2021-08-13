@@ -104,7 +104,7 @@ class PosePredictor(PosePredictorInterface):
 
         self.__skeleton_builder = SkeletBuilder()
 
-        self.__human_cleaner = HumanCleaner(min_visible=8)  # TODO: was 5
+        self.__human_cleaner = HumanCleaner(min_visible=8)
         # Will be initialized at first launch
         self.__tracker = None
 
