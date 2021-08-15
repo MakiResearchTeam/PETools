@@ -36,6 +36,9 @@ class PoseTransformer:
         preproc_data = self.preprocess(human, skip_hip=True, **kwargs)
         transfo_data = self.transform(preproc_data)
         human = self.postprocess(transfo_data, source_human=human, **kwargs)
+        reset_state = kwargs.get('reset', False)
+        if reset_state:
+            self.reset_state()
         return human
 
     def transform(self, human):
@@ -43,3 +46,6 @@ class PoseTransformer:
         output_seq = self.transformer.predict_poses(human_seq, mask_seq)[0]
         # Return the last pose
         return output_seq[0, -1]
+
+    def reset_state(self):
+        self.buffer.reset_state()

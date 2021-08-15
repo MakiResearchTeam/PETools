@@ -41,3 +41,7 @@ class SequenceBuffer:
         self.mask_sequence[0, -1] = present
         return self.sequence
 
+    def reset_state(self):
+        self.token_sequence = np.zeros(shape=(1, self.seqlen, self.dim), dtype='float32')
+        self.mask_sequence = np.zeros(shape=(1, self.seqlen), dtype='float32')
+        self.absent_token = np.zeros(shape=self.dim, dtype='float32')
