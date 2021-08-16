@@ -1,7 +1,13 @@
+from typing import List, Tuple
+from petools.tools.estimate_tools import Human
 
 
-class OPWrapper:
-
+class OpWrapper:
+    """
+    This object performs a given Op on input humans. Each human will be provided with an individual Op instance.
+    When instantiating an Op for a given human, it is being bind to the human's id (and saved to an internal register
+    of ops) so that the Op instance can be reused when a human with the same id is encountered.
+    """
     def __init__(self, op_init_fn):
         """
         Parameters
@@ -17,34 +23,29 @@ class OPWrapper:
         self.op_init_fn = op_init_fn
         self.register = {}
 
-    def __call__(self, humans: list, **op_kwargs) -> list:
+    def __call__(self, humans: List[Human], **op_kwargs) -> List[Tuple[Human, object]]:
         """
-        Returns updated human list
-        According to init operation
+        Returns results of the given Op applied to `humans`.
 
+        Parameters
+        ----------
+        humans : List[Human]
+            List of humans to be processed.
+        op_kwargs : dict
+            Supplement key-word arguments for the Op instances.
+
+        Returns
+        -------
+        List[Tuple[int, object]]
+            A list of tuples (Human, operation result).
         """
-        updated_humans = []
+        op_results = []
         for human in humans:
-            # If id == -1, then human not tracked for somehow
-            # Its more safety to skip this human (skeleton),
-            # i.e. delete from final predictions
-            if human.id == -1:
-                continue
-            # Save id
-            old_id = human.id
-            # Take mod
-            mod = self.register.get(str(human.id))
-            # If not found (new human)
-            if mod is None:
-                # Init new
-                mod = self.op_init_fn()
-                self.register[str(human.id)] = mod
-            # Apply mod on human
-            updated_human = mod(human, **op_kwargs)
-            # Restore `id`, because some modules can recreate human class (so id in human will be dropped)
-            # In order to keep `id` through different modules, assign old `id` to new class
-            updated_human.id = old_id
-            # Store updated human
-            updated_humans.append(updated_human)
-
-        return updated_humans
+            op = self.register.get(str(human.id))
+            if op is None:
+                # Human with a new id has been encountered. Create a new instance of the Op
+                op = self.op_init_fn()
+                self.register[str(human.id)] = op
+            op_result = op(human, **op_kwargs)
+            op_results.append((human, op_result))
+        return op_results
