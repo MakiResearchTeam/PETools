@@ -1,50 +1,40 @@
+from typing import List, Tuple
+
+from .op_wrapper import OpWrapper
+from petools.tools.estimate_tools import Human
 
 
-class OPWrapper:
-
-    def __init__(self, op_init_fn):
+class HumanModWrapper(OpWrapper):
+    """
+    A subclass that simply unpacks results of the Op.
+    An op in the context of HumanModWrapper is an Op that modifies or creates a new human.
+    """
+    def __call__(self, humans: list, **op_kwargs) -> List[Human]:
         """
+        Returns results of the given Op (human modifier) applied to `humans`.
+
         Parameters
         ----------
-        op_init_fn : func
-            Function that create class which apply some operation on list of Human classes
-            Class must have method with next signature:
-                def __call__(self, human: Human) -> Human:
-                    pass
-            Class must return list of modified (or whatever) list of Human classes
+        humans : List[Human]
+            List of humans to be processed.
+        op_kwargs : dict
+            Supplement key-word arguments for the Op instances.
 
+        Returns
+        -------
+        List[Human]
+            A list of tuples (Human, operation result).
         """
-        self.op_init_fn = op_init_fn
-        self.register = {}
-
-    def __call__(self, humans: list, **op_kwargs) -> list:
-        """
-        Returns updated human list
-        According to init operation
-
-        """
+        # noinspection PyTypeChecker
+        mod_results: List[Tuple[Human, Human]] = super(HumanModWrapper, self).__call__(humans, **op_kwargs)
         updated_humans = []
-        for human in humans:
-            # If id == -1, then human not tracked for somehow
-            # Its more safety to skip this human (skeleton),
-            # i.e. delete from final predictions
-            if human.id == -1:
-                continue
-            # Save id
-            old_id = human.id
-            # Take mod
-            mod = self.register.get(str(human.id))
-            # If not found (new human)
-            if mod is None:
-                # Init new
-                mod = self.op_init_fn()
-                self.register[str(human.id)] = mod
-            # Apply mod on human
-            updated_human = mod(human, **op_kwargs)
+        for old_human, new_human in mod_results:
+            if new_human is None:
+                # Something made it impossible to modify that human.
+                # Leave an old human as a result.
+                updated_humans.append(old_human)
             # Restore `id`, because some modules can recreate human class (so id in human will be dropped)
-            # In order to keep `id` through different modules, assign old `id` to new class
-            updated_human.id = old_id
-            # Store updated human
-            updated_humans.append(updated_human)
-
+            # In order to keep `id` through different modules, assign old `id` to the new instance
+            new_human.id = old_human.id
+            updated_humans.append(new_human)
         return updated_humans

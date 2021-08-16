@@ -1,4 +1,5 @@
 from typing import List, Tuple
+
 from petools.tools.estimate_tools import Human
 
 
@@ -36,11 +37,16 @@ class OpWrapper:
 
         Returns
         -------
-        List[Tuple[int, object]]
+        List[Tuple[Human, object]]
             A list of tuples (Human, operation result).
         """
         op_results = []
         for human in humans:
+            if human.id == -1:
+                # An exceptional case which is not being processed by the OpWrapper.
+                # Humans with id=-1 are assumed to be erroneous.
+                op_results.append((Human, None))
+                continue
             op = self.register.get(str(human.id))
             if op is None:
                 # Human with a new id has been encountered. Create a new instance of the Op
