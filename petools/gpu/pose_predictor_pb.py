@@ -92,6 +92,8 @@ class PosePredictor(PosePredictorInterface):
             peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME],
         )
 
+        self.__session = self.__model.session
+
         self.__image_preprocessor = GpuImagePreprocessor(
             h=self.__min_h,
             w=int(self.__min_h / PosePredictor.W_BY_H),
@@ -120,6 +122,26 @@ class PosePredictor(PosePredictorInterface):
         if self.__path_to_pb_3d is not None:
             converter_fn = init_converter(self.__path_to_pb_3d)
             self.__converter3d = HumanModWrapper(converter_fn)
+
+    @property
+    def pe_model(self):
+        return self.__model
+
+    @property
+    def converter(self):
+        return self.__converter3d
+
+    @property
+    def corrector(self):
+        return self.__corrector
+
+    @property
+    def session(self):
+        return self.__session
+
+    @property
+    def tracker(self):
+        return self.__tracker
 
     def __human_tracker(self, humans, im_size):
         """
