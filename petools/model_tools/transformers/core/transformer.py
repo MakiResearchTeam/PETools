@@ -17,7 +17,7 @@ class Transformer(ProtobufModel):
         )
 
         self._input_sequence = self.input_map['input']
-        self._input_mask = self.input_map['mask_']
+        self._input_mask = self.input_map['mask']
 
     def predict_poses(self, input_seq, input_mask):
         return super().predict(

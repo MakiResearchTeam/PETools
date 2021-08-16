@@ -51,7 +51,7 @@ class ProtobufModel:
             self._graph_def = load_graph_def(protobuf_path)
             self._output_tensors = tf.import_graph_def(
                 self._graph_def,
-                input_map=input_map,
+                input_map=self._input_map,
                 return_elements=output_tensors
             )
 
