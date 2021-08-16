@@ -1,2 +1,2 @@
 
-from .op_wrapper import OPWrapper
+from .op_wrapper import OpWrapper

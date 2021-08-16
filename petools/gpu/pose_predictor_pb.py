@@ -13,7 +13,7 @@ from petools.tools.estimate_tools import Human
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
 from .gpu_model import GpuModel
 from petools.model_tools.image_preprocessors import GpuImagePreprocessor
-from petools.model_tools.operation_wrapper import OPWrapper
+from petools.model_tools.operation_wrapper import OpWrapper
 from petools.model_tools.human_cleaner import HumanCleaner
 from petools.model_tools.human_tracker import HumanTracker
 from petools.model_tools.one_euro_filter import OneEuroModule
@@ -109,7 +109,7 @@ class PosePredictor(PosePredictorInterface):
         self.__tracker = None
 
         # --- SMOOTHER
-        self.__smoother = OPWrapper(lambda: OneEuroModule())
+        self.__smoother = OpWrapper(lambda: OneEuroModule())
 
         human_processor = HumanProcessor.init_from_lib()
         # --- CORRECTOR
@@ -122,7 +122,7 @@ class PosePredictor(PosePredictorInterface):
                 preprocess=Preprocess2D(human_processor),
                 postprocess=Postprocess2D(human_processor)
             )
-            self.__corrector = OPWrapper(corrector_fn)
+            self.__corrector = OpWrapper(corrector_fn)
 
         # --- CONVERTER
         self.__converter3d = lambda humans, **kwargs: humans
@@ -134,7 +134,7 @@ class PosePredictor(PosePredictorInterface):
                 preprocess=Preprocess3D(human_processor),
                 postprocess=Postprocess3D(human_processor)
             )
-            self.__converter3d = OPWrapper(converter_fn)
+            self.__converter3d = OpWrapper(converter_fn)
 
     def __human_tracker(self, humans, im_size):
         """
