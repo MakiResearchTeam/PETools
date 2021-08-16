@@ -59,6 +59,10 @@ class ProtobufModel:
     def input_map(self):
         return self._input_map
 
+    @property
+    def session(self):
+        return self._session
+
     def predict(self, feed_dict):
         """
         Execute the graph from the protobuf.
