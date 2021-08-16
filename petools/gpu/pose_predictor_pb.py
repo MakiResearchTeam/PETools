@@ -13,14 +13,12 @@ from petools.tools.estimate_tools import Human
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
 from .gpu_model import GpuModel
 from petools.model_tools.image_preprocessors import GpuImagePreprocessor
-from petools.model_tools.operation_wrapper import OpWrapper
+from petools.model_tools.operation_wrapper import OpWrapper, HumanModWrapper
 from petools.model_tools.human_cleaner import HumanCleaner
 from petools.model_tools.human_tracker import HumanTracker
-from petools.model_tools.one_euro_filter import OneEuroModule
+
 # Converter / Corrector
-from petools.model_tools.transformers import HumanProcessor, Transformer, PoseTransformer
-from petools.model_tools.transformers import Postprocess3D, Postprocess2D, Preprocess3D, Preprocess2D, SequenceBuffer
-from petools.model_tools.transformers.utils import H36_2DPOINTS_DIM_FLAT
+from .init_utils import init_corrector, init_converter, init_smoother
 
 
 class PosePredictor(PosePredictorInterface):
@@ -73,8 +71,8 @@ class PosePredictor(PosePredictorInterface):
         self.__expected_w = expected_w
         self.__norm_mode = norm_mode
         self.__path_to_tb = path_to_pb
-        self.__path_to_tb_3d = path_to_pb_3d
-        self.__path_to_tb_cor = path_to_pb_cor
+        self.__path_to_pb_3d = path_to_pb_3d
+        self.__path_to_pb_cor = path_to_pb_cor
         self.__path_to_config = path_to_config
         self._init_model()
 
@@ -109,32 +107,19 @@ class PosePredictor(PosePredictorInterface):
         self.__tracker = None
 
         # --- SMOOTHER
-        self.__smoother = OpWrapper(lambda: OneEuroModule())
+        self.__smoother = HumanModWrapper(init_smoother())
 
-        human_processor = HumanProcessor.init_from_lib()
         # --- CORRECTOR
         self.__corrector = lambda humans, **kwargs: humans
-        if self.__path_to_tb_cor is not None:
-            corrector_t = Transformer(protobuf_path=self.__path_to_tb_cor)
-            corrector_fn = lambda: PoseTransformer(
-                transformer=corrector_t,
-                seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
-                preprocess=Preprocess2D(human_processor),
-                postprocess=Postprocess2D(human_processor)
-            )
-            self.__corrector = OpWrapper(corrector_fn)
+        if self.__path_to_pb_cor is not None:
+            corrector_fn = init_corrector(self.__path_to_pb_cor)
+            self.__corrector = HumanModWrapper(corrector_fn)
 
         # --- CONVERTER
         self.__converter3d = lambda humans, **kwargs: humans
-        if self.__path_to_tb_3d is not None:
-            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d)
-            converter_fn = lambda: PoseTransformer(
-                transformer=converter_t,
-                seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
-                preprocess=Preprocess3D(human_processor),
-                postprocess=Postprocess3D(human_processor)
-            )
-            self.__converter3d = OpWrapper(converter_fn)
+        if self.__path_to_pb_3d is not None:
+            converter_fn = init_converter(self.__path_to_pb_3d)
+            self.__converter3d = HumanModWrapper(converter_fn)
 
     def __human_tracker(self, humans, im_size):
         """
