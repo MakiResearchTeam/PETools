@@ -10,23 +10,18 @@ class GpuModel(ProtobufModel, Model):
             paf_name, ind_name, peaks_score_name, upsample_size_name='upsample_size',
             session=None
     ):
-        # Create graph for GPU model
-        graph = tf.Graph()
-        with graph.as_default():
-            # Create some placeholders inside created graph
-            self.__in_x = tf.placeholder(dtype=tf.float32, shape=[1, None, None, 3], name='in_x')
-            self.__upsample_size = tf.placeholder(dtype=tf.int32, shape=(2), name='upsample')
-
         super(GpuModel, self).__init__(
             protobuf_path=pb_path,
             input_map={
-                input_name: self.__in_x,
-                upsample_size_name: self.__upsample_size
+                input_name: ('float32', [1, None, None, 3], 'in_x'),
+                upsample_size_name: ('int32', [2], 'upsample')
             },
             output_tensors=[paf_name, ind_name, peaks_score_name],
-            graph=graph,
             session=session
         )
+
+        self._in_x = self.input_map[input_name]
+        self._upsample_size = self.input_map[upsample_size_name]
 
     def predict(self, norm_img):
         """
@@ -45,7 +40,7 @@ class GpuModel(ProtobufModel, Model):
         """
         resize_to = norm_img[0].shape[:2]
         batched_paf, indices, peaks = super(GpuModel, self).predict(feed_dict={
-                self.__in_x: norm_img,
-                self.__upsample_size: resize_to
+                self._in_x: norm_img,
+                self._upsample_size: resize_to
         })
         return batched_paf, indices, peaks
