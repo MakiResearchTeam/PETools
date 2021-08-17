@@ -45,7 +45,7 @@ class OpWrapper:
             if human.id == -1:
                 # An exceptional case which is not being processed by the OpWrapper.
                 # Humans with id=-1 are assumed to be erroneous.
-                op_results.append((Human, None))
+                op_results.append((human, None))
                 continue
             op = self.register.get(str(human.id))
             if op is None:

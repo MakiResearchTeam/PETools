@@ -3,6 +3,7 @@ import os
 import pathlib
 
 from petools.tools.estimate_tools import Human
+from petools.model_tools.transformers.utils import HIP_ID
 from ..utils import *
 
 
@@ -32,10 +33,20 @@ class PosePreprocessor:
         self.std2d = std_2d.reshape(-1).astype('float32')
 
     def norm2d(self, human):
+        human = self._take_array_from_human(human).reshape(-1)
+        human -= self.mean2d
+        human /= self.std2d
+        return human
+
+    def hip_shift(self, human):
+        human = self._take_array_from_human(human)
+        # Skip probability (last) values in last dimension
+        human[:, :-1] -= human[HIP_ID, :-1]
+        return human
+
+    def _take_array_from_human(self, human) -> np.ndarray:
         if isinstance(human, Human):
-            human = human.to_np()
+            human = human.to_np(copy_if_cached=True)
         else:
             human = np.asarray(human)
-
-        return (human.reshape(-1) - self.mean2d) / self.std2d
-
+        return human

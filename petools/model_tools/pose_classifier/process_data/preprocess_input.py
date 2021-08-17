@@ -1,5 +1,3 @@
-import numpy as np
-
 from petools.tools import Human
 from .pose_preprocessor import PosePreprocessor
 
@@ -17,6 +15,7 @@ class Preprocess2DPose:
         self.pose_preprocessor = pose_preprocessor
 
     def __call__(self, human: Human, **kwargs):
-        norm_human_np = self.pose_preprocessor.norm2d(human)
+        shifted_human = self.pose_preprocessor.hip_shift(human)
+        norm_human_np = self.pose_preprocessor.norm2d(shifted_human)
         return norm_human_np
 
