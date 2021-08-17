@@ -29,7 +29,7 @@ class Human:
         self.count_kp = count_kp
         self.np = self.np3d = None
         self.pose_name = 'Unknown pose'
-        self.pose_class_conf = -1
+        self.pose_class_conf = 0.0
 
     def part_count(self):
         return len(self.body_parts.keys())
