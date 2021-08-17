@@ -7,6 +7,9 @@ from petools.model_tools.transformers.utils import HIP_ID
 from ..utils import *
 
 
+EPSILON = 1e-7
+
+
 class PosePreprocessor:
     """
     This is a utility for normalizing data which feeds into classifier.
@@ -35,7 +38,7 @@ class PosePreprocessor:
     def norm2d(self, human):
         human = self._take_array_from_human(human).reshape(-1)
         human -= self.mean2d
-        human /= self.std2d
+        human /= (self.std2d + EPSILON)
         return human
 
     def hip_shift(self, human):
