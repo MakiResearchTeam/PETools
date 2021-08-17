@@ -1,5 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import List
+
 import numpy as np
+
+from petools.tools import Human
 
 
 class PosePredictorInterface(ABC):
@@ -59,10 +63,13 @@ class PosePredictorInterface(ABC):
         pass
 
     @staticmethod
-    def pack_data(humans, end_time, **kwargs):
+    def pack_data(humans: List[Human], end_time, **kwargs):
         data = {
             PosePredictorInterface.HUMANS: [
-                (single_human.id, single_human.to_dict(prepend_p=True), single_human.to_dict_from3d(prepend_p=True))
+                (
+                    single_human.id, single_human.to_dict(prepend_p=True), single_human.to_dict_from3d(prepend_p=True),
+                    single_human.pose_name, single_human.pose_class_conf
+                )
                 for single_human in humans
             ],
             PosePredictorInterface.TIME: end_time,

@@ -33,6 +33,8 @@ class HumanModWrapper(OpWrapper):
                 # Something made it impossible to modify that human.
                 # Leave an old human as a result.
                 updated_humans.append(old_human)
+                # Skip id assignment
+                continue
             # Restore `id`, because some modules can recreate human class (so id in human will be dropped)
             # In order to keep `id` through different modules, assign old `id` to the new instance
             new_human.id = old_human.id

@@ -3,6 +3,9 @@ from petools.model_tools.transformers import HumanProcessor, Transformer, PoseTr
 from petools.model_tools.transformers import Postprocess3D, Postprocess2D, Preprocess3D, Preprocess2D, SequenceBuffer
 from petools.model_tools.transformers.utils import H36_2DPOINTS_DIM_FLAT
 
+from petools.model_tools.pose_classifier import (PosePreprocessor, PoseClassifier, Classifier,
+                                                 Postprocess2DPose, Preprocess2DPose)
+
 
 def init_smoother():
     return lambda: OneEuroModule()
@@ -30,4 +33,15 @@ def init_converter(pb_path: str, session=None) -> callable:
         postprocess=Postprocess3D(human_processor)
     )
     return converter_fn
+
+
+def init_classifier(pb_path: str, path_to_classifier_config: str, session=None) -> callable:
+    human_processor = PosePreprocessor.init_from_lib()
+    classifier_t = Classifier(protobuf_path=pb_path, session=session)
+    classifier_fn = lambda: PoseClassifier(
+        classifier=classifier_t,
+        preprocess=Preprocess2DPose(human_processor),
+        postprocess=Postprocess2DPose(path_to_classifier_config)
+    )
+    return classifier_fn
 

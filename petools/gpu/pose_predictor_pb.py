@@ -17,8 +17,8 @@ from petools.model_tools.operation_wrapper import OpWrapper, HumanModWrapper
 from petools.model_tools.human_cleaner import HumanCleaner
 from petools.model_tools.human_tracker import HumanTracker
 
-# Converter / Corrector
-from .init_utils import init_corrector, init_converter, init_smoother
+# Init tools
+from .init_utils import init_corrector, init_converter, init_smoother, init_classifier
 
 
 class PosePredictor(PosePredictorInterface):
@@ -35,6 +35,8 @@ class PosePredictor(PosePredictorInterface):
             path_to_config: str,
             path_to_pb_3d: str = None,
             path_to_pb_cor: str = None,
+            path_to_pb_classifier: str = None,
+            path_to_classifier_config: str = None,
             min_h=320,
             expected_w=600,
             norm_mode=CAFFE,
@@ -56,6 +58,10 @@ class PosePredictor(PosePredictorInterface):
             Path to protobuf file with 2d-3d converter model.
         path_to_pb_cor : str
             Path to protobuf file with corrector model.
+        path_to_pb_classifier : str
+            Path to protobuf file with classification model.
+        path_to_classifier_config : str
+            Path to config for classification model.
         min_h : tuple
             H_min
         norm_mode : str
@@ -74,6 +80,9 @@ class PosePredictor(PosePredictorInterface):
         self.__path_to_pb_3d = path_to_pb_3d
         self.__path_to_pb_cor = path_to_pb_cor
         self.__path_to_config = path_to_config
+
+        self.__path_to_pb_classifier = path_to_pb_classifier
+        self.__path_to_classifier_config = path_to_classifier_config
         self._init_model()
 
     def _init_model(self):
@@ -122,6 +131,15 @@ class PosePredictor(PosePredictorInterface):
         if self.__path_to_pb_3d is not None:
             converter_fn = init_converter(self.__path_to_pb_3d)
             self.__converter3d = HumanModWrapper(converter_fn)
+
+        # --- CLASSIFIER
+        self.__classifier = lambda humans, **kwargs: humans
+        if self.__path_to_pb_classifier is not None:
+            classifier_fn = init_classifier(
+                self.__path_to_pb_classifier,
+                path_to_classifier_config=self.__path_to_classifier_config
+            )
+            self.__classifier = HumanModWrapper(classifier_fn)
 
     @property
     def pe_model(self):
@@ -231,6 +249,7 @@ class PosePredictor(PosePredictorInterface):
         # 8. Smoother, smooth predictions;
         # 9. Corrector, correct predictions;
         # 10. Converter 3d, convert 2d predictions into 3d.
+        # 11. Classify 2d points.
         # At the end - pack results (2d, 3d and time of overall pipeline) into dict
 
         # Measure time of overall pipeline
@@ -271,6 +290,8 @@ class PosePredictor(PosePredictorInterface):
         # 10. Converter 3d, convert 2d predictions into 3d.
         # Converter need source resolution to perform human normalization
         humans = self.__converter3d(humans, source_resolution=original_in_size)
+        # 11. Classify 2d points.
+        humans = self.__classifier(humans)
 
         # Time of the overall prediction pipeline
         end_time = time.time() - start_time
@@ -348,6 +369,7 @@ class PosePredictor(PosePredictorInterface):
         # 8. Smoother, smooth predictions;
         # 9. Corrector, correct predictions;
         # 10. Converter 3d, convert 2d predictions into 3d.
+        # 11. Classify 2d points.
         # At the end - pack results (2d, 3d and time of overall pipeline) into dict
 
         # Measure time of overall pipeline
@@ -418,6 +440,11 @@ class PosePredictor(PosePredictorInterface):
         humans = self.__converter3d(humans, source_resolution=original_in_size)
         end_time_converter = time.time() - start_time_converter
 
+        start_time_classifier = time.time()
+        # 11. Classify 2d points.
+        humans = self.__classifier(humans)
+        end_time_classifier = time.time() - start_time_classifier
+
         # Time of the overall prediction pipeline
         end_time = time.time() - start_time
 
@@ -431,7 +458,8 @@ class PosePredictor(PosePredictorInterface):
             'tracker': end_time_tracker,
             'euro': end_time_euro,
             'corrector': end_time_corrector,
-            'converter3d': end_time_converter
+            'converter3d': end_time_converter,
+            'classifier': end_time_classifier
         }
         # Pack data into suitable for other APIs form
         return PosePredictor.pack_data(humans=humans, end_time=end_time, **data_time_logs)

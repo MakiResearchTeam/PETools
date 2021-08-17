@@ -1,0 +1,10 @@
+CURRENT_VERSION = 'v1'
+
+CLASSIFIER_STATS = 'classifier_stats'
+
+MEAN_2D_V1 = f'mean_2d_{CURRENT_VERSION}.npy'
+MEAN_2D = MEAN_2D_V1
+
+
+STD_2D_V1 = f'std_2d_{CURRENT_VERSION}.npy'
+STD_2D = STD_2D_V1

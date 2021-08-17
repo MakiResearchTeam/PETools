@@ -8,7 +8,10 @@ class Human:
     Store keypoints of the single human
 
     """
-    __slots__ = ('body_parts', 'score', 'id', 'count_kp', 'np', 'np3d')
+    __slots__ = (
+        'body_parts', 'score', 'id', 'count_kp',
+        'np', 'np3d', 'pose_name', 'pose_class_conf'
+    )
 
     def __init__(self, count_kp=NUMBER_OF_KEYPOINTS):
         """
@@ -25,6 +28,8 @@ class Human:
         self.id = -1
         self.count_kp = count_kp
         self.np = self.np3d = None
+        self.pose_name = 'Unknown pose'
+        self.pose_class_conf = -1
 
     def part_count(self):
         return len(self.body_parts.keys())

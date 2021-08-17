@@ -12,9 +12,9 @@ setup(
     package_data={'petools': [
         'tools/estimate_tools/pafprocess/*.so',
         'tools/estimate_tools/pafprocess/*.pyd',
-        'gpu/3d_converter_stats/*',
         'cpu/3d_converter_stats/*',
-        'model_tools/transformers/3d_converter_stats/*'
+        'model_tools/transformers/3d_converter_stats/*.npy',
+        'model_tools/pose_classifier/classifier_stats/*.npy'
     ]},
     version=meta['__title__'],
     description=meta['__description__'],
