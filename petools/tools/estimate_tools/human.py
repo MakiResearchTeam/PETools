@@ -187,7 +187,7 @@ class Human:
 
         if self.np is None:
             raise ValueError(
-                "Error! np3в array in Human is not compiled. Call `compile_np` in order to compile 3d array. \n"
+                "Error! np array in Human is not compiled. Call `compile_np` in order to compile array. \n"
                 "Compile it before call method `to_dict`."
             )
         # If array was cached, then use it in order to create dict representation
