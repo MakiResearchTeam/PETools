@@ -43,12 +43,12 @@ def draw_skeletons_on_image(
     # 1 - index for 2d points
     humans = [list(single_h[1].values()) for single_h in predictions_humans]
     if draw_pose_name:
-        pose_name_list = [list(single_h[3].values()) for single_h in predictions_humans]
+        pose_name_list = [single_h[3] for single_h in predictions_humans]
     else:
         pose_name_list = None
 
     if draw_pose_conf:
-        pose_conf_class_list = [list(single_h[4].values()) for single_h in predictions_humans]
+        pose_conf_class_list = [single_h[4] for single_h in predictions_humans]
     else:
         pose_conf_class_list = None
 

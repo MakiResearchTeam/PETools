@@ -25,7 +25,6 @@ class Postprocess2DPose:
         self._class2name = class2name
 
     def __call__(self, nn_predict: np.ndarray, source_human: Human, **kwargs) -> Human:
-        print(nn_predict.shape)
         indx_max_conf = int(np.argmax(nn_predict, axis=1))
         # Poses in config file shifted by 1
         shifted_indx = indx_max_conf + 1
