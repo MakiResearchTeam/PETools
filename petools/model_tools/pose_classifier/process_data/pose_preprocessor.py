@@ -33,7 +33,7 @@ class PosePreprocessor:
 
     def norm2d(self, human):
         if isinstance(human, Human):
-            human = human.to_np()[:, :2]
+            human = human.to_np()
         else:
             human = np.asarray(human)
 
