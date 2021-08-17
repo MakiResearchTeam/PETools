@@ -37,5 +37,5 @@ class PoseClassifier:
 
     def transform(self, human: np.ndarray):
         batched_h = np.expand_dims(human, axis=0)
-        classified_data = self.classifier.classify_poses(batched_h)
+        classified_data = np.asarray(self.classifier.classify_poses(batched_h), dtype=np.float32)
         return classified_data
