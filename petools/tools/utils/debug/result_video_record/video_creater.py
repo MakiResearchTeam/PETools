@@ -7,8 +7,11 @@ from .connect_two_videos import VideoReader, VideoWriter
 
 def create_video_w_model(
         path_to_pb: str, path_to_config: str,
-        path_to_pb_cor: str, gpu_id: str,
-        video_read_path: str, video_save_path: str, **kwargs):
+        path_to_pb_cor: str, path_to_pb_classifier: str,
+        path_to_classifier_config: str, gpu_id: str,
+        video_read_path: str, video_save_path: str,
+        draw_pose_name: bool = False, pose_name_position: tuple = (100, 100),
+        draw_pose_conf: bool = False, pose_conf_position: tuple = (120, 120), **kwargs):
     """
 
     Parameters
@@ -19,12 +22,24 @@ def create_video_w_model(
         Path to config file for PosePredictor
     path_to_pb_cor : str
         Path to pose corrector, can be None, i.e. not applied
+    path_to_pb_classifier : str
+        Path to protobuf file with classification model
+    path_to_classifier_config : str
+        Path to config for classification model
     gpu_id : str
         Id of gpu, for example: '1', '0', and etc...
     video_read_path : str
         Path to read video at which human will be estimated by model
     video_save_path : str
         Path to save final video
+    draw_pose_name : bool
+        If true, then on video also will be pose name per frame
+    pose_name_position : tuple
+        Position of the pose name (X, Y)
+    draw_pose_conf : bool
+        If true, then confidence of pose by classificator will be shown per frame
+    pose_conf_position : tuple
+        Position of the conf (X, Y)
     kwargs : dict
         Additional parameters for PosePredictor
 
@@ -33,6 +48,8 @@ def create_video_w_model(
         path_to_pb=path_to_pb,
         path_to_config=path_to_config,
         path_to_pb_cor=path_to_pb_cor,
+        path_to_pb_classifier=path_to_pb_classifier,
+        path_to_classifier_config=path_to_classifier_config,
         gpu_id=str(gpu_id),
         **kwargs
     )
@@ -50,7 +67,11 @@ def create_video_w_model(
         # read_frames return batched data, in our case batch_size = 1
         s_img = s_img[0]
         predictions = pose_predictor.predict(s_img)
-        s_img_skeletons = draw_skeletons_on_image(s_img, predictions)
+        s_img_skeletons = draw_skeletons_on_image(
+            s_img, predictions,
+            draw_pose_name=draw_pose_name, pose_name_position=pose_name_position,
+            draw_pose_conf=draw_pose_conf, pose_conf_position=pose_conf_position
+        )
         w_r.write([s_img_skeletons])
     iterator.close()
     w_r.release()

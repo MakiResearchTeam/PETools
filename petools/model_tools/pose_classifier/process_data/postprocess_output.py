@@ -26,10 +26,12 @@ class Postprocess2DPose:
 
     def __call__(self, nn_predict: np.ndarray, source_human: Human, **kwargs) -> Human:
         indx_max_conf = int(np.argmax(nn_predict, axis=1))
+        # Poses in config file shifted by 1
+        shifted_indx = indx_max_conf + 1
 
-        if self._class2name.get(str(indx_max_conf)) is None:
+        if self._class2name.get(str(shifted_indx)) is None:
             source_human.pose_name = self.NONE
         else:
-            source_human.pose_name = self._class2name[str(indx_max_conf)]
+            source_human.pose_name = self._class2name[str(shifted_indx)]
         source_human.pose_class_conf = nn_predict[0, indx_max_conf]
         return source_human
