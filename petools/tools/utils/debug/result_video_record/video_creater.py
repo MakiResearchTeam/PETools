@@ -11,7 +11,8 @@ def create_video_w_model(
         path_to_classifier_config: str, gpu_id: str,
         video_read_path: str, video_save_path: str,
         draw_pose_name: bool = False, pose_name_position: tuple = (100, 100),
-        draw_pose_conf: bool = False, pose_conf_position: tuple = (120, 120), **kwargs):
+        draw_pose_conf: bool = False, pose_conf_position: tuple = (120, 120),
+        fps=20, **kwargs):
     """
 
     Parameters
@@ -55,7 +56,7 @@ def create_video_w_model(
     )
 
     v_r = VideoReader(video_read_path)
-    w_r = VideoWriter(video_save_path)
+    w_r = VideoWriter(video_save_path, fps=fps)
 
     iterator = tqdm(range(v_r.get_length()))
 
