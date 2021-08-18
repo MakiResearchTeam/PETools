@@ -2,6 +2,8 @@ import json
 import os
 import time
 import numpy as np
+from typing import Callable
+import tensorflow as tf
 
 # Miscellaneous pose utilities
 from petools.core import PosePredictorInterface
@@ -20,6 +22,9 @@ from petools.model_tools.human_tracker import HumanTracker
 # Init tools
 from .init_utils import init_corrector, init_converter, init_smoother, init_classifier
 
+OP_CONSTRUCTOR = Callable[[], object]
+OP_INITIALIZER = Callable[..., OP_CONSTRUCTOR]
+
 
 class PosePredictor(PosePredictorInterface):
     INPUT_NAME = INPUT_TENSOR
@@ -37,6 +42,9 @@ class PosePredictor(PosePredictorInterface):
             path_to_pb_cor: str = None,
             path_to_pb_classifier: str = None,
             path_to_classifier_config: str = None,
+            converter_initializer: OP_INITIALIZER = init_converter,
+            corrector_initializer: OP_INITIALIZER = init_corrector,
+            classifier_initializer: OP_INITIALIZER = init_classifier,
             min_h=320,
             expected_w=600,
             norm_mode=CAFFE,
@@ -62,6 +70,15 @@ class PosePredictor(PosePredictorInterface):
             Path to protobuf file with classification model.
         path_to_classifier_config : str
             Path to config for classification model.
+        converter_initializer : Callable
+            A function that takes in a path to protobuf and optional tf.Session object and returns
+            a Callable[[], converter] that returns a converter when being called.
+        corrector_initializer : Callable
+            A function that takes in a path to protobuf and optional tf.Session object and returns
+            a Callable[[], corrector] that returns a corrector when being called.
+        classifier_initializer : Callable
+            A function that takes in a path to protobuf, path to a file with a list of classes and optional tf.Session
+            object and returns a Callable[[], classifier] that returns a classifier when being called.
         min_h : tuple
             H_min
         norm_mode : str
@@ -83,6 +100,10 @@ class PosePredictor(PosePredictorInterface):
 
         self.__path_to_pb_classifier = path_to_pb_classifier
         self.__path_to_classifier_config = path_to_classifier_config
+
+        self.__converter_init = converter_initializer
+        self.__corrector_init = corrector_initializer
+        self.__classifier_init = classifier_initializer
         self._init_model()
 
     def _init_model(self):
@@ -123,19 +144,19 @@ class PosePredictor(PosePredictorInterface):
         # --- CORRECTOR
         self.__corrector = lambda humans, **kwargs: humans
         if self.__path_to_pb_cor is not None:
-            corrector_fn = init_corrector(self.__path_to_pb_cor)
+            corrector_fn = self.__corrector_init(self.__path_to_pb_cor)
             self.__corrector = HumanModWrapper(corrector_fn)
 
         # --- CONVERTER
         self.__converter3d = lambda humans, **kwargs: humans
         if self.__path_to_pb_3d is not None:
-            converter_fn = init_converter(self.__path_to_pb_3d)
+            converter_fn = self.__converter_init(self.__path_to_pb_3d)
             self.__converter3d = HumanModWrapper(converter_fn)
 
         # --- CLASSIFIER
         self.__classifier = lambda humans, **kwargs: humans
         if self.__path_to_pb_classifier is not None:
-            classifier_fn = init_classifier(
+            classifier_fn = self.__classifier_init(
                 self.__path_to_pb_classifier,
                 path_to_classifier_config=self.__path_to_classifier_config
             )
