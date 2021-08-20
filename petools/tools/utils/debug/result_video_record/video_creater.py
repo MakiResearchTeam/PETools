@@ -7,9 +7,9 @@ from .connect_two_videos import VideoReader, VideoWriter
 
 def create_video_w_model(
         path_to_pb: str, path_to_config: str,
-        path_to_pb_cor: str, path_to_pb_classifier: str,
-        path_to_classifier_config: str, gpu_id: str,
         video_read_path: str, video_save_path: str,
+        path_to_pb_cor: str = None, path_to_pb_classifier: str = None,
+        path_to_classifier_config: str = None, gpu_id: str = None,
         draw_pose_name: bool = False, pose_name_position: tuple = (100, 100),
         draw_pose_conf: bool = False, pose_conf_position: tuple = (120, 120),
         fps=20, **kwargs):
