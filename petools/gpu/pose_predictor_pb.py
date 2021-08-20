@@ -3,7 +3,7 @@ import os
 import time
 import numpy as np
 from typing import Callable
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 # Miscellaneous pose utilities
 from petools.core import PosePredictorInterface
