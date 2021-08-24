@@ -37,17 +37,17 @@ class ProtobufModel:
         assert len(input_map) != 0
         assert len(output_tensors) != 0
         if session is None:
-            self.__protobuf_graph = tf.Graph()
+            self._protobuf_graph = tf.Graph()
 
             # This graph management is required for usage of TensorRT.
             # TensorRT can't run when there are multiple graphs in one session.
             # Therefore, we need an individual session for each model running on TensorRT.
-            with self.__protobuf_graph.as_default():
+            with self._protobuf_graph.as_default():
                 self._init_graph(
                     protobuf_path=protobuf_path, input_map=input_map, output_tensors=output_tensors
                 )
         else:
-            self.__protobuf_graph = session.graph
+            self._protobuf_graph = session.graph
             self._init_graph(
                 protobuf_path=protobuf_path, input_map=input_map, output_tensors=output_tensors,
                 session=session
@@ -105,7 +105,7 @@ class ProtobufModel:
                 assert input_map in self._input_map.values(), f'Unknown tensor: {input_map}. Expected one of those:' \
                                                             f'{self._input_map.values()}'
         # Execute session with graph
-        with self.__protobuf_graph.as_default():
+        with self._protobuf_graph.as_default():
             return self._session.run(
                 self._output_tensors,
                 feed_dict=feed_dict

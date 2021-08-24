@@ -13,10 +13,10 @@ class Classifier(ProtobufModel):
     """
 
     def __init__(
-            self, protobuf_path: str, session: tf.Session = None):
+            self, protobuf_path: str, session: tf.Session = None, input_dims: int = H3P6_2D_NUM * NUM_DIMENSIONS):
         super().__init__(
             protobuf_path,
-            input_map={'input': ('float32', [1, H3P6_2D_NUM * NUM_DIMENSIONS], 'input')},
+            input_map={'input': ('float32', [1, input_dims], 'input')},
             output_tensors=['Identity:0'],
             session=session
         )
