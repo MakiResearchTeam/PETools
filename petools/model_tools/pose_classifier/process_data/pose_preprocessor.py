@@ -8,6 +8,7 @@ from ..utils import *
 
 
 EPSILON = 1e-7
+PATH_DATA = None
 
 
 class PosePreprocessor:
@@ -16,18 +17,33 @@ class PosePreprocessor:
 
     """
 
+    # TODO: Delete this method. Method only used as debug tool
+    @staticmethod
+    def set_data_path(path: str):
+        global PATH_DATA
+        PATH_DATA = path
+
     @staticmethod
     def init_from_lib():
-        file_path = os.path.abspath(__file__)
-        dir_path = pathlib.Path(file_path).parent
-        data_stats_dir = os.path.join(dir_path, CLASSIFIER_STATS)
-        mean_path = os.path.join(data_stats_dir, MEAN_2D)
-        assert os.path.isfile(mean_path), f"Could not find {MEAN_2D} in {mean_path}."
-        mean_2d = np.load(mean_path)
+        if PATH_DATA is not None:
+            mean_path = os.path.join(PATH_DATA, MEAN_2D)
+            assert os.path.isfile(mean_path), f"Could not find {MEAN_2D} in {mean_path}."
+            mean_2d = np.load(mean_path)
 
-        std_path = os.path.join(data_stats_dir, STD_2D)
-        assert os.path.isfile(std_path), f"Could not find {STD_2D} in {std_path}."
-        std_2d = np.load(std_path)
+            std_path = os.path.join(PATH_DATA, STD_2D)
+            assert os.path.isfile(std_path), f"Could not find {STD_2D} in {std_path}."
+            std_2d = np.load(std_path)
+        else:
+            file_path = os.path.abspath(__file__)
+            dir_path = pathlib.Path(file_path).parent
+            data_stats_dir = os.path.join(dir_path, CLASSIFIER_STATS)
+            mean_path = os.path.join(data_stats_dir, MEAN_2D)
+            assert os.path.isfile(mean_path), f"Could not find {MEAN_2D} in {mean_path}."
+            mean_2d = np.load(mean_path)
+
+            std_path = os.path.join(data_stats_dir, STD_2D)
+            assert os.path.isfile(std_path), f"Could not find {STD_2D} in {std_path}."
+            std_2d = np.load(std_path)
 
         return PosePreprocessor(mean_2d, std_2d)
 
