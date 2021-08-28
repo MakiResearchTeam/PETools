@@ -24,6 +24,7 @@ class Preprocess2DPose:
 
     def __call__(self, human: Human, **kwargs):
         human = human.to_np(copy_if_cached=True)[:, :-1]
+        print('human: ', human.shape)
         self.fg.generate_features(human, features=self.features)
         norm_human_np = self.pose_preprocessor.norm2d(self.features)
         return norm_human_np

@@ -69,7 +69,7 @@ def gen_f(points: np.ndarray, features: np.ndarray, point_triple_ids: np.ndarray
             points[ind1, 0], points[ind1, 1],
             points[ind2, 0], points[ind2, 1],
             points[ind3, 0], points[ind3, 1],
-            i * NUM_C,
+            i * 5,
             features
         )
 
