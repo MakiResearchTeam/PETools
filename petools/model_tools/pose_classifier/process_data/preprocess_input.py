@@ -20,11 +20,9 @@ class Preprocess2DPose:
         self.pose_preprocessor = pose_preprocessor
         self.fg = FeatureGenerator(np.array(conlist, dtype=np.int32), NUM_PROD_POINTS)
         self.features = np.empty(shape=(self.fg.n_triples * NUM_C), dtype=np.float32)
-        print('features shape: ', self.features.shape)
 
     def __call__(self, human: Human, **kwargs):
         human = human.to_np(copy_if_cached=True)[:, :-1]
-        print('human: ', human.shape)
         self.fg.generate_features(human, features=self.features)
         norm_human_np = self.pose_preprocessor.norm2d(self.features)
         return norm_human_np
