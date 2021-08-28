@@ -1,9 +1,7 @@
 import tensorflow.compat.v1 as tf
 
 from petools.core import ProtobufModel
-from petools.model_tools.transformers.utils import H3P6_2D_NUM
-
-INPUT_SHAPE = 55
+from .utils import INPUT_SHAPE
 
 
 class Classifier(ProtobufModel):

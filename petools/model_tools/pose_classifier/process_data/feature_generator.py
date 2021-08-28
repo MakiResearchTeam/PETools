@@ -1,7 +1,10 @@
+from ..utils import NUM_C
+
 import numpy as np
 from math import sqrt
 
 from numba import njit
+
 
 
 @njit
@@ -66,14 +69,12 @@ def gen_f(points: np.ndarray, features: np.ndarray, point_triple_ids: np.ndarray
             points[ind1, 0], points[ind1, 1],
             points[ind2, 0], points[ind2, 1],
             points[ind3, 0], points[ind3, 1],
-            i * FeatureGenerator.NUM_C,
+            i * NUM_C,
             features
         )
 
 
 class FeatureGenerator:
-
-    NUM_C = 5
 
     def __init__(self, connectivity_list, n_points):
         self.connectivity_list = connectivity_list
