@@ -51,6 +51,8 @@ class PosePreprocessor:
         self.std2d = std_2d.reshape(-1).astype('float32')
 
     def norm2d(self, human):
+        print('inside preprocess: ', human.shape)
+        print('loaded mean: ', self.mean2d.shape, ' loaded std: ', self.std2d.shape)
         human -= self.mean2d
         human /= (self.std2d + EPSILON)
         return human
