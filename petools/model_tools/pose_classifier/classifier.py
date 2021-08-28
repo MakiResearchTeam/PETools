@@ -3,7 +3,7 @@ import tensorflow.compat.v1 as tf
 from petools.core import ProtobufModel
 from petools.model_tools.transformers.utils import H3P6_2D_NUM
 
-NUM_DIMENSIONS = 3
+INPUT_SHAPE = 55
 
 
 class Classifier(ProtobufModel):
@@ -13,7 +13,7 @@ class Classifier(ProtobufModel):
     """
 
     def __init__(
-            self, protobuf_path: str, session: tf.Session = None, input_dims: int = H3P6_2D_NUM * NUM_DIMENSIONS):
+            self, protobuf_path: str, session: tf.Session = None, input_dims: int = INPUT_SHAPE):
         super().__init__(
             protobuf_path,
             input_map={'input': ('float32', [1, input_dims], 'input')},
