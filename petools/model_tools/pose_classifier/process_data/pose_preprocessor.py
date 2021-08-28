@@ -51,14 +51,7 @@ class PosePreprocessor:
         self.std2d = std_2d.reshape(-1).astype('float32')
 
     def norm2d(self, human):
-        human = self._take_array_from_human(human).reshape(-1)
         human -= self.mean2d
         human /= (self.std2d + EPSILON)
         return human
 
-    def _take_array_from_human(self, human) -> np.ndarray:
-        if isinstance(human, Human):
-            human = human.to_np(copy_if_cached=True)
-        else:
-            human = np.asarray(human)
-        return human
