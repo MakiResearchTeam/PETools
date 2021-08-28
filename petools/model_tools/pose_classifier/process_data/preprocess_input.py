@@ -1,5 +1,9 @@
+import numpy as np
+
 from petools.tools import Human
 from .pose_preprocessor import PosePreprocessor
+from petools.model_tools.transformers.utils import NUM_PROD_POINTS
+from .utils import conlist, FeatureGenerator
 
 
 class Preprocess2DPose:
@@ -13,9 +17,12 @@ class Preprocess2DPose:
         pose_preprocessor : HumanProcessor
         """
         self.pose_preprocessor = pose_preprocessor
+        self.fg = FeatureGenerator(np.array(conlist, dtype=np.int32), NUM_PROD_POINTS)
+        self.features = np.empty(shape=(self.fg.n_triples * FeatureGenerator.NUM_C), dtype=np.float32)
 
     def __call__(self, human: Human, **kwargs):
-        shifted_human = self.pose_preprocessor.hip_shift(human)
-        norm_human_np = self.pose_preprocessor.norm2d(shifted_human)
+        human = human.to_np(copy_if_cached=True)[:, :-1]
+        self.fg.generate_features(human, features=self.features)
+        norm_human_np = self.pose_preprocessor.norm2d(self.features)
         return norm_human_np
 
