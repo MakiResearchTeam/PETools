@@ -6,7 +6,6 @@ from math import sqrt
 from numba import njit
 
 
-
 @njit
 def multi_sim(x1: float, y1: float, x2: float, y2: float, x3: float, y3: float, start_ind: int, out: np.ndarray):
     # Computes a cosine similarity between two vectors
@@ -44,21 +43,6 @@ def multi_sim(x1: float, y1: float, x2: float, y2: float, x3: float, y3: float, 
     out[start_ind + 4] = product
 
 
-def make_point_triples(connectivity_list: np.ndarray):
-    py_triples = []
-    for i in range(connectivity_list.shape[0]):
-        p_first = connectivity_list[i, 0]
-        p_inter = connectivity_list[i, 1]
-        for j in range(connectivity_list.shape[0]):
-            p_inter_temp = connectivity_list[j, 0]
-            if p_inter_temp == p_inter:
-                p_last = connectivity_list[j, 1]
-                py_triples.append([p_first, p_inter, p_last])
-                break
-
-    return np.array(py_triples, dtype='int32')
-
-
 @njit
 def gen_f(points: np.ndarray, features: np.ndarray, point_triple_ids: np.ndarray, n_triples: int):
     for i in range(n_triples):
@@ -77,14 +61,13 @@ def gen_f(points: np.ndarray, features: np.ndarray, point_triple_ids: np.ndarray
 class FeatureGenerator:
 
     def __init__(self, connectivity_list, n_points):
-        self.connectivity_list = connectivity_list
         # An idiot check
         for i in range(connectivity_list.shape[0]):
             assert connectivity_list[i, 0] < n_points
             assert connectivity_list[i, 1] < n_points
 
         # Make a list of points triples (vector pairs)
-        self.point_triple_ids = make_point_triples(self.connectivity_list)
+        self.point_triple_ids = np.array(connectivity_list, dtype=np.int32)
         self.n_triples = self.point_triple_ids.shape[0]
 
     def generate_features(self, points, features):
