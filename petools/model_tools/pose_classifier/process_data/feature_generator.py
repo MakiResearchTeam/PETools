@@ -78,10 +78,10 @@ class FeatureGenerator:
             np.prod(points[22]) < 1e-3 or np.prod(points[2]) < 1e-3 or np.prod(points[22] - points[2]) < 1e-3:
             dist = np.zeros((2,), dtype=np.float32)
         else:
-            dist = (points[11] - points[10]) / (points[22] - points[2])
+            ev_dist = lambda x: np.sqrt(np.sum(np.square(x)))
+            dist = ev_dist(points[11] - points[10]) / ev_dist(points[22] - points[2])
         features[-1] = dist[0] # x
         features[-2] = dist[1] # y
 
         dist = np.sign(points[2] - points[22])
-        features[-3] = dist[0] # x
-        features[-4] = dist[1] # y
+        features[-3] = dist[1] # y
