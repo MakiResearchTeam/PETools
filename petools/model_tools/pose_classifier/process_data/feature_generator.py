@@ -58,6 +58,22 @@ def gen_f(points: np.ndarray, features: np.ndarray, point_triple_ids: np.ndarray
         )
 
 
+EXP_SCALE = 2
+EPSILONE = 1e-6
+
+
+@njit
+def ev_dist(x: float) -> float:
+    return np.sqrt(np.sum(np.square(x)))
+
+
+@njit
+def calc_exp(hand: float, knee: float, foot: float) -> float:
+    hand2knee = hand - knee
+    knee2foot = knee - foot
+    return np.exp(-EXP_SCALE * (ev_dist(hand2knee) ** 2) / ((ev_dist(knee2foot)) ** 2 + EPSILONE))
+
+
 class FeatureGenerator:
 
     def __init__(self, connectivity_list, n_points):
@@ -73,14 +89,20 @@ class FeatureGenerator:
     def generate_features(self, points, features):
         # Compute distances
         gen_f(points, features, self.point_triple_ids, self.n_triples)
-        # Hip dist to hip-neck
-        if np.prod(points[11]) < 1e-3 or np.prod(points[10]) < 1e-3 or \
-            np.prod(points[22]) < 1e-3 or np.prod(points[2]) < 1e-3 or np.prod(points[22] - points[2]) < 1e-3:
-            dist = np.float32(0.0)
-        else:
-            ev_dist = lambda x: np.sqrt(np.sum(np.square(x)))
-            dist = ev_dist(points[11] - points[10]) / ev_dist(points[22] - points[2])
-        features[-1] = dist
+        left_hand = points[8]
+        right_hand = points[9]
 
-        dist = np.sign(points[2] - points[22])
-        features[-2] = dist[1] # y
+        left_knee = points[12]
+        right_knee = points[13]
+
+        left_foot = points[14]
+        right_foot = points[15]
+
+        # left to left
+        features[-1] = calc_exp(left_hand, left_knee, left_foot)
+        # right to right
+        features[-2] = calc_exp(right_hand, right_knee, right_foot)
+        # right to left
+        features[-3] = calc_exp(right_hand, left_knee, left_foot)
+        # left to right
+        features[-4] = calc_exp(left_hand, right_knee, right_foot)
