@@ -1,9 +1,22 @@
-from ..utils import NUM_C
-
 import numpy as np
 from math import sqrt
 
 from numba import njit
+
+EXP_SCALE = 2
+EPSILONE = 1e-6
+
+
+@njit
+def ev_dist(x: float) -> float:
+    return np.sqrt(np.sum(np.square(x)))
+
+
+@njit
+def calc_exp(one_p: float, center_p: float, max_radi_p: float, scale_eps: float = EXP_SCALE) -> float:
+    hand2knee = one_p - center_p
+    knee2foot = center_p - max_radi_p
+    return np.exp(-scale_eps * (ev_dist(hand2knee) ** 2) / ((ev_dist(knee2foot)) ** 2 + EPSILONE))
 
 
 @njit
@@ -57,21 +70,33 @@ def gen_f(points: np.ndarray, features: np.ndarray, point_triple_ids: np.ndarray
             features
         )
 
+    left_hand = points[8]
+    right_hand = points[9]
 
-EXP_SCALE = 2
-EPSILONE = 1e-6
+    left_knee = points[12]
+    right_knee = points[13]
 
+    left_foot = points[14]
+    right_foot = points[15]
 
-@njit
-def ev_dist(x: float) -> float:
-    return np.sqrt(np.sum(np.square(x)))
-
-
-@njit
-def calc_exp(hand: float, knee: float, foot: float) -> float:
-    hand2knee = hand - knee
-    knee2foot = knee - foot
-    return np.exp(-EXP_SCALE * (ev_dist(hand2knee) ** 2) / ((ev_dist(knee2foot)) ** 2 + EPSILONE))
+    # Around knee
+    # left to left
+    features[-1] = calc_exp(left_hand, left_knee, left_foot)
+    # right to right
+    features[-2] = calc_exp(right_hand, right_knee, right_foot)
+    # right to left
+    features[-3] = calc_exp(right_hand, left_knee, left_foot)
+    # left to right
+    features[-4] = calc_exp(left_hand, right_knee, right_foot)
+    # Around foot
+    # left to left
+    features[-5] = calc_exp(left_hand, left_foot, left_knee, 1.0)
+    # right to right
+    features[-6] = calc_exp(right_hand, right_foot, right_knee, 1.0)
+    # right to left
+    features[-7] = calc_exp(right_hand, left_foot, left_knee, 0.75)
+    # left to right
+    features[-8] = calc_exp(left_hand, right_foot, right_knee, 0.75)
 
 
 class FeatureGenerator:
@@ -89,20 +114,3 @@ class FeatureGenerator:
     def generate_features(self, points, features):
         # Compute distances
         gen_f(points, features, self.point_triple_ids, self.n_triples)
-        left_hand = points[8]
-        right_hand = points[9]
-
-        left_knee = points[12]
-        right_knee = points[13]
-
-        left_foot = points[14]
-        right_foot = points[15]
-
-        # left to left
-        features[-1] = calc_exp(left_hand, left_knee, left_foot)
-        # right to right
-        features[-2] = calc_exp(right_hand, right_knee, right_foot)
-        # right to left
-        features[-3] = calc_exp(right_hand, left_knee, left_foot)
-        # left to right
-        features[-4] = calc_exp(left_hand, right_knee, right_foot)
