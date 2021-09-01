@@ -2,6 +2,8 @@ import json
 import os
 import time
 import numpy as np
+from typing import Callable
+import tensorflow.compat.v1 as tf
 
 # Miscellaneous pose utilities
 from petools.core import PosePredictorInterface
@@ -13,14 +15,15 @@ from petools.tools.estimate_tools import Human
 from .utils import INPUT_TENSOR, IND_TENSOR, PAF_TENSOR, PEAKS_SCORE_TENSOR, INPUT_TENSOR_3D, OUTPUT_TENSOR_3D
 from .gpu_model import GpuModel
 from petools.model_tools.image_preprocessors import GpuImagePreprocessor
-from petools.model_tools.operation_wrapper import OPWrapper
+from petools.model_tools.operation_wrapper import OpWrapper, HumanModWrapper
 from petools.model_tools.human_cleaner import HumanCleaner
 from petools.model_tools.human_tracker import HumanTracker
-from petools.model_tools.one_euro_filter import OneEuroModule
-# Converter / Corrector
-from petools.model_tools.transformers import HumanProcessor, Transformer, PoseTransformer
-from petools.model_tools.transformers import Postprocess3D, Postprocess2D, Preprocess3D, Preprocess2D, SequenceBuffer
-from petools.model_tools.transformers.utils import H36_2DPOINTS_DIM_FLAT
+
+# Init tools
+from .init_utils import init_corrector, init_converter, init_smoother, init_classifier
+
+OP_CONSTRUCTOR = Callable[[], object]
+OP_INITIALIZER = Callable[..., OP_CONSTRUCTOR]
 
 
 class PosePredictor(PosePredictorInterface):
@@ -37,6 +40,11 @@ class PosePredictor(PosePredictorInterface):
             path_to_config: str,
             path_to_pb_3d: str = None,
             path_to_pb_cor: str = None,
+            path_to_pb_classifier: str = None,
+            path_to_classifier_config: str = None,
+            converter_initializer: OP_INITIALIZER = init_converter,
+            corrector_initializer: OP_INITIALIZER = init_corrector,
+            classifier_initializer: OP_INITIALIZER = init_classifier,
             min_h=320,
             expected_w=600,
             norm_mode=CAFFE,
@@ -58,6 +66,19 @@ class PosePredictor(PosePredictorInterface):
             Path to protobuf file with 2d-3d converter model.
         path_to_pb_cor : str
             Path to protobuf file with corrector model.
+        path_to_pb_classifier : str
+            Path to protobuf file with classification model.
+        path_to_classifier_config : str
+            Path to config for classification model.
+        converter_initializer : Callable
+            A function that takes in a path to protobuf and optional tf.Session object and returns
+            a Callable[[], converter] that returns a converter when being called.
+        corrector_initializer : Callable
+            A function that takes in a path to protobuf and optional tf.Session object and returns
+            a Callable[[], corrector] that returns a corrector when being called.
+        classifier_initializer : Callable
+            A function that takes in a path to protobuf, path to a file with a list of classes and optional tf.Session
+            object and returns a Callable[[], classifier] that returns a classifier when being called.
         min_h : tuple
             H_min
         norm_mode : str
@@ -73,9 +94,16 @@ class PosePredictor(PosePredictorInterface):
         self.__expected_w = expected_w
         self.__norm_mode = norm_mode
         self.__path_to_tb = path_to_pb
-        self.__path_to_tb_3d = path_to_pb_3d
-        self.__path_to_tb_cor = path_to_pb_cor
+        self.__path_to_pb_3d = path_to_pb_3d
+        self.__path_to_pb_cor = path_to_pb_cor
         self.__path_to_config = path_to_config
+
+        self.__path_to_pb_classifier = path_to_pb_classifier
+        self.__path_to_classifier_config = path_to_classifier_config
+
+        self.__converter_init = converter_initializer
+        self.__corrector_init = corrector_initializer
+        self.__classifier_init = classifier_initializer
         self._init_model()
 
     def _init_model(self):
@@ -94,6 +122,8 @@ class PosePredictor(PosePredictorInterface):
             peaks_score_name=config[PosePredictor.PEAKS_SCORE_NAME],
         )
 
+        self.__session = self.__model.session
+
         self.__image_preprocessor = GpuImagePreprocessor(
             h=self.__min_h,
             w=int(self.__min_h / PosePredictor.W_BY_H),
@@ -109,32 +139,48 @@ class PosePredictor(PosePredictorInterface):
         self.__tracker = None
 
         # --- SMOOTHER
-        self.__smoother = OPWrapper(lambda: OneEuroModule())
+        self.__smoother = HumanModWrapper(init_smoother())
 
-        human_processor = HumanProcessor.init_from_lib()
         # --- CORRECTOR
         self.__corrector = lambda humans, **kwargs: humans
-        if self.__path_to_tb_cor is not None:
-            corrector_t = Transformer(protobuf_path=self.__path_to_tb_cor)
-            corrector_fn = lambda: PoseTransformer(
-                transformer=corrector_t,
-                seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
-                preprocess=Preprocess2D(human_processor),
-                postprocess=Postprocess2D(human_processor)
-            )
-            self.__corrector = OPWrapper(corrector_fn)
+        if self.__path_to_pb_cor is not None:
+            corrector_fn = self.__corrector_init(self.__path_to_pb_cor)
+            self.__corrector = HumanModWrapper(corrector_fn)
 
         # --- CONVERTER
         self.__converter3d = lambda humans, **kwargs: humans
-        if self.__path_to_tb_3d is not None:
-            converter_t = Transformer(protobuf_path=self.__path_to_tb_3d)
-            converter_fn = lambda: PoseTransformer(
-                transformer=converter_t,
-                seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
-                preprocess=Preprocess3D(human_processor),
-                postprocess=Postprocess3D(human_processor)
+        if self.__path_to_pb_3d is not None:
+            converter_fn = self.__converter_init(self.__path_to_pb_3d)
+            self.__converter3d = HumanModWrapper(converter_fn)
+
+        # --- CLASSIFIER
+        self.__classifier = lambda humans, **kwargs: humans
+        if self.__path_to_pb_classifier is not None:
+            classifier_fn = self.__classifier_init(
+                self.__path_to_pb_classifier,
+                path_to_classifier_config=self.__path_to_classifier_config
             )
-            self.__converter3d = OPWrapper(converter_fn)
+            self.__classifier = HumanModWrapper(classifier_fn)
+
+    @property
+    def pe_model(self):
+        return self.__model
+
+    @property
+    def converter(self):
+        return self.__converter3d
+
+    @property
+    def corrector(self):
+        return self.__corrector
+
+    @property
+    def session(self):
+        return self.__session
+
+    @property
+    def tracker(self):
+        return self.__tracker
 
     def __human_tracker(self, humans, im_size):
         """
@@ -224,6 +270,7 @@ class PosePredictor(PosePredictorInterface):
         # 8. Smoother, smooth predictions;
         # 9. Corrector, correct predictions;
         # 10. Converter 3d, convert 2d predictions into 3d.
+        # 11. Classify 2d points.
         # At the end - pack results (2d, 3d and time of overall pipeline) into dict
 
         # Measure time of overall pipeline
@@ -264,6 +311,8 @@ class PosePredictor(PosePredictorInterface):
         # 10. Converter 3d, convert 2d predictions into 3d.
         # Converter need source resolution to perform human normalization
         humans = self.__converter3d(humans, source_resolution=original_in_size)
+        # 11. Classify 2d points.
+        humans = self.__classifier(humans)
 
         # Time of the overall prediction pipeline
         end_time = time.time() - start_time
@@ -341,6 +390,7 @@ class PosePredictor(PosePredictorInterface):
         # 8. Smoother, smooth predictions;
         # 9. Corrector, correct predictions;
         # 10. Converter 3d, convert 2d predictions into 3d.
+        # 11. Classify 2d points.
         # At the end - pack results (2d, 3d and time of overall pipeline) into dict
 
         # Measure time of overall pipeline
@@ -411,6 +461,11 @@ class PosePredictor(PosePredictorInterface):
         humans = self.__converter3d(humans, source_resolution=original_in_size)
         end_time_converter = time.time() - start_time_converter
 
+        start_time_classifier = time.time()
+        # 11. Classify 2d points.
+        humans = self.__classifier(humans)
+        end_time_classifier = time.time() - start_time_classifier
+
         # Time of the overall prediction pipeline
         end_time = time.time() - start_time
 
@@ -424,7 +479,8 @@ class PosePredictor(PosePredictorInterface):
             'tracker': end_time_tracker,
             'euro': end_time_euro,
             'corrector': end_time_corrector,
-            'converter3d': end_time_converter
+            'converter3d': end_time_converter,
+            'classifier': end_time_classifier
         }
         # Pack data into suitable for other APIs form
         return PosePredictor.pack_data(humans=humans, end_time=end_time, **data_time_logs)

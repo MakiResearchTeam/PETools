@@ -8,7 +8,72 @@ class Human:
     Store keypoints of the single human
 
     """
-    __slots__ = ('body_parts', 'score', 'id', 'count_kp', 'np', 'np3d')
+    __slots__ = (
+        'body_parts', 'score', 'id', 'count_kp',
+        'np', 'np3d', 'pose_name', 'pose_class_conf'
+    )
+
+    @staticmethod
+    def from_array(human_array):
+        """
+        Take points from `human_array` and create Human class with this points
+
+        Parameters
+        ----------
+        human_array : np.ndarray or list
+            Array of input points
+            NOTICE! Input array must be with shape (N, 3) (N - number of points)
+            Human will handle N keypoints from this array
+
+        Returns
+        -------
+        Human
+            Created Human object with points in `human_np`
+
+        """
+        if len(human_array) == 0:
+            return
+
+        if len(human_array[0]) != 3:
+            raise ValueError("Wrong input shape of human array. Expected array with shape (N, 3), but" +
+                             f"shape (N, {len(human_array[0])}) were given."
+            )
+
+        human_class = Human(count_kp=len(human_array))
+        human_class.np = np.asarray(human_array, dtype=np.float32)
+        human_class.score = float(np.sum(human_array[:, -1], axis=0)) / len(human_array)
+        return human_class
+
+    @staticmethod
+    def from_array_3d(human_array):
+        """
+        Take points from `human_array` and create Human class with this points
+
+        Parameters
+        ----------
+        human_array : np.ndarray or list
+            Array of input points
+            NOTICE! Input array must be with shape (N, 4) (N - number of points)
+            Human will handle N keypoints from this array
+
+        Returns
+        -------
+        Human
+            Created Human object with points in `human_np`
+
+        """
+        if len(human_array) == 0:
+            return
+
+        if len(human_array[0]) != 4:
+            raise ValueError("Wrong input shape of human array. Expected array with shape (N, 4), but" +
+                             f"shape (N, {len(human_array[0])}) were given."
+            )
+
+        human_class = Human(count_kp=len(human_array))
+        human_class.np3d = np.asarray(human_array, dtype=np.float32)
+        human_class.score = float(np.sum(human_array[:, -1], axis=0)) / len(human_array)
+        return human_class
 
     def __init__(self, count_kp=NUMBER_OF_KEYPOINTS):
         """
@@ -25,6 +90,8 @@ class Human:
         self.id = -1
         self.count_kp = count_kp
         self.np = self.np3d = None
+        self.pose_name = 'Unknown pose'
+        self.pose_class_conf = 0.0
 
     def part_count(self):
         return len(self.body_parts.keys())
@@ -182,7 +249,7 @@ class Human:
 
         if self.np is None:
             raise ValueError(
-                "Error! np3в array in Human is not compiled. Call `compile_np` in order to compile 3d array. \n"
+                "Error! np array in Human is not compiled. Call `compile_np` in order to compile array. \n"
                 "Compile it before call method `to_dict`."
             )
         # If array was cached, then use it in order to create dict representation
@@ -319,67 +386,28 @@ class Human:
         # (N, 4)
         return np.array(list_points, dtype=np.float32).reshape(-1, 4)
 
-    @staticmethod
-    def from_array(human_array):
+    def get_human_info(self):
         """
-        Take points from `human_array` and create Human class with this points
-
-        Parameters
-        ----------
-        human_array : np.ndarray or list
-            Array of input points
-            NOTICE! Input array must be with shape (N, 3) (N - number of points)
-            Human will handle N keypoints from this array
 
         Returns
         -------
-        Human
-            Created Human object with points in `human_np`
+        int
+            Human id, by default equal to -1
+        dict
+            2D Keypoints as dict (with p in keys)
+        dict
+            3D Keypoints as dict (with p in keys),
+            if not present then it will be filled with zeros
+        str
+            Pose name (if not present then it will be 'Unknown pose')
+        float
+            Confidence in pose classification (by default equal to 0.0)
 
         """
-        if len(human_array) == 0:
-            return
-
-        if len(human_array[0]) != 3:
-            raise ValueError("Wrong input shape of human array. Expected array with shape (N, 3), but" +
-                             f"shape (N, {len(human_array[0])}) were given."
-            )
-
-        human_class = Human(count_kp=len(human_array))
-        human_class.np = np.asarray(human_array, dtype=np.float32)
-        human_class.score = float(np.sum(human_array[:, -1], axis=0)) / len(human_array)
-        return human_class
-
-    @staticmethod
-    def from_array_3d(human_array):
-        """
-        Take points from `human_array` and create Human class with this points
-
-        Parameters
-        ----------
-        human_array : np.ndarray or list
-            Array of input points
-            NOTICE! Input array must be with shape (N, 4) (N - number of points)
-            Human will handle N keypoints from this array
-
-        Returns
-        -------
-        Human
-            Created Human object with points in `human_np`
-
-        """
-        if len(human_array) == 0:
-            return
-
-        if len(human_array[0]) != 4:
-            raise ValueError("Wrong input shape of human array. Expected array with shape (N, 4), but" +
-                             f"shape (N, {len(human_array[0])}) were given."
-            )
-
-        human_class = Human(count_kp=len(human_array))
-        human_class.np3d = np.asarray(human_array, dtype=np.float32)
-        human_class.score = float(np.sum(human_array[:, -1], axis=0)) / len(human_array)
-        return human_class
+        return (
+            self.id, self.to_dict(prepend_p=True), self.to_dict_from3d(prepend_p=True),
+            self.pose_name, self.pose_class_conf
+        )
 
     def __str__(self):
         return ' '.join([str(x) for x in self.body_parts.values()])
