@@ -3,17 +3,37 @@ from math import sqrt
 
 from numba import njit
 
-EXP_SCALE = 2
 EPSILONE = 1e-6
 
 
-@njit
-def ev_dist(x: float) -> float:
-    return np.sqrt(np.sum(np.square(x)))
+CALC_EXP_INDX = np.array([
+    # Around knee
+    [8, 12, 14],  # left to left
+    [9, 13, 15],  # right to right
+    [9, 12, 14],  # right to left
+    [8, 13, 15],  # left to right
+    # Around foot
+    [8, 14, 12],  # left to left
+    [9, 15, 13],  # right to right
+    [9, 14, 12],  # right to left
+    [8, 15, 13]   # left to right
+], dtype=np.int32)
+
+SCALE_CALC_EXP = np.array([
+    2.0, 2.0, 2.0, 2.0, # Around knee
+    1.0, 1.0, 1.0, 1.0  # Around foot
+], dtype=np.float32)
 
 
 @njit
-def calc_exp(one_p: float, center_p: float, max_radi_p: float, scale_eps: float = EXP_SCALE) -> float:
+def ev_dist(x: np.ndarray) -> np.ndarray:
+    return np.sqrt(np.sum(np.square(x), axis=1))
+
+
+@njit
+def calc_exp(
+        one_p: np.ndarray, center_p: np.ndarray,
+        max_radi_p: np.ndarray, scale_eps: np.ndarray) -> np.ndarray:
     hand2knee = one_p - center_p
     knee2foot = center_p - max_radi_p
     return np.exp(-scale_eps * (ev_dist(hand2knee) ** 2) / ((ev_dist(knee2foot)) ** 2 + EPSILONE))
@@ -70,33 +90,12 @@ def gen_f(points: np.ndarray, features: np.ndarray, point_triple_ids: np.ndarray
             features
         )
 
-    left_hand = points[8]
-    right_hand = points[9]
-
-    left_knee = points[12]
-    right_knee = points[13]
-
-    left_foot = points[14]
-    right_foot = points[15]
-
-    # Around knee
-    # left to left
-    features[-1] = calc_exp(left_hand, left_knee, left_foot)
-    # right to right
-    features[-2] = calc_exp(right_hand, right_knee, right_foot)
-    # right to left
-    features[-3] = calc_exp(right_hand, left_knee, left_foot)
-    # left to right
-    features[-4] = calc_exp(left_hand, right_knee, right_foot)
-    # Around foot
-    # left to left
-    features[-5] = calc_exp(left_hand, left_foot, left_knee, 1.0)
-    # right to right
-    features[-6] = calc_exp(right_hand, right_foot, right_knee, 1.0)
-    # right to left
-    features[-7] = calc_exp(right_hand, left_foot, left_knee, 0.75)
-    # left to right
-    features[-8] = calc_exp(left_hand, right_foot, right_knee, 0.75)
+    features[-len(SCALE_CALC_EXP):] = calc_exp(
+        points[CALC_EXP_INDX[:, 0]],
+        points[CALC_EXP_INDX[:, 1]],
+        points[CALC_EXP_INDX[:, 2]],
+        SCALE_CALC_EXP
+    )
 
 
 class FeatureGenerator:
