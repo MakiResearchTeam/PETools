@@ -4,7 +4,7 @@ from petools.tools import Human
 from .pose_preprocessor import PosePreprocessor
 from petools.model_tools.transformers.utils import NUM_PROD_POINTS
 from .feature_generator import FeatureGenerator
-from ..utils import NUM_C, conlist
+from ..utils import INPUT_SHAPE, conlist
 
 
 class Preprocess2DPose:
@@ -19,7 +19,7 @@ class Preprocess2DPose:
         """
         self.pose_preprocessor = pose_preprocessor
         self.fg = FeatureGenerator(np.array(conlist, dtype=np.int32), NUM_PROD_POINTS)
-        self.features = np.empty(shape=(self.fg.n_triples * NUM_C), dtype=np.float32)
+        self.features = np.empty(shape=INPUT_SHAPE, dtype=np.float32)
 
     def __call__(self, human: Human, **kwargs):
         human = human.to_np(copy_if_cached=True)[:, :-1]

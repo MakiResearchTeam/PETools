@@ -1,9 +1,42 @@
-from ..utils import NUM_C
-
 import numpy as np
 from math import sqrt
 
 from numba import njit
+
+EPSILONE = 1e-6
+
+
+CALC_EXP_INDX = np.array([
+    # Around knee
+    [8, 12, 14],  # left to left
+    [9, 13, 15],  # right to right
+    [9, 12, 14],  # right to left
+    [8, 13, 15],  # left to right
+    # Around foot
+    [8, 14, 12],  # left to left
+    [9, 15, 13],  # right to right
+    [9, 14, 12],  # right to left
+    [8, 15, 13]   # left to right
+], dtype=np.int32)
+
+SCALE_CALC_EXP = np.array([
+    2.0, 2.0, 2.0, 2.0, # Around knee
+    1.0, 1.0, 1.0, 1.0  # Around foot
+], dtype=np.float32)
+
+
+@njit
+def ev_dist(x: np.ndarray) -> np.ndarray:
+    return np.sqrt(np.sum(np.square(x), axis=1))
+
+
+@njit
+def calc_exp(
+        one_p: np.ndarray, center_p: np.ndarray,
+        max_radi_p: np.ndarray, scale_eps: np.ndarray) -> np.ndarray:
+    hand2knee = one_p - center_p
+    knee2foot = center_p - max_radi_p
+    return np.exp(-scale_eps * (ev_dist(hand2knee) ** 2) / ((ev_dist(knee2foot)) ** 2 + EPSILONE))
 
 
 @njit
@@ -57,6 +90,13 @@ def gen_f(points: np.ndarray, features: np.ndarray, point_triple_ids: np.ndarray
             features
         )
 
+    features[-len(SCALE_CALC_EXP):] = calc_exp(
+        points[CALC_EXP_INDX[:, 0]],
+        points[CALC_EXP_INDX[:, 1]],
+        points[CALC_EXP_INDX[:, 2]],
+        SCALE_CALC_EXP
+    )
+
 
 class FeatureGenerator:
 
@@ -73,4 +113,3 @@ class FeatureGenerator:
     def generate_features(self, points, features):
         # Compute distances
         gen_f(points, features, self.point_triple_ids, self.n_triples)
-
