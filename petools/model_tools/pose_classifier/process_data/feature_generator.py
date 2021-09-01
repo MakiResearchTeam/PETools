@@ -5,7 +5,12 @@ from numba import njit
 
 EPSILONE = 1e-6
 
-
+# Indx of keypoints in order to calculate np.exp(-x) values
+# Each column have next meaning:
+#   First - from which points observe, and how far it compare to Second point;
+#   Second - center point;
+#   Third - help value in order to calculate radious from second to third point
+#           and divide in exp calculation;
 CALC_EXP_INDX = np.array([
     # Around knee
     [8, 12, 14],  # left to left
