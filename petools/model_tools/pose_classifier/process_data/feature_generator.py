@@ -6,10 +6,11 @@ from numba import njit
 EPSILONE = 1e-6
 
 # Indx of keypoints in order to calculate np.exp(-x) values
+# Single rows represent single feature which further can be scaled by SCALE_CALC_EXP
 # Each column have next meaning:
 #   First - from which points observe, and how far it compare to Second point;
 #   Second - center point;
-#   Third - help value in order to calculate radious from second to third point
+#   Third - help value in order to calculate radius from second to third point
 #           and divide in exp calculation;
 CALC_EXP_INDX = np.array([
     # Around knee
@@ -24,6 +25,7 @@ CALC_EXP_INDX = np.array([
     [8, 15, 13]   # left to right
 ], dtype=np.int32)
 
+# Scale for features, must be same len as number of rows above
 SCALE_CALC_EXP = np.array([
     2.0, 2.0, 2.0, 2.0, # Around knee
     1.0, 1.0, 1.0, 1.0  # Around foot
