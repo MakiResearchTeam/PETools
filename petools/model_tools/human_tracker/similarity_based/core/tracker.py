@@ -38,6 +38,8 @@ class SimilarityBasedTracker(Tracker):
             feature_id = self.feature_registry.register_features(human_features[human_ind])
             humans[human_ind].id = feature_id
 
+        # Let the registry know that no new information about this frame will come.
+        self.feature_registry.update_state()
         return humans
 
     def compute_simmat(self, human_features, **kwargs) -> Union[SIMMAT, None]:

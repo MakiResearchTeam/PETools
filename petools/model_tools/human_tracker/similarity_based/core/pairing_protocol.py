@@ -1,4 +1,5 @@
 from typing import List, Tuple
+from abc import abstractmethod
 
 from .typing import FEATURE_ID, HUMAN_IND, SIMMAT, PAIRING_INFO
 
@@ -7,6 +8,7 @@ class PairingProtocol:
     """
     Performs pairing of humans to already registered features' IDs.
     """
+    @abstractmethod
     def pairing(self, similarity_mat: SIMMAT, **kwargs) -> PAIRING_INFO:
         """
         Parameters
