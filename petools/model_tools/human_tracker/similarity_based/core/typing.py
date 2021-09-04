@@ -5,5 +5,5 @@ FEATURE_ID = int
 HUMAN_IND = Union[int, None]
 SIMILARITY_VALUE = object
 # Similarity matrix
-SIMMAT = Dict[FEATURE_ID, List[Tuple[HUMAN_IND, object]]]
+SIMMAT = Dict[FEATURE_ID, List[Tuple[HUMAN_IND, SIMILARITY_VALUE]]]
 PAIRING_INFO = List[Tuple[FEATURE_ID, HUMAN_IND]]
