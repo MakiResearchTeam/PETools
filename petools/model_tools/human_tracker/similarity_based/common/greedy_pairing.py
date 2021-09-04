@@ -27,7 +27,6 @@ class GreedyPairing(PairingProtocol):
             for human_ind, sim_val in sim_list:
                 if human_ind in used_human_inds:
                     continue
-
                 # noinspection PyTypeChecker
                 if sim_val < min_sim:
                     min_sim = sim_val

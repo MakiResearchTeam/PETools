@@ -6,7 +6,7 @@ from typing import Callable
 import tensorflow.compat.v1 as tf
 
 # Miscellaneous pose utilities
-from petools.core import PosePredictorInterface
+from petools.core import PosePredictorInterface, Tracker
 from petools.tools.estimate_tools.skelet_builder import SkeletBuilder
 from petools.tools.utils import CAFFE, scale_predicted_kp
 from petools.tools.utils.nns_tools.modify_skeleton import modify_humans
@@ -17,7 +17,7 @@ from .gpu_model import GpuModel
 from petools.model_tools.image_preprocessors import GpuImagePreprocessor
 from petools.model_tools.operation_wrapper import OpWrapper, HumanModWrapper
 from petools.model_tools.human_cleaner import HumanCleaner
-from petools.model_tools.human_tracker import HumanTracker
+from petools.model_tools.human_tracker import HumanTrackerV2
 
 # Init tools
 from .init_utils import init_corrector, init_converter, init_smoother, init_classifier
@@ -45,6 +45,7 @@ class PosePredictor(PosePredictorInterface):
             converter_initializer: OP_INITIALIZER = init_converter,
             corrector_initializer: OP_INITIALIZER = init_corrector,
             classifier_initializer: OP_INITIALIZER = init_classifier,
+            human_tracker: Tracker = HumanTrackerV2(),
             min_h=320,
             expected_w=600,
             norm_mode=CAFFE,
@@ -104,6 +105,7 @@ class PosePredictor(PosePredictorInterface):
         self.__converter_init = converter_initializer
         self.__corrector_init = corrector_initializer
         self.__classifier_init = classifier_initializer
+        self.__external_human_tracker = human_tracker
         self._init_model()
 
     def _init_model(self):
@@ -136,7 +138,8 @@ class PosePredictor(PosePredictorInterface):
 
         self.__human_cleaner = HumanCleaner(min_visible=8)
         # Will be initialized at first launch
-        self.__tracker = None
+        if self.__external_human_tracker is not None:
+            self.__tracker = self.__external_human_tracker
 
         # --- SMOOTHER
         self.__smoother = HumanModWrapper(init_smoother())
@@ -181,26 +184,6 @@ class PosePredictor(PosePredictorInterface):
     @property
     def tracker(self):
         return self.__tracker
-
-    def __human_tracker(self, humans, im_size):
-        """
-        Init tracker and keep update image size
-
-        Parameters
-        ----------
-        humans: list
-            List of class Human with predidction of NN
-        im_size : tuple
-            (Height, Wight) - of the image where prediction was taken
-
-        """
-        if self.__tracker is None:
-            self.__tracker = HumanTracker(image_size=im_size)
-        else:
-            # If older im_size will be given - reset will be not applied
-            # Otherwise all values will be dropped
-            self.__tracker.reset(new_image_size=im_size)
-        return self.__tracker(humans)
 
     def predict(self, image: np.ndarray):
         """
@@ -302,7 +285,7 @@ class PosePredictor(PosePredictorInterface):
         # Remove skeletons with low number of keypoints
         humans = self.__human_cleaner(humans)
         # 7. Track humans, assign unique id for every prediction and track human further;
-        humans = self.__human_tracker(humans, original_in_size)
+        humans = self.__tracker(humans, image_size=original_in_size)
         # 8. One Euro algorithm which smooth keypoints movement
         humans = self.__smoother(humans)
         # 9. Corrector, correct predictions;

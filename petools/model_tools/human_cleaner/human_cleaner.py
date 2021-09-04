@@ -1,4 +1,7 @@
+from typing import List
 import numpy as np
+
+from petools.tools import Human
 
 
 class HumanCleaner:
@@ -25,7 +28,7 @@ class HumanCleaner:
         self._min_visible = min_visible
         self._threshold_visibility = threshold_visibility
 
-    def __call__(self, humans: list) -> list:
+    def __call__(self, humans: List[Human]) -> List[Human]:
         """
         Clean input list of Human classes according to number of visible keypoints
 
