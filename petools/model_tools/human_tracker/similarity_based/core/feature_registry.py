@@ -1,6 +1,6 @@
 from typing import Tuple
 from abc import abstractmethod
-from logging import getLogger
+from petools.tools import Logging
 
 from .typing import FEATURE_ID
 
@@ -35,7 +35,7 @@ class FeatureRegistry:
     """
 
     def __init__(self, *args, **kwargs):
-        self.logger = getLogger(self.__class__.__name__)
+        self.logger = Logging.get_logger(self.__class__.__name__)
         init_info = 'Initialized FeatureRegistry: \n' \
                     f'class_name: {self.__class__.__name__}\n' \
                     f'args: {args}\n' \
@@ -50,11 +50,8 @@ class FeatureRegistry:
     def get_feature(self, id: FEATURE_ID):
         f = self._registry.get(id)
         if f is None:
-            debug_msg = 'Call _register_features: \n' \
-                        'registry=' + str(self.registry) + '\n' \
-                                                           f'id={id}\n'
-            self.logger.debug(debug_msg)
-            self.logger.error(f'Feature with id={id} was not found.')
+            self.logger.debug(f'Feature with id={id} was not found.')
+            self.logger.debug(f'Current registry={self._registry}.')
         return f
 
     def _register_features(self, id: FEATURE_ID, features):
@@ -70,7 +67,7 @@ class FeatureRegistry:
         if f is not None:
             raise FeatureAlreadyRegistered(id)
         self.registry[id] = features
-        self.logger.info(f'Registered new features with id={id}.')
+        self.logger.debug(f'Registered new features with id={id}, features={features}.')
 
     @abstractmethod
     def register_features(self, features) -> FEATURE_ID:
@@ -83,7 +80,7 @@ class FeatureRegistry:
             raise FeatureNotFound(id)
 
         self._registry[id] = features
-        self.logger.info(f'Updated features with id={id}.')
+        self.logger.debug(f'Updated features with id={id}, old_features={self._registry[id]}, new_features={features}.')
 
     @abstractmethod
     def update_features(self, id: FEATURE_ID, features):
@@ -100,4 +97,5 @@ class FeatureRegistry:
         """
         Being called at the end of each frame.
         """
+        self.logger.debug('Update state. \n\n\n')
         pass

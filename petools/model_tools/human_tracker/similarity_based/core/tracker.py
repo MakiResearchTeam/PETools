@@ -1,5 +1,7 @@
 from typing import List, Union
+import logging
 
+from petools.tools import Logging, log
 from petools.core import Tracker
 from petools.tools import Human
 from .feature_extractor import FeatureExtractor
@@ -16,16 +18,21 @@ class SimilarityBasedTracker(Tracker):
             feature_registry: FeatureRegistry,
             pairing_protocol: PairingProtocol
     ):
+        super().__init__()
         self.feature_extractor = feature_extractor
         self.similarity = similarity
         self.feature_registry = feature_registry
         self.pairing_protocol = pairing_protocol
 
+    @log
     def __call__(self, humans: List[Human], **kwargs):
         # --- Extract features
         human_features = []
         for human in humans:
             human_features.append(self.feature_extractor(human, **kwargs))
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f'Computed features for humans: features={human_features}.')
 
         # Compute similarity and assign IDs
         similarity_mat = self.compute_simmat(human_features, **kwargs)
@@ -57,7 +64,7 @@ class SimilarityBasedTracker(Tracker):
         similarity_mat : dict
             Dictionary with the following contents: {feature_id : [(human_ind, similarity_value)]}
         """
-        if self.feature_registry.has_features():
+        if not self.feature_registry.has_features():
             return None
 
         similarity_mat = dict()  # {feature_id: (human_ind, similarity_value)}

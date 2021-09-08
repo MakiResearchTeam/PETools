@@ -1,6 +1,4 @@
-import logging
 from dataclasses import dataclass
-from logging import getLogger
 
 from ..core import FeatureRegistry, FEATURE_ID, FeatureIterator
 
@@ -15,13 +13,13 @@ class FeaturesHolder:
 
 class Iter(FeatureIterator):
     def __init__(self, holder_dict):
-        self.holder_iter = holder_dict.items()
+        self.holder_iter = iter(holder_dict.items())
         self.counter = 0
         self.n = len(holder_dict)
 
     def __next__(self):
         if self.counter >= self.n:
-            return
+            raise StopIteration()
         id, holder = next(self.holder_iter)
         features = holder.features
         self.counter += 1
@@ -53,7 +51,10 @@ class ExpAvgRegistry(FeatureRegistry):
     def update_features(self, id: FEATURE_ID, features):
         holder = self.get_feature(id)
         if features is None:
+            self.logger.debug(f'For a human with id={id} received None. Probably human walked out of frame'
+                              f'or the estimated pose is too dissimilar from the last one.')
             holder.n_absent += 1
+            return
         else:
             holder.n_absent = 0
 
@@ -62,12 +63,15 @@ class ExpAvgRegistry(FeatureRegistry):
 
     # noinspection PyTypeChecker
     def __iter__(self) -> FeatureIterator:
+        self.logger.debug('Created a feature iterator.')
         return Iter(self.registry)
 
     def update_state(self):
         # Remove expired feature holders
-        for id, holder in self.registry.items():
+        for id, holder in list(self.registry.items()):
             if holder.n_absent >= self.expiration_time:
                 self.registry.pop(id)
-                self.logger.info(f'Feature holder with id={id} has expired. Removing.')
+                self.logger.debug(f'Feature holder with id={id} has expired. Removing.')
+
+        super().update_state()
 
