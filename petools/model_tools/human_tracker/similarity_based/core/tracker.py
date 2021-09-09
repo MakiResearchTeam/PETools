@@ -23,16 +23,22 @@ class SimilarityBasedTracker(Tracker):
         self.similarity = similarity
         self.feature_registry = feature_registry
         self.pairing_protocol = pairing_protocol
+        self.frame_number = 0
 
     @log
     def __call__(self, humans: List[Human], **kwargs):
+        if self.debug_enabled:
+            self.debug_log(f'Tracking humans on frame={self.frame_number}.')
+
         # --- Extract features
         human_features = []
         for human in humans:
             human_features.append(self.feature_extractor(human, **kwargs))
 
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f'Computed features for humans: features={human_features}.')
+        if self.debug_enabled:
+            self.debug_log(f'Computed features for humans:')
+            for feature in human_features:
+                self.debug_log(feature)
 
         # Compute similarity and assign IDs
         similarity_mat = self.compute_simmat(human_features, **kwargs)
@@ -42,11 +48,24 @@ class SimilarityBasedTracker(Tracker):
         for human_ind, is_paired in paired_humans.items():
             if is_paired:
                 continue
+            # Human with such features was not paired. Register the feature vector
+            if self.debug_enabled:
+                self.debug_log(f'Human (ind={human_ind}) with the following features was not paired:')
+                self.debug_log(human_features[human_ind])
+
             feature_id = self.feature_registry.register_features(human_features[human_ind])
             humans[human_ind].id = feature_id
 
+            if self.debug_enabled:
+                self.debug_log(f"This human's features (ind={human_ind}) were registered with an id={feature_id}.")
+
         # Let the registry know that no new information about this frame will come.
         self.feature_registry.update_state()
+
+        if self.debug_enabled:
+            self.debug_log(f'Finished tracking on frame={self.frame_number}.\n\n\n')
+
+        self.frame_number += 1
         return humans
 
     def compute_simmat(self, human_features, **kwargs) -> Union[SIMMAT, None]:
@@ -112,3 +131,10 @@ class SimilarityBasedTracker(Tracker):
             self.feature_registry.update_features(feature_id, human_features[human_ind])
 
         return paired_humans
+
+    def reset(self):
+        self.feature_registry.reset()
+        self.feature_extractor.reset()
+        self.similarity.reset()
+        self.pairing_protocol.reset()
+        self.frame_number = 0

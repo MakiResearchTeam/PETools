@@ -36,7 +36,7 @@ class ExpAvgRegistry(FeatureRegistry):
         expiration_time : int
             How much frame a human must be absent to remove it from the registry.
         """
-        super().__init__(alpha=alpha, expiration_time=expiration_time)
+        super().__init__()
         assert 0.0 < alpha <= 1.0, f'Alpha must be in (0, 1], but received alpha={alpha}.'
         self.alpha = alpha
         self.expiration_time = expiration_time
@@ -71,7 +71,12 @@ class ExpAvgRegistry(FeatureRegistry):
         for id, holder in list(self.registry.items()):
             if holder.n_absent >= self.expiration_time:
                 self.registry.pop(id)
-                self.logger.debug(f'Feature holder with id={id} has expired. Removing.')
+                if self.debug_enabled:
+                    self.debug_log(f'Feature holder with id={id} has expired. Removing.')
 
         super().update_state()
+
+    def reset(self):
+        super(ExpAvgRegistry, self).reset()
+        self.id_counter = 0
 

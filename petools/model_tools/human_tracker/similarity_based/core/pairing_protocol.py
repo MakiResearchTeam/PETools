@@ -22,3 +22,6 @@ class PairingProtocol:
             List with the following contents: [(feature_id, human_ind)].
         """
         pass
+
+    def reset(self):
+        pass

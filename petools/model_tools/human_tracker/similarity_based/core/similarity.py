@@ -10,3 +10,6 @@ class Similarity:
     def __call__(self, f1, f2, **kwargs) -> object:
         pass
 
+    def reset(self):
+        pass
+

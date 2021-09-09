@@ -1,6 +1,7 @@
+import logging
 from typing import Tuple
 from abc import abstractmethod
-from petools.tools import Logging
+from petools.tools import LoggedEntity
 
 from .typing import FEATURE_ID
 
@@ -27,7 +28,7 @@ class FeatureIterator:
         pass
 
 
-class FeatureRegistry:
+class FeatureRegistry(LoggedEntity):
     """
     Represents a buffer that holds feature vectors for registered (known) humans.
     It encapsulates how features are being processed from frame to frame (if such processing is needed, for example,
@@ -35,12 +36,7 @@ class FeatureRegistry:
     """
 
     def __init__(self, *args, **kwargs):
-        self.logger = Logging.get_logger(self.__class__.__name__)
-        init_info = 'Initialized FeatureRegistry: \n' \
-                    f'class_name: {self.__class__.__name__}\n' \
-                    f'args: {args}\n' \
-                    f'kwargs: {kwargs}'
-        self.logger.info(init_info)
+        super().__init__()
         self._registry = {}
 
     @property
@@ -49,9 +45,9 @@ class FeatureRegistry:
 
     def get_feature(self, id: FEATURE_ID):
         f = self._registry.get(id)
-        if f is None:
-            self.logger.debug(f'Feature with id={id} was not found.')
-            self.logger.debug(f'Current registry={self._registry}.')
+        if f is None and self.debug_enabled:
+            self.debug_log(f'Feature with id={id} was not found.')
+            self.debug_log(f'Current registry={self._registry}.')
         return f
 
     def _register_features(self, id: FEATURE_ID, features):
@@ -67,7 +63,9 @@ class FeatureRegistry:
         if f is not None:
             raise FeatureAlreadyRegistered(id)
         self.registry[id] = features
-        self.logger.debug(f'Registered new features with id={id}, features={features}.')
+
+        if self.debug_enabled:
+            self.debug_log(f'Registered new features with id={id}, features={features}.')
 
     @abstractmethod
     def register_features(self, features) -> FEATURE_ID:
@@ -80,7 +78,8 @@ class FeatureRegistry:
             raise FeatureNotFound(id)
 
         self._registry[id] = features
-        self.logger.debug(f'Updated features with id={id}, old_features={self._registry[id]}, new_features={features}.')
+        if self.debug_enabled:
+            self.debug_log(f'Updated features with id={id}, old_features={self._registry[id]}, new_features={features}.')
 
     @abstractmethod
     def update_features(self, id: FEATURE_ID, features):
@@ -97,5 +96,12 @@ class FeatureRegistry:
         """
         Being called at the end of each frame.
         """
-        self.logger.debug('Update state. \n\n\n')
-        pass
+        if self.debug_enabled:
+            self.debug_log('Update state of the feature registry.')
+
+    def reset(self):
+        self._registry.clear()
+
+        if self.debug_enabled:
+            self.debug_log('Reset state of the feature registry.')
+
