@@ -2,9 +2,10 @@ from typing import List, Tuple
 from abc import abstractmethod
 
 from .typing import REPRESENTATION_ID, HUMAN_IND, SIMMAT, PAIRING_INFO
+from petools.tools import LoggedEntity
 
 
-class PairingProtocol:
+class PairingProtocol(LoggedEntity):
     """
     Performs pairing of humans to already registered features' IDs.
     """

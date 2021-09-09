@@ -51,8 +51,9 @@ class ExpAvgRegistry(RepresentationRegistry):
     def update_representation(self, id: REPRESENTATION_ID, representation: HumanRepresentation):
         holder = self.get_representation(id)
         if representation is None:
-            self.logger.debug(f'For a human with id={id} received None. Probably human walked out of frame'
-                              f'or the estimated pose is too dissimilar from the last one.')
+            if self.debug_enabled:
+                self.debug_log(f'For a human with id={id} received None. Probably human walked out of frame '
+                              f'or the estimated pose is too dissimilar from the last one.\n')
             holder.n_absent += 1
             return
         else:
@@ -65,7 +66,7 @@ class ExpAvgRegistry(RepresentationRegistry):
     # noinspection PyTypeChecker
     def __iter__(self) -> RepresentationIterator:
         if self.debug_enabled:
-            self.logger.debug('Created a representation iterator.')
+            self.debug_log('Created a representation iterator.\n')
         return Iter(self.registry)
 
     def update_state(self):

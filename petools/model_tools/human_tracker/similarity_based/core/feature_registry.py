@@ -48,7 +48,9 @@ class RepresentationRegistry(LoggedEntity):
         f = self._registry.get(id)
         if f is None and self.debug_enabled:
             self.debug_log(f'Representation with id={id} was not found.')
-            self.debug_log(f'Current registry={self._registry}.')
+            self.debug_log(f'Current registry contains the following representations:')
+            for id, representation in self._registry.items():
+                self.debug_log(f'id={id} / representation={representation}\n')
         return f
 
     def _register_representation(self, id: REPRESENTATION_ID, representation):
@@ -66,7 +68,8 @@ class RepresentationRegistry(LoggedEntity):
         self.registry[id] = representation
 
         if self.debug_enabled:
-            self.debug_log(f'Registered new representation with id={id}, representation={representation}.')
+            self.debug_log(f'Registered new representation with id={id}: ')
+            self.debug_log(f'{representation}\n')
 
     @abstractmethod
     def register_representation(self, representation) -> REPRESENTATION_ID:
@@ -80,8 +83,9 @@ class RepresentationRegistry(LoggedEntity):
 
         self._registry[id] = representation
         if self.debug_enabled:
-            self.debug_log(f'Updated representation with id={id}, old_representation={self._registry[id]}, '
-                           f'new_representation={representation}.')
+            self.debug_log(f'Updated representation with id={id}:')
+            self.debug_log(f'old_representation={self._registry[id]}')
+            self.debug_log(f'new_representation={representation}.\n')
 
     @abstractmethod
     def update_representation(self, id: REPRESENTATION_ID, representation):
@@ -99,11 +103,11 @@ class RepresentationRegistry(LoggedEntity):
         Being called at the end of each frame.
         """
         if self.debug_enabled:
-            self.debug_log('Update state of the representations registry.')
+            self.debug_log('Update state of the representations registry.\n')
 
     def reset(self):
         self._registry.clear()
 
         if self.debug_enabled:
-            self.debug_log('Reset state of the representations registry.')
+            self.debug_log('Reset state of the representations registry.\n')
 
