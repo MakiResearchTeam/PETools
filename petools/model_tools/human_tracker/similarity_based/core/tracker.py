@@ -5,7 +5,7 @@ from petools.tools import Logging, log
 from petools.core import Tracker
 from petools.tools import Human
 from .feature_extractor import FeatureExtractor
-from .feature_registry import FeatureRegistry
+from .feature_registry import RepresentationRegistry
 from .similarity import Similarity
 from .pairing_protocol import PairingProtocol
 from .typing import SIMMAT
@@ -15,13 +15,13 @@ class SimilarityBasedTracker(Tracker):
     def __init__(
             self, feature_extractor: FeatureExtractor,
             similarity: Similarity,
-            feature_registry: FeatureRegistry,
+            representation_registry: RepresentationRegistry,
             pairing_protocol: PairingProtocol
     ):
         super().__init__()
         self.feature_extractor = feature_extractor
         self.similarity = similarity
-        self.feature_registry = feature_registry
+        self.representation_registry = representation_registry
         self.pairing_protocol = pairing_protocol
         self.frame_number = 0
 
@@ -31,18 +31,18 @@ class SimilarityBasedTracker(Tracker):
             self.debug_log(f'Tracking humans on frame={self.frame_number}.')
 
         # --- Extract features
-        human_features = []
+        human_representations = []
         for human in humans:
-            human_features.append(self.feature_extractor(human, **kwargs))
+            human_representations.append(self.feature_extractor(human, **kwargs))
 
         if self.debug_enabled:
-            self.debug_log(f'Computed features for humans:')
-            for feature in human_features:
+            self.debug_log(f'Computed representations for humans:')
+            for feature in human_representations:
                 self.debug_log(feature)
 
         # Compute similarity and assign IDs
-        similarity_mat = self.compute_simmat(human_features, **kwargs)
-        paired_humans = self.id_pairing(similarity_mat, humans, human_features, **kwargs)
+        similarity_mat = self.compute_simmat(human_representations, **kwargs)
+        paired_humans = self.id_pairing(similarity_mat, humans, human_representations, **kwargs)
 
         # If some humans were not paired with an existing ID, register them and pair with a new ID
         for human_ind, is_paired in paired_humans.items():
@@ -50,17 +50,17 @@ class SimilarityBasedTracker(Tracker):
                 continue
             # Human with such features was not paired. Register the feature vector
             if self.debug_enabled:
-                self.debug_log(f'Human (ind={human_ind}) with the following features was not paired:')
-                self.debug_log(human_features[human_ind])
+                self.debug_log(f'Human (ind={human_ind}) with the following representation was not paired:')
+                self.debug_log(human_representations[human_ind])
 
-            feature_id = self.feature_registry.register_features(human_features[human_ind])
+            feature_id = self.representation_registry.register_representation(human_representations[human_ind])
             humans[human_ind].id = feature_id
 
             if self.debug_enabled:
-                self.debug_log(f"This human's features (ind={human_ind}) were registered with an id={feature_id}.")
+                self.debug_log(f"This human representation (ind={human_ind}) was registered with an id={feature_id}.")
 
         # Let the registry know that no new information about this frame will come.
-        self.feature_registry.update_state()
+        self.representation_registry.update_state()
 
         if self.debug_enabled:
             self.debug_log(f'Finished tracking on frame={self.frame_number}.\n\n\n')
@@ -83,11 +83,11 @@ class SimilarityBasedTracker(Tracker):
         similarity_mat : dict
             Dictionary with the following contents: {feature_id : [(human_ind, similarity_value)]}
         """
-        if not self.feature_registry.has_features():
+        if not self.representation_registry.has_representations():
             return None
 
         similarity_mat = dict()  # {feature_id: (human_ind, similarity_value)}
-        for feature_id, registered_feature in self.feature_registry:
+        for feature_id, registered_feature in self.representation_registry:
             similarities = []
             similarity_mat[feature_id] = similarities
             for human_ind, human_feature in enumerate(human_features):
@@ -122,18 +122,18 @@ class SimilarityBasedTracker(Tracker):
             # Feature vector with the corresponding ID was not paired with any of the humans.
             if human_ind is None:
                 # Let the registry know that the human with the corresponding ID is absent.
-                self.feature_registry.update_features(feature_id, None)
+                self.representation_registry.update_representation(feature_id, None)
                 continue
 
             # Perform ID pairing.
             humans[human_ind].id = feature_id
             paired_humans[human_ind] = True
-            self.feature_registry.update_features(feature_id, human_features[human_ind])
+            self.representation_registry.update_representation(feature_id, human_features[human_ind])
 
         return paired_humans
 
     def reset(self):
-        self.feature_registry.reset()
+        self.representation_registry.reset()
         self.feature_extractor.reset()
         self.similarity.reset()
         self.pairing_protocol.reset()

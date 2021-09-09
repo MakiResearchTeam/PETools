@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from .feature_extractor import HumanRepresentation
 
 
 class Similarity:
@@ -7,7 +8,7 @@ class Similarity:
     describing how similar the two feature vectors are.
     """
     @abstractmethod
-    def __call__(self, f1, f2, **kwargs) -> object:
+    def __call__(self, f1: HumanRepresentation, f2: HumanRepresentation, **kwargs) -> object:
         pass
 
     def reset(self):

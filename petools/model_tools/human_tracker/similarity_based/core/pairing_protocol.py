@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from abc import abstractmethod
 
-from .typing import FEATURE_ID, HUMAN_IND, SIMMAT, PAIRING_INFO
+from .typing import REPRESENTATION_ID, HUMAN_IND, SIMMAT, PAIRING_INFO
 
 
 class PairingProtocol:

@@ -1,17 +1,17 @@
 from dataclasses import dataclass
 
-from ..core import FeatureRegistry, FEATURE_ID, FeatureIterator
+from ..core import RepresentationRegistry, REPRESENTATION_ID, RepresentationIterator, HumanRepresentation
 
 
 @dataclass
-class FeaturesHolder:
-    features: object
+class RepresentationHolder:
+    representation: HumanRepresentation
     id: int
     # Number of frames the owner of this feature was absent (for example, human walked out of the frame)
     n_absent: int = 0
 
 
-class Iter(FeatureIterator):
+class Iter(RepresentationIterator):
     def __init__(self, holder_dict):
         self.holder_iter = iter(holder_dict.items())
         self.counter = 0
@@ -21,12 +21,12 @@ class Iter(FeatureIterator):
         if self.counter >= self.n:
             raise StopIteration()
         id, holder = next(self.holder_iter)
-        features = holder.features
+        representation = holder.representation
         self.counter += 1
-        return id, features
+        return id, representation
 
 
-class ExpAvgRegistry(FeatureRegistry):
+class ExpAvgRegistry(RepresentationRegistry):
     def __init__(self, alpha: float = 0.9, expiration_time: int = 10):
         """
         Parameters
@@ -42,15 +42,15 @@ class ExpAvgRegistry(FeatureRegistry):
         self.expiration_time = expiration_time
         self.id_counter = 0
 
-    def register_features(self, features) -> FEATURE_ID:
-        holder = FeaturesHolder(features, self.id_counter)
-        self._register_features(self.id_counter, holder)
+    def register_representation(self, representation) -> REPRESENTATION_ID:
+        holder = RepresentationHolder(representation, self.id_counter)
+        self._register_representation(self.id_counter, holder)
         self.id_counter += 1
         return holder.id
 
-    def update_features(self, id: FEATURE_ID, features):
-        holder = self.get_feature(id)
-        if features is None:
+    def update_representation(self, id: REPRESENTATION_ID, representation: HumanRepresentation):
+        holder = self.get_representation(id)
+        if representation is None:
             self.logger.debug(f'For a human with id={id} received None. Probably human walked out of frame'
                               f'or the estimated pose is too dissimilar from the last one.')
             holder.n_absent += 1
@@ -59,11 +59,13 @@ class ExpAvgRegistry(FeatureRegistry):
             holder.n_absent = 0
 
         # Update feature values using exponential averaging
-        holder.features = holder.features * (1.0 - self.alpha) + features * self.alpha
+        holder.representation.features = \
+            holder.representation.features * (1.0 - self.alpha) + representation.features * self.alpha
 
     # noinspection PyTypeChecker
-    def __iter__(self) -> FeatureIterator:
-        self.logger.debug('Created a feature iterator.')
+    def __iter__(self) -> RepresentationIterator:
+        if self.debug_enabled:
+            self.logger.debug('Created a representation iterator.')
         return Iter(self.registry)
 
     def update_state(self):
@@ -72,7 +74,7 @@ class ExpAvgRegistry(FeatureRegistry):
             if holder.n_absent >= self.expiration_time:
                 self.registry.pop(id)
                 if self.debug_enabled:
-                    self.debug_log(f'Feature holder with id={id} has expired. Removing.')
+                    self.debug_log(f'Representation holder with id={id} has expired. Removing.')
 
         super().update_state()
 

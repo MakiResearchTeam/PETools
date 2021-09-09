@@ -3,34 +3,35 @@ from typing import Tuple
 from abc import abstractmethod
 from petools.tools import LoggedEntity
 
-from .typing import FEATURE_ID
+from .typing import REPRESENTATION_ID
+from .feature_extractor import HumanRepresentation
 
 
-class FeatureNotFound(Exception):
+class RepresentationNotFound(Exception):
     def __init__(self, id, *args, **kwargs):
         super().__init__(f'Feature with id={id} was not found in the registry. '
                          f'Please call `register_features` first.')
 
 
-class FeatureAlreadyRegistered(Exception):
+class RepresentationAlreadyRegistered(Exception):
     def __init__(self, id, *args, **kwargs):
         super().__init__(f'Feature with id={id} is already in the registry. '
                          f'Please use another id.')
 
 
-class FeatureIterator:
+class RepresentationIterator:
     """
     Iterates over already registered features.
     """
 
     @abstractmethod
-    def __next__(self) -> Tuple[FEATURE_ID, object]:
+    def __next__(self) -> Tuple[REPRESENTATION_ID, HumanRepresentation]:
         pass
 
 
-class FeatureRegistry(LoggedEntity):
+class RepresentationRegistry(LoggedEntity):
     """
-    Represents a buffer that holds feature vectors for registered (known) humans.
+    Represents a buffer that holds representations (feature vectors) for registered (known) humans.
     It encapsulates how features are being processed from frame to frame (if such processing is needed, for example,
     exponential averaging among frames).
     """
@@ -43,53 +44,54 @@ class FeatureRegistry(LoggedEntity):
     def registry(self):
         return self._registry
 
-    def get_feature(self, id: FEATURE_ID):
+    def get_representation(self, id: REPRESENTATION_ID):
         f = self._registry.get(id)
         if f is None and self.debug_enabled:
-            self.debug_log(f'Feature with id={id} was not found.')
+            self.debug_log(f'Representation with id={id} was not found.')
             self.debug_log(f'Current registry={self._registry}.')
         return f
 
-    def _register_features(self, id: FEATURE_ID, features):
+    def _register_representation(self, id: REPRESENTATION_ID, representation):
         """
         This method must be used for adding new features to the registry.
 
         Parameters
         ----------
         id : int
-        features : object
+        representation : object
         """
-        f = self.get_feature(id)
+        f = self.get_representation(id)
         if f is not None:
-            raise FeatureAlreadyRegistered(id)
-        self.registry[id] = features
+            raise RepresentationAlreadyRegistered(id)
+        self.registry[id] = representation
 
         if self.debug_enabled:
-            self.debug_log(f'Registered new features with id={id}, features={features}.')
+            self.debug_log(f'Registered new representation with id={id}, representation={representation}.')
 
     @abstractmethod
-    def register_features(self, features) -> FEATURE_ID:
+    def register_representation(self, representation) -> REPRESENTATION_ID:
         pass
 
-    def _update_features(self, id: FEATURE_ID, features):
+    def _update_representation(self, id: REPRESENTATION_ID, representation):
         # Make sure the feature exists.
-        f = self.get_feature(id)
+        f = self.get_representation(id)
         if f is None:
-            raise FeatureNotFound(id)
+            raise RepresentationNotFound(id)
 
-        self._registry[id] = features
+        self._registry[id] = representation
         if self.debug_enabled:
-            self.debug_log(f'Updated features with id={id}, old_features={self._registry[id]}, new_features={features}.')
+            self.debug_log(f'Updated representation with id={id}, old_representation={self._registry[id]}, '
+                           f'new_representation={representation}.')
 
     @abstractmethod
-    def update_features(self, id: FEATURE_ID, features):
+    def update_representation(self, id: REPRESENTATION_ID, representation):
         pass
 
-    def has_features(self) -> bool:
+    def has_representations(self) -> bool:
         return len(self._registry) > 0
 
     @abstractmethod
-    def __iter__(self) -> FeatureIterator:
+    def __iter__(self) -> RepresentationIterator:
         pass
 
     def update_state(self):
@@ -97,11 +99,11 @@ class FeatureRegistry(LoggedEntity):
         Being called at the end of each frame.
         """
         if self.debug_enabled:
-            self.debug_log('Update state of the feature registry.')
+            self.debug_log('Update state of the representations registry.')
 
     def reset(self):
         self._registry.clear()
 
         if self.debug_enabled:
-            self.debug_log('Reset state of the feature registry.')
+            self.debug_log('Reset state of the representations registry.')
 
