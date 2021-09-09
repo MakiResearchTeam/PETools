@@ -5,6 +5,7 @@ from ..core import Similarity
 from ..core import HumanRepresentation
 
 
+@dataclass
 class GaussianRepresentation(HumanRepresentation):
     std: np.ndarray
 
@@ -31,5 +32,5 @@ class Gauss(Similarity):
         x = f2.features
 
         exp_arg = (kernel_mean - x) / kernel_std
-        kernel_val = np.exp(np.square(exp_arg))
+        kernel_val = np.exp(-np.square(exp_arg))
         return np.mean(kernel_val)
