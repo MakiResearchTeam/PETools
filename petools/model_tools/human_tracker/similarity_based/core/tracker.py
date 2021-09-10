@@ -46,10 +46,15 @@ class SimilarityBasedTracker(Tracker):
                 self.debug_log(feature)
             self.debug_log('')
 
-        # Compute similarity and assign IDs
+        # --- Compute similarity and assign IDs
         if self.debug_enabled:
             self.debug_log(f'--- COMPUTING SIMILARITY MATRIX')
-        similarity_mat = self.compute_simmat(human_representations, **kwargs)
+        similarity_mat = self.similarity.compute_similarity_matrix(
+            self.representation_registry.representations,
+            human_representations,
+            **kwargs
+        )
+        # --- Perform pairing
         if self.debug_enabled:
             self.debug_log(f'--- PERFORMING REPRESENTATIONS PAIRING')
         paired_humans = self.id_pairing(similarity_mat, humans, human_representations, **kwargs)
@@ -79,33 +84,6 @@ class SimilarityBasedTracker(Tracker):
 
         self.frame_number += 1
         return humans
-
-    def compute_simmat(self, human_features, **kwargs) -> Union[SIMMAT, None]:
-        """
-        Computes a "similarity matrix" containing similarity values between humans' and already stored features.
-        Returns None if there are no features stored at the moment.
-
-        Parameters
-        ----------
-        human_features : list
-            List of features computed for the humans.
-
-        Returns
-        -------
-        similarity_mat : dict
-            Dictionary with the following contents: {feature_id : [(human_ind, similarity_value)]}
-        """
-        if not self.representation_registry.has_representations():
-            return None
-
-        similarity_mat = dict()  # {feature_id: (human_ind, similarity_value)}
-        for feature_id, registered_feature in self.representation_registry:
-            similarities = []
-            similarity_mat[feature_id] = similarities
-            for human_ind, human_feature in enumerate(human_features):
-                sim_val = self.similarity(registered_feature, human_feature, **kwargs)
-                similarities.append((human_ind, sim_val))
-        return similarity_mat
 
     def id_pairing(self, similarity_mat: Union[SIMMAT, None], humans: List[Human], human_features: list, **kwargs):
         """

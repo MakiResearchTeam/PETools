@@ -1,7 +1,8 @@
 import logging
-from typing import Tuple
+from typing import Tuple, List
 from abc import abstractmethod
 from petools.tools import LoggedEntity
+from collections import Iterator
 
 from .typing import REPRESENTATION_ID
 from .feature_extractor import HumanRepresentation
@@ -17,16 +18,6 @@ class RepresentationAlreadyRegistered(Exception):
     def __init__(self, id, *args, **kwargs):
         super().__init__(f'Feature with id={id} is already in the registry. '
                          f'Please use another id.')
-
-
-class RepresentationIterator:
-    """
-    Iterates over already registered features.
-    """
-
-    @abstractmethod
-    def __next__(self) -> Tuple[REPRESENTATION_ID, HumanRepresentation]:
-        pass
 
 
 class RepresentationRegistry(LoggedEntity):
@@ -94,8 +85,9 @@ class RepresentationRegistry(LoggedEntity):
     def has_representations(self) -> bool:
         return len(self._registry) > 0
 
+    @property
     @abstractmethod
-    def __iter__(self) -> RepresentationIterator:
+    def representations(self) -> List[Tuple[int, HumanRepresentation]]:
         pass
 
     def update_state(self):

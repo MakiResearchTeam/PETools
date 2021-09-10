@@ -1,6 +1,7 @@
 from dataclasses import dataclass
+from typing import List, Tuple
 
-from ..core import RepresentationRegistry, REPRESENTATION_ID, RepresentationIterator, HumanRepresentation
+from ..core import RepresentationRegistry, REPRESENTATION_ID, HumanRepresentation
 
 
 @dataclass
@@ -9,21 +10,6 @@ class RepresentationHolder:
     id: int
     # Number of frames the owner of this feature was absent (for example, human walked out of the frame)
     n_absent: int = 0
-
-
-class Iter(RepresentationIterator):
-    def __init__(self, holder_dict):
-        self.holder_iter = iter(holder_dict.items())
-        self.counter = 0
-        self.n = len(holder_dict)
-
-    def __next__(self):
-        if self.counter >= self.n:
-            raise StopIteration()
-        id, holder = next(self.holder_iter)
-        representation = holder.representation
-        self.counter += 1
-        return id, representation
 
 
 class ExpAvgRegistry(RepresentationRegistry):
@@ -64,10 +50,10 @@ class ExpAvgRegistry(RepresentationRegistry):
             holder.representation.features * (1.0 - self.alpha) + representation.features * self.alpha
 
     # noinspection PyTypeChecker
-    def __iter__(self) -> RepresentationIterator:
-        if self.debug_enabled:
-            self.debug_log('Created a representation iterator.\n')
-        return Iter(self.registry)
+    @property
+    def representations(self) -> List[Tuple[int, HumanRepresentation]]:
+        reprs = [(id, x.representation) for id, x in self.registry.items()]
+        return reprs
 
     def update_state(self):
         # Remove expired feature holders

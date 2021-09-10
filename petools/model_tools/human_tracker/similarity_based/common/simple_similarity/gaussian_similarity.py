@@ -1,8 +1,9 @@
 import numpy as np
 from dataclasses import dataclass
 
-from ..core import Similarity
-from ..core import HumanRepresentation
+from petools.model_tools.human_tracker.similarity_based.core import Similarity
+from petools.model_tools.human_tracker.similarity_based.core import HumanRepresentation
+from .simple_similarity import SimilarityMeasure
 
 
 @dataclass
@@ -10,7 +11,7 @@ class GaussianRepresentation(HumanRepresentation):
     std: np.ndarray
 
 
-class Gauss(Similarity):
+class Gauss(SimilarityMeasure):
     def __call__(self, f1: GaussianRepresentation, f2: GaussianRepresentation, **kwargs) -> np.float:
         """
         Computes similarity, using gaussian kernel.
