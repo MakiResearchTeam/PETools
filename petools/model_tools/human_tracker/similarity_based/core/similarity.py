@@ -1,11 +1,12 @@
 from abc import abstractmethod
 from typing import List, Tuple, Union
 
+from petools.tools.logging import LoggedEntity
 from .typing import SIMMAT, REPRESENTATION_ID
 from .feature_extractor import HumanRepresentation
 
 
-class Similarity:
+class Similarity(LoggedEntity):
     """
     Performs a comparison of two feature vectors and returns a value
     describing how similar the two feature vectors are.

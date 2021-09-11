@@ -3,9 +3,10 @@ from abc import abstractmethod
 
 from petools.model_tools.human_tracker.similarity_based import HumanRepresentation
 from petools.model_tools.human_tracker.similarity_based.core import Similarity, SIMMAT
+from petools.tools.logging import LoggedEntity
 
 
-class SimilarityMeasure:
+class SimilarityMeasure(LoggedEntity):
     @abstractmethod
     def __call__(self, f1: HumanRepresentation, f2: HumanRepresentation, **kwargs):
         pass
@@ -13,6 +14,7 @@ class SimilarityMeasure:
 
 class SimpleSimilarity(Similarity):
     def __init__(self, sim_measure):
+        super().__init__()
         self.sim_measure = sim_measure
 
     def compute_similarity_matrix(

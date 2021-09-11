@@ -8,7 +8,7 @@ class LoggedEntity:
         self.logger = Logging.get_logger(self.__class__.__name__)
 
     def debug_log(self, msg):
-        self.logger.debug(msg)
+        self.logger.debug(f'{self.__class__.__name__} // {msg}')
 
     @property
     def debug_enabled(self):
