@@ -16,7 +16,8 @@ setup(
         'tools/estimate_tools/pafprocess/*.pyd',
         'cpu/3d_converter_stats/*',
         'model_tools/transformers/3d_converter_stats/*.npy',
-        'model_tools/pose_classifier/process_data/classifier_stats/*.npy'
+        'model_tools/pose_classifier/process_data/classifier_stats/*.npy',
+        'model_tools/human_tracker/similarity_based/body_proportions/data_statistics/*.npy'
     ]},
     version=meta['__title__'],
     description=meta['__description__'],
