@@ -1,6 +1,6 @@
 import numpy as np
 
-from petools.model_tools.human_tracker.similarity_based.core import Similarity, HumanRepresentation
+from petools.model_tools.human_tracker.similarity_based.core import HumanRepresentation
 from .simple_similarity import SimilarityMeasure
 
 

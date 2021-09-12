@@ -33,6 +33,7 @@ class SimilarityBasedTracker(Tracker):
             for human in humans:
                 self.debug_log(human.get_human_info())
             self.debug_log('')
+
         # --- Extract features
         if self.debug_enabled:
             self.debug_log(f'--- EXTRACTING FEATURES')
@@ -54,6 +55,7 @@ class SimilarityBasedTracker(Tracker):
             human_representations,
             **kwargs
         )
+
         # --- Perform pairing
         if self.debug_enabled:
             self.debug_log(f'--- PERFORMING REPRESENTATIONS PAIRING')

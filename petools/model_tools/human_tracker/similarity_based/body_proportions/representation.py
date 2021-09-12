@@ -21,7 +21,7 @@ class XYDecayingWeights:
 
     @property
     def decay(self):
-        return self.steps / self.decay_steps
+        return (self.steps / self.decay_steps) ** 2
 
     @property
     def weights(self):
@@ -35,6 +35,3 @@ class CustomRepresentation(HumanRepresentation):
     std_xy: np.ndarray
     features_weights: np.ndarray
     xy_weights: XYDecayingWeights
-
-
-

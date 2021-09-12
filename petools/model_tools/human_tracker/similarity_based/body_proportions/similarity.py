@@ -5,7 +5,7 @@ from .. import HumanRepresentation
 from ..core import Similarity, REPRESENTATION_ID, SIMMAT
 from .representation import CustomRepresentation
 from ..common import SimpleSimilarity
-from .custom_gauss import CustomGauss
+from .gaussian_measure import CustomGauss
 
 
 class CustomSimilarity(SimpleSimilarity):

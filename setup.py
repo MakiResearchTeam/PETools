@@ -1,6 +1,7 @@
 from setuptools import setup
 import setuptools
 import os
+from Cython.Build import cythonize
 
 meta = {}
 with open(os.path.join('petools', '__version__.py')) as f:
@@ -27,5 +28,6 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    install_requires=[]
+    install_requires=[],
+    ext_modules=cythonize("**/*.pyx")
 )

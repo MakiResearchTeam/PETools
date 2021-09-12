@@ -31,13 +31,11 @@ class CustomGauss(SimilarityMeasure):
         if self.debug_enabled:
             self.debug_log(f'kernel_val_features: {kernel_val_features}')
 
-        # TODO
         # Compute l2 distance between mean points and then pass it through the kernel
-        kernel_val_xy = self.kernel(f2.xy, f1.xy, f1.std_xy)
+        dist = np.linalg.norm(f1.xy - f2.xy)
+        kernel_val_xy = np.exp(-np.square(dist / f1.std_xy))
         if self.debug_enabled:
             self.debug_log(f'kernel_val_xy: {kernel_val_xy}')
-        #print('kernel_val_features', kernel_val_features)
-        #print('kernel_val_xy', kernel_val_xy)
         # --- Compute weighted average
         num = np.dot(kernel_val_features, f1.features_weights) + np.dot(kernel_val_xy, f1.xy_weights.weights)
         if self.debug_enabled:
@@ -45,7 +43,4 @@ class CustomGauss(SimilarityMeasure):
         den = np.sum(f1.features_weights) + np.sum(f1.xy_weights.weights)
         if self.debug_enabled:
             self.debug_log(f'den: {den}')
-
-        #print('num', num)
-        #print('den', den)
         return num / den
