@@ -1,0 +1,6 @@
+cython
+tensorflow-gpu==1.15.5
+cython>=0.29.24
+numpy>=1.18.5
+numba>=0.53.1
+opencv==4.5.0
