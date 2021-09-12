@@ -406,7 +406,8 @@ class Human:
         """
         return (
             self.id, self.to_dict(prepend_p=True), self.to_dict_from3d(prepend_p=True),
-            self.pose_name, self.pose_class_conf
+            # Make sure that `pose_class_conf` is a python float, otherwise it may not serialize into json format
+            (self.pose_name, float(self.pose_class_conf))
         )
 
     def __str__(self):

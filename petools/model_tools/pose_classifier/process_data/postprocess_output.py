@@ -29,5 +29,5 @@ class Postprocess2DPose:
         # Poses in config file shifted by 1
         shifted_indx = indx_max_conf + 1
         source_human.pose_name = self._class2name.get(str(shifted_indx), self.NONE)
-        source_human.pose_class_conf = nn_predict[0, indx_max_conf]
+        source_human.pose_class_conf = float(nn_predict[0, indx_max_conf])
         return source_human
