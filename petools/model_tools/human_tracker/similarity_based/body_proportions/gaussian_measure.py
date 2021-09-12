@@ -1,18 +1,18 @@
 import numpy as np
 
-from .representation import CustomRepresentation
+from .representation import FancyRepresentation
 from ..common import SimilarityMeasure
 
 
-class CustomGauss(SimilarityMeasure):
+class GaussianMeasure(SimilarityMeasure):
     def kernel(self, x, kernel_mean, kernel_std):
         exp_arg = (kernel_mean - x) / kernel_std
         kernel_val = np.exp(-np.square(exp_arg))
         return kernel_val
 
-    def __call__(self, f1: CustomRepresentation, f2: CustomRepresentation, **kwargs) -> np.float:
+    def __call__(self, f1: FancyRepresentation, f2: FancyRepresentation, **kwargs) -> np.float:
         """
-        Computes similarity, using gaussian kernel.
+        Computes similarity, using a gaussian kernel.
 
         Parameters
         ----------
@@ -38,9 +38,8 @@ class CustomGauss(SimilarityMeasure):
             self.debug_log(f'kernel_val_xy: {kernel_val_xy}')
         # --- Compute weighted average
         num = np.dot(kernel_val_features, f1.features_weights) + np.dot(kernel_val_xy, f1.xy_weights.weights)
-        if self.debug_enabled:
-            self.debug_log(f'num: {num}')
         den = np.sum(f1.features_weights) + np.sum(f1.xy_weights.weights)
         if self.debug_enabled:
-            self.debug_log(f'den: {den}')
+            self.debug_log(f'numerator value: {num}')
+            self.debug_log(f'denominator value: {den}')
         return num / den

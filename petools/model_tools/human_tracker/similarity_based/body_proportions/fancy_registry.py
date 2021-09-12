@@ -1,13 +1,13 @@
 from ..common import ExpAvgRegistry
-from .representation import CustomRepresentation
+from .representation import FancyRepresentation
 from ..core import REPRESENTATION_ID
 
 
-class CustomRegistry(ExpAvgRegistry):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class FancyRegistry(ExpAvgRegistry):
+    def __init__(self, alpha: float = 0.2, expiration_time: int = 70):
+        super().__init__(alpha=alpha, expiration_time=expiration_time)
 
-    def update_representation(self, id: REPRESENTATION_ID, representation: CustomRepresentation):
+    def update_representation(self, id: REPRESENTATION_ID, representation: FancyRepresentation):
         super().update_representation(id, representation)
         if representation is None:
             if self.debug_enabled:
@@ -18,7 +18,7 @@ class CustomRegistry(ExpAvgRegistry):
         reg_repr.xy = representation.xy
     
     def update_state(self):
-        super(CustomRegistry, self).update_state()
+        super(FancyRegistry, self).update_state()
         for id, holder in self.registry.items():
             xy_weights = holder.representation.xy_weights
             xy_weights.step()

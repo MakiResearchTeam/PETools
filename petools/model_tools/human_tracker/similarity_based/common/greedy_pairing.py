@@ -10,7 +10,7 @@ class GreedyPairing(PairingProtocol):
     - the larger the value, the less similar features are.
     """
 
-    def __init__(self, threshold: float, comparator=lambda a, b: a < b, worst_similarity_value=1e6):
+    def __init__(self, threshold: float = 0.1, comparator=lambda a, b: a > b, worst_similarity_value=0.1):
         """
         Parameters
         ----------
@@ -39,7 +39,7 @@ class GreedyPairing(PairingProtocol):
         if best_human_ind is None or best_feature_id is None:
             if self.debug_enabled:
                 self.debug_log('Best value was not found. '
-                                  f'similarity_mat={similarity_mat}, used_human_inds={used_human_inds}')
+                               f'similarity_mat={similarity_mat}, used_human_inds={used_human_inds}')
 
         if self.debug_enabled:
             self.debug_log(

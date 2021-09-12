@@ -2,6 +2,7 @@ from setuptools import setup
 import setuptools
 import os
 from Cython.Build import cythonize
+import numpy as np
 
 meta = {}
 with open(os.path.join('petools', '__version__.py')) as f:
@@ -29,5 +30,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     install_requires=[],
-    ext_modules=cythonize("**/*.pyx")
+    ext_modules=cythonize("**/*.pyx"),
+    include_dirs=[np.get_include()]
 )
