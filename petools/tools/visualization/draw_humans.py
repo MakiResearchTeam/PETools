@@ -1,13 +1,32 @@
 import numpy as np
 import cv2
+from random import randint
 
 from petools.core import PosePredictorInterface
 from .core import draw_human
 from petools.tools.estimate_tools.constants import CONNECT_KP
 
 
+def random_color():
+    return randint(0, 255), randint(0, 255), randint(0, 255)
+
+
+ID2COLOR = {
+    '0': (255, 0, 0),
+    '1': (0, 255, 0),
+    '2': (0, 0, 255),
+    '3': (0, 0, 0),
+    '4': (255, 255, 0),
+    '5': (255, 255, 255),
+    '6': (20, 100, 255),
+    '7': (220, 100, 255),
+    '8': (20, 200, 255),
+    '9': (220, 100, 255),
+}
+
 def draw_humans(
-        image, humans, connect_indexes: list = CONNECT_KP,
+        image, humans, humans_ids: list = None,
+        connect_indexes: list = CONNECT_KP,
         color=(255, 0, 0), thickness=2,
         conf_threshold: float = 1e-3,
         draw_pose_name: bool = False, pose_name_position: tuple = (100, 100),
@@ -25,6 +44,8 @@ def draw_humans(
     humans : list or dict
         If it's a list, it must contain all the humans (Human, list, dict) to draw.
         If it's a dict, it must be a dictionary returned by the PosePredictor instance.
+    humans_ids : list, optional
+        Contains IDs for the corresponding humans.
     connect_indexes : list
         Contains pairs or point indices that are connected to each other.
     color : tuple
@@ -48,16 +69,20 @@ def draw_humans(
 
     Warnings
     --------
-    Currently the method draws all the pose info in one place. Please be aware as in case of drawing multiple
-    humans the info for each one will overlap.
+    Currently the method draws all the pose info (name and confidence) in one place.
+    Please be aware as in case of drawing multiple humans the info for each one will overlap.
     """
     if isinstance(humans, dict):
         humans_ = humans.get(PosePredictorInterface.HUMANS)
         assert humans_, f'Received dictionary which does not contain {PosePredictorInterface.HUMANS} key. ' \
                         f'Received dict={humans_}'
+        humans_ids = [id for id, human_2d, human_3d, pose_info in humans_]
         humans = [human_2d for id, human_2d, human_3d, pose_info in humans_]
-        pose_name_list = [pose_info[0] for id, human_2d, human_3d, pose_info in humans_]
-        pose_conf_list = [pose_info[1] for id, human_2d, human_3d, pose_info in humans_]
+
+        if draw_pose_name:
+            pose_name_list = [pose_info[0] for id, human_2d, human_3d, pose_info in humans_]
+        if draw_pose_conf:
+            pose_conf_list = [pose_info[1] for id, human_2d, human_3d, pose_info in humans_]
 
     if pose_name_list:
         assert len(pose_name_list) == len(humans)
@@ -73,6 +98,11 @@ def draw_humans(
         pose_conf = None
         if pose_conf_list and draw_pose_name:
             pose_conf = pose_conf_list[i]
+
+        if humans_ids:
+            color = ID2COLOR.get(str(humans_ids[i]))
+            if not color:
+                color = random_color()
 
         draw_human(
             image=image,
