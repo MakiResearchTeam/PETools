@@ -1,6 +1,11 @@
-cython
-tensorflow-gpu==1.15.5
+cython~=0.29.24
+tensorflow-gpu~=1.15.0
 cython>=0.29.24
 numpy>=1.18.5
 numba>=0.53.1
 opencv==4.5.0
+
+pathlib~=1.0.1
+tqdm~=4.55.0
+scipy~=1.5.2
+setuptools~=51.0.0
