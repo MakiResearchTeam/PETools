@@ -24,8 +24,7 @@ class GpuImagePreprocessor(ImagePreprocessor):
         original_in_size = image.shape[:-1]
         # Get final image size and padding value
         (new_h, new_w), padding = self.__get_image_info(original_in_size)
-        # TODO: Test effect of nearest resize
-        resized_img = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+        resized_img = cv2.resize(image, (new_w, new_h))
         if padding:
             # Check buffers
             if self._saved_padding_w is None or \
