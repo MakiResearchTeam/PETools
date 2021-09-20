@@ -1,2 +1,3 @@
-from .draw_skeletons import draw_skeletons_on_image, draw_humans
+from .core import draw_human
+from .draw_humans import draw_humans
 from .paf import visualize_paf
