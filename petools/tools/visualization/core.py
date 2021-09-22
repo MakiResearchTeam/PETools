@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from petools.tools import Human
+from .coherence_check import coherence_check
 
 
 def _draw_human(
@@ -71,9 +72,9 @@ def _draw_human(
         Thickness of the font for confidence.
     """
     for i in range(len(connect_indices)):
-        ind_pair = connect_indices[i]
-        p1 = points[ind_pair[0]]
-        p2 = points[ind_pair[1]]
+        ind1, ind2 = connect_indices[i]
+        p1 = points[ind1]
+        p2 = points[ind2]
 
         if p1[2] < conf_threshold or p2[2] < conf_threshold:
             continue
@@ -116,6 +117,8 @@ def draw_human(
         pose_name_position: tuple = (100, 100),
         pose_conf: float = None,
         pose_conf_position: tuple = (120, 120),
+        do_coherence_check: bool = True,
+        root_points: tuple = (2, 0, 1, 4, 5, 10, 11, 22)
 ):
     """
     Draws a single human on the given image. Note that drawing happens inplace, so if you don't
@@ -143,6 +146,11 @@ def draw_human(
         Confidence of the given pose (class) name.
     pose_conf_position : tuple
         Position where to draw the pose name.
+    do_coherence_check : bool
+        Whether to perform human skeleton coherence check.
+    root_points : tuple
+        A list of root points used in the coherence check. From those points tracing will be performed
+        to mask the absent (unconnected) part of the skeleton graph.
     """
     if isinstance(human, Human):
         points = human.to_np()
@@ -154,9 +162,20 @@ def draw_human(
         points = [val for val in human.values()]
         assert len(points[0]) == 3, \
             f'The dictionary must contain elements of length 3, but received len(elem)={points[0]}'
+    elif isinstance(human, np.ndarray):
+        points = human
     else:
-        raise Exception("Unrecognized data type. Expected data types: np.ndarray, list, dict. "
+        raise Exception("Unrecognized data type. Expected data types: np.ndarray, list, dict, Human. "
                         f"Received type: {type(human)}. \nData:\n {human}")
+
+    if do_coherence_check:
+        points = coherence_check(
+            points=points,
+            root_points=root_points,
+            connect_indices=connect_indices,
+            conf_threshold=conf_threshold
+        )
+
     _draw_human(
         image=image,
         points=points,

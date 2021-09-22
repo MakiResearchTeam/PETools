@@ -24,6 +24,7 @@ ID2COLOR = {
     '9': (220, 100, 255),
 }
 
+
 def draw_humans(
         image, humans, humans_ids: list = None,
         connect_indexes: list = CONNECT_KP,
@@ -32,6 +33,8 @@ def draw_humans(
         draw_pose_name: bool = False, pose_name_position: tuple = (100, 100),
         draw_pose_conf: bool = False, pose_conf_position: tuple = (100, 170),
         pose_name_list: list = None, pose_conf_list: list = None,
+        do_coherence_check: bool = True,
+        root_points: tuple = (2, 0, 1, 4, 5, 10, 11, 22)
 ):
     """
     Draws all the `humans` on the given image inplace. If you don't want the original image to be modified,
@@ -66,6 +69,11 @@ def draw_humans(
         List of (class) names for the humans' poses.
     pose_conf_list : list
         List of confidence values for each pose (class) name.
+    do_coherence_check : bool
+        Whether to perform human skeleton coherence check.
+    root_points : tuple
+        A list of root points used in the coherence check. From those points tracing will be performed
+        to mask the absent (unconnected) part of the skeleton graph.
 
     Warnings
     --------
@@ -84,6 +92,10 @@ def draw_humans(
         if draw_pose_conf:
             pose_conf_list = [pose_info[1] for id, human_2d, human_3d, pose_info in humans_]
 
+    # No humans to draw
+    if len(humans) == 0:
+        return
+
     if pose_name_list:
         assert len(pose_name_list) == len(humans)
 
@@ -100,9 +112,11 @@ def draw_humans(
             pose_conf = pose_conf_list[i]
 
         if humans_ids:
-            color = ID2COLOR.get(str(humans_ids[i]))
+            id = str(humans_ids[i])
+            color = ID2COLOR.get(id)
             if not color:
                 color = random_color()
+                ID2COLOR[id] = color
 
         draw_human(
             image=image,
@@ -114,5 +128,7 @@ def draw_humans(
             pose_name=pose_name,
             pose_name_position=pose_name_position,
             pose_conf=pose_conf,
-            pose_conf_position=pose_conf_position
+            pose_conf_position=pose_conf_position,
+            do_coherence_check=do_coherence_check,
+            root_points=root_points
         )
