@@ -16,6 +16,13 @@ STD_3D_V1 = 'std_3d_v1.npy'
 STD_3D_V2 = 'std_3d.npy'
 STD_3D = STD_3D_V2
 
+PCA_MATRIX_BACKWARD_V1 = 'pca_mat_backward.npy'
+PCA_MATRIX_BACKWARD = PCA_MATRIX_BACKWARD_V1
+
+PCA_MATRIX_FORWARD_V1 = 'pca_mat_forward.npy'
+PCA_MATRIX_FORWARD = PCA_MATRIX_FORWARD_V1
+
+
 # Map production keypoints (predicted from NN)
 # To keypoints of Human3.6M dataset for suitable input into 3d converter
 PRODUCTION_TO_HUMAN36_V1 = [
