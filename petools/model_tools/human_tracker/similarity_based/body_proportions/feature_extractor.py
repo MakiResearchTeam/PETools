@@ -94,6 +94,9 @@ class FExtractor(FeatureExtractor):
     def compute_mean_point(self, human: np.ndarray, **kwargs):
         select = human[:, -1] > self.p_threshold
         points = human[:, :-1][select]
+        if len(points) == 0:
+            return np.asarray([0, 0], dtype='float32')
+
         mean_point = points.mean(axis=0)
         image_size = kwargs['image_size']
         h, w = image_size
@@ -102,18 +105,22 @@ class FExtractor(FeatureExtractor):
         return mean_point
 
     def compute_height(self, human: np.ndarray, **kwargs):
+        image_size = kwargs['image_size']
+        h, w = image_size
         upper_h = None
         for ind in self.upper_points_inds:
             if human[ind, 2] > self.p_threshold:
                 upper_h = human[ind, 1]
+        if upper_h is None:
+            upper_h = 0.0
 
         lower_h = None
         for ind in self.lower_points_inds:
             if human[ind, 2] > self.p_threshold:
                 lower_h = human[ind, 1]
 
-        image_size = kwargs['image_size']
-        h, w = image_size
+        if lower_h is None:
+            lower_h = h
         return (lower_h - upper_h) / h
 
     def compute_body_features(self, human: np.ndarray):
