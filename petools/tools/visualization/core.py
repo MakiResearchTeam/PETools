@@ -3,6 +3,7 @@ import numpy as np
 
 from petools.tools import Human
 from .coherence_check import coherence_check
+from petools.tools.estimate_tools.constants import CONNECT_KP
 
 
 def _draw_human(
@@ -109,7 +110,7 @@ def _draw_human(
 def draw_human(
         image: np.ndarray,
         human,
-        connect_indices: list,
+        connect_indices: list = CONNECT_KP,
         color: tuple = (255, 0, 0),
         thickness: int = 2,
         conf_threshold: float = 1e-3,
