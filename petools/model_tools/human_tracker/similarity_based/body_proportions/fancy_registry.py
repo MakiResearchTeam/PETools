@@ -16,6 +16,7 @@ class FancyRegistry(ExpAvgRegistry):
             return
         reg_repr = self.get_representation(id).representation
         reg_repr.xy = representation.xy
+        reg_repr.height = reg_repr.height * (1.0 - self.alpha) + representation.height * self.alpha
     
     def update_state(self):
         super(FancyRegistry, self).update_state()

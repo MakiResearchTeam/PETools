@@ -9,7 +9,12 @@ from .representation import FancyRepresentation, XYDecayingWeights
 
 class FExtractor(FeatureExtractor):
     @staticmethod
-    def init_from_lib():
+    def init_from_lib(n_points=23,
+                      features_std_scale=3.0, features_weight_scale=1.0, xy_std_scale=0.1, xy_weight_scale=10.0,
+                      p_threshold=0.5, decay_steps=80):
+        """
+        See the constructor for the parameters description.
+        """
         file_path = os.path.abspath(__file__)
         dir_path = pathlib.Path(file_path).parent
         stats_dir = os.path.join(dir_path, 'data_statistics')
@@ -18,12 +23,17 @@ class FExtractor(FeatureExtractor):
         indices = np.load(os.path.join(stats_dir, 'feature_indices.npy'))
         from .data_statistics.constants import conlist
         return FExtractor(
-            indices=indices, conlist=conlist, mean=mean, std=std
+            indices=indices, conlist=conlist, mean=mean, std=std,
+            n_points=n_points,
+            features_std_scale=features_std_scale, features_weight_scale=features_weight_scale,
+            xy_std_scale=xy_std_scale, xy_weight_scale=xy_weight_scale,
+            p_threshold=p_threshold, decay_steps=decay_steps
         )
 
     def __init__(self, indices: np.ndarray, conlist: list, mean: np.ndarray = None, std: np.ndarray = None, n_points=23,
                  features_std_scale=3.0, features_weight_scale=1.0, xy_std_scale=0.1, xy_weight_scale=10.0,
-                 p_threshold=0.5, decay_steps=80):
+                 p_threshold=0.5, decay_steps=80, upper_points_inds=(4, 5, 2), lower_points_inds=(10, 11, 22),
+                 height_std=0.1, height_weight=5.0):
         """
         Custom feature extractor used in human tracking pipeline.
 
@@ -51,6 +61,10 @@ class FExtractor(FeatureExtractor):
             Determines the minimum confidence value for a point to be considered during mean point computation.
         decay_steps : int
             Determines for how long the xy weights will decay.
+        upper_points_inds : tuple
+            Indices of the upper keypoints. Used to calculate height of the upper body.
+        lower_points_inds : tuple
+            Indices of the lower keypoints. Used to calculate height of the upper body.
         """
         super().__init__()
         self.fg = FeatureGenerator(conlist, n_points, 1e-6)
@@ -63,7 +77,11 @@ class FExtractor(FeatureExtractor):
         self.low_diag_indices = np.tril_indices(temp_f.shape[0], k=-1)
         self.indices = indices[:-1]
         self.n_used_features = len(temp_f[self.low_diag_indices][self.indices])
+        self.upper_points_inds = upper_points_inds
+        self.lower_points_inds = lower_points_inds
 
+        self.height_std = height_std
+        self.height_weight = height_weight
         self.init_buffers(features_std_scale, features_weight_scale, xy_std_scale, xy_weight_scale)
 
     # noinspection PyAttributeOutsideInit
@@ -83,6 +101,21 @@ class FExtractor(FeatureExtractor):
         mean_point[1] /= h
         return mean_point
 
+    def compute_height(self, human: np.ndarray, **kwargs):
+        upper_h = None
+        for ind in self.upper_points_inds:
+            if human[ind, 2] > self.p_threshold:
+                upper_h = human[ind, 1]
+
+        lower_h = None
+        for ind in self.lower_points_inds:
+            if human[ind, 2] > self.p_threshold:
+                lower_h = human[ind, 1]
+
+        image_size = kwargs['image_size']
+        h, w = image_size
+        return (lower_h - upper_h) / h
+
     def compute_body_features(self, human: np.ndarray):
         f = self.fg.generate_features(human)
         f = f[self.low_diag_indices].reshape(-1)
@@ -97,4 +130,9 @@ class FExtractor(FeatureExtractor):
         f = self.compute_body_features(human)
         xy = self.compute_mean_point(human, **kwargs)
         xy_weights = XYDecayingWeights(xy.shape, self.decay_steps, init=self.xy_weights)
-        return FancyRepresentation(f, self.std_features, xy, self.xy_std, self.feature_weights, xy_weights)
+        h = self.compute_height(human)
+        return FancyRepresentation(
+            f, self.feature_weights, self.std_features,
+            xy, self.xy_std, xy_weights,
+            h, self.height_std, self.height_weight
+        )

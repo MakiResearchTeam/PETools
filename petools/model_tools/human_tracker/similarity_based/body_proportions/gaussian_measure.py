@@ -36,9 +36,16 @@ class GaussianMeasure(SimilarityMeasure):
         kernel_val_xy = np.exp(-np.square(dist / f1.std_xy))
         if self.debug_enabled:
             self.debug_log(f'kernel_val_xy: {kernel_val_xy}')
+
+        # --- Compute kernel for height
+        kernel_val_height = self.kernel(f2.height, f1.height, f1.std_height)
+        if self.debug_enabled:
+            self.debug_log(f'kernel_val_height: {kernel_val_features}')
+
         # --- Compute weighted average
         num = np.dot(kernel_val_features, f1.features_weights) + np.dot(kernel_val_xy, f1.xy_weights.weights)
-        den = np.sum(f1.features_weights) + np.sum(f1.xy_weights.weights)
+        num += kernel_val_height * f1.height_weight
+        den = np.sum(f1.features_weights) + np.sum(f1.xy_weights.weights) + f1.height_weight
         if self.debug_enabled:
             self.debug_log(f'numerator value: {num}')
             self.debug_log(f'denominator value: {den}')
