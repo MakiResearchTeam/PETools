@@ -50,9 +50,11 @@ class XYDecayingWeights:
 class FancyRepresentation(HumanRepresentation):
     std_features: np.ndarray
     features_weights: np.ndarray
+
     xy: np.ndarray
     std_xy: np.ndarray
     xy_weights: XYDecayingWeights
+
     height: float
     std_height: float
     height_weight: float

@@ -9,7 +9,7 @@ from .gaussian_measure import GaussianMeasure
 
 
 class FancySimilarity(SimpleSimilarity):
-    def __init__(self, distance=0.075, min_height_ratio=1.125):
+    def __init__(self, distance=0.075, min_height_ratio=1.1):
         super().__init__(sim_measure=GaussianMeasure())
         self.distance = distance
         self.min_height_ratio = min_height_ratio
@@ -34,7 +34,7 @@ class FancySimilarity(SimpleSimilarity):
                 if dist < self.distance and ratio < self.min_height_ratio:
                     reg_repr1.xy_weights.start_decay()
                     if self.debug_enabled:
-                        self.debug_log(f'Started decay on representation with id={id1}.')
+                        self.debug_log(f'Started decay on representation with id={id1}, height_ratio={ratio}.')
                     break
 
         return super().compute_similarity_matrix(registered_representations, new_representations, **kwargs)

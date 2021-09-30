@@ -10,9 +10,9 @@ class FancyRegistry(ExpAvgRegistry):
     def update_representation(self, id: REPRESENTATION_ID, representation: FancyRepresentation):
         super().update_representation(id, representation)
         if representation is None:
-            if self.debug_enabled:
-                self.debug_log(f'Turning on weight decay on representation with id={id} because no update value received.')
-            self.get_representation(id).representation.xy_weights.start_decay()
+            #if self.debug_enabled:
+            #    self.debug_log(f'Turning on weight decay on representation with id={id} because no update value received.')
+            #self.get_representation(id).representation.xy_weights.start_decay()
             return
         reg_repr = self.get_representation(id).representation
         reg_repr.xy = representation.xy

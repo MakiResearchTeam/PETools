@@ -5,13 +5,16 @@ import pathlib
 from ..core import FeatureExtractor
 from .feature_generator import FeatureGenerator
 from .representation import FancyRepresentation, XYDecayingWeights
+from petools.model_tools.pose_classifier.process_data.feature_generator import FeatureGenerator as CFeatureGenerator
+from petools.model_tools.pose_classifier.utils import conlist as CF_CONLIST
+from petools.model_tools.pose_classifier.utils import INPUT_SHAPE
 
 
 class FExtractor(FeatureExtractor):
     @staticmethod
     def init_from_lib(n_points=23,
-                      features_std_scale=3.0, features_weight_scale=1.0, xy_std_scale=0.1, xy_weight_scale=10.0,
-                      p_threshold=0.5, decay_steps=80):
+                      features_std_scale=1.0, features_weight_scale=27.0, xy_std_scale=0.1, xy_weight_scale=10.0,
+                      p_threshold=0.1, decay_steps=80):
         """
         See the constructor for the parameters description.
         """
@@ -32,8 +35,8 @@ class FExtractor(FeatureExtractor):
 
     def __init__(self, indices: np.ndarray, conlist: list, mean: np.ndarray = None, std: np.ndarray = None, n_points=23,
                  features_std_scale=3.0, features_weight_scale=1.0, xy_std_scale=0.1, xy_weight_scale=10.0,
-                 p_threshold=0.5, decay_steps=80, upper_points_inds=(4, 5, 2), lower_points_inds=(10, 11, 22),
-                 height_std=0.1, height_weight=5.0):
+                 p_threshold=0.1, decay_steps=80, upper_points_inds=(4, 5, 2), lower_points_inds=(10, 11, 22),
+                 height_std=0.03, height_weight=1.0):
         """
         Custom feature extractor used in human tracking pipeline.
 
@@ -76,10 +79,13 @@ class FExtractor(FeatureExtractor):
         temp_f = self.fg.generate_features(np.random.randn(n_points, 2).astype('float32'))
         self.low_diag_indices = np.tril_indices(temp_f.shape[0], k=-1)
         self.indices = indices[:-1]
-        self.n_used_features = len(temp_f[self.low_diag_indices][self.indices])
+        print('self.indices', len(self.indices))
+        self.n_used_features = len(temp_f[self.low_diag_indices][self.indices]) + INPUT_SHAPE
         self.upper_points_inds = upper_points_inds
         self.lower_points_inds = lower_points_inds
-
+        self.classifier_fextractor = CFeatureGenerator(connectivity_list=np.array(CF_CONLIST), n_points=n_points)
+        self.features = np.empty(shape=INPUT_SHAPE, dtype=np.float32)
+        print('INPUT_SHAPE', INPUT_SHAPE)
         self.height_std = height_std
         self.height_weight = height_weight
         self.init_buffers(features_std_scale, features_weight_scale, xy_std_scale, xy_weight_scale)
@@ -87,7 +93,10 @@ class FExtractor(FeatureExtractor):
     # noinspection PyAttributeOutsideInit
     def init_buffers(self, std_scale, weights_scale, xy_weight_std, xy_weight_scale):
         self.std_features = np.ones(self.n_used_features, dtype='float32') * std_scale
-        self.feature_weights = np.ones(self.n_used_features, dtype='float32') * weights_scale
+        self.feature_weights = np.ones(self.n_used_features, dtype='float32') / self.n_used_features * weights_scale
+        self.feature_weights[:self.n_used_features - INPUT_SHAPE] *= 2.0
+        self.feature_weights[self.n_used_features - INPUT_SHAPE:] *= 0.5
+        #self.feature_weights[self.n_used_features:] = 1 / INPUT_SHAPE * 0.0
         self.xy_weights = np.ones(1, dtype='float32') * xy_weight_scale
         self.xy_std = np.ones(1, dtype='float32') * xy_weight_std
 
@@ -135,11 +144,17 @@ class FExtractor(FeatureExtractor):
     def __call__(self, human, **kwargs):
         human = human.to_np()
         f = self.compute_body_features(human)
+
+        self.classifier_fextractor.generate_features(human[:, :-1], self.features)
+        f = np.concatenate([f, self.features])
+
         xy = self.compute_mean_point(human, **kwargs)
         xy_weights = XYDecayingWeights(xy.shape, self.decay_steps, init=self.xy_weights)
-        h = self.compute_height(human)
+
+        h = self.compute_height(human, **kwargs)
+
         return FancyRepresentation(
-            f, self.feature_weights, self.std_features,
+            f, self.std_features, self.feature_weights,
             xy, self.xy_std, xy_weights,
             h, self.height_std, self.height_weight
         )
