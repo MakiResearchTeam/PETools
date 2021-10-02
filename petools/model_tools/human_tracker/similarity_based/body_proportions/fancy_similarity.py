@@ -24,6 +24,8 @@ class FancySimilarity(SimpleSimilarity):
 
                 dist = LA.norm(reg_repr1.xy - reg_repr2.xy)
 
+                # If the heights ratio is too large, then we do not need to turn off
+                # the weight decay.
                 min_h = min(reg_repr1.height, reg_repr2.height)
                 max_h = max(reg_repr1.height, reg_repr2.height)
                 ratio = max_h / min_h

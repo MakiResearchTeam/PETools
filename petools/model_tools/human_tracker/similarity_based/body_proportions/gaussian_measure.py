@@ -43,8 +43,7 @@ class GaussianMeasure(SimilarityMeasure):
 
         # --- Compute weighted average
         num = feat_score + xy_score
-        #num += kernel_val_height * f1.height_weight
-        den = np.sum(f1.features_weights) + np.sum(f1.xy_weights.weights) #+ f1.height_weight
+        den = np.sum(f1.features_weights) + np.sum(f1.xy_weights.weights)
         if self.debug_enabled:
             self.debug_log(f'numerator value: {num}')
             self.debug_log(f'denominator value: {den}')

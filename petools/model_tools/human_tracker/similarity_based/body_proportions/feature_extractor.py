@@ -11,10 +11,13 @@ from petools.model_tools.pose_classifier.utils import INPUT_SHAPE
 
 
 class FExtractor(FeatureExtractor):
+    """
+    Computes various features that help to identify an individual.
+    """
     @staticmethod
     def init_from_lib(n_points=23,
                       features_std_scale=1.0, features_weight_scale=27.0, xy_std_scale=0.1, xy_weight_scale=10.0,
-                      p_threshold=0.1, decay_steps=80):
+                      p_threshold=0.1, decay_steps=80, upper_points_inds=(4, 5, 2), lower_points_inds=(10, 11, 22)):
         """
         See the constructor for the parameters description.
         """
@@ -30,13 +33,13 @@ class FExtractor(FeatureExtractor):
             n_points=n_points,
             features_std_scale=features_std_scale, features_weight_scale=features_weight_scale,
             xy_std_scale=xy_std_scale, xy_weight_scale=xy_weight_scale,
-            p_threshold=p_threshold, decay_steps=decay_steps
+            p_threshold=p_threshold, decay_steps=decay_steps,
+            upper_points_inds=upper_points_inds, lower_points_inds=lower_points_inds
         )
 
     def __init__(self, indices: np.ndarray, conlist: list, mean: np.ndarray = None, std: np.ndarray = None, n_points=23,
                  features_std_scale=3.0, features_weight_scale=1.0, xy_std_scale=0.1, xy_weight_scale=10.0,
-                 p_threshold=0.1, decay_steps=80, upper_points_inds=(4, 5, 2), lower_points_inds=(10, 11, 22),
-                 height_std=0.03, height_weight=1.0):
+                 p_threshold=0.1, decay_steps=80, upper_points_inds=(4, 5, 2), lower_points_inds=(10, 11, 22)):
         """
         Custom feature extractor used in human tracking pipeline.
 
@@ -79,15 +82,11 @@ class FExtractor(FeatureExtractor):
         temp_f = self.fg.generate_features(np.random.randn(n_points, 2).astype('float32'))
         self.low_diag_indices = np.tril_indices(temp_f.shape[0], k=-1)
         self.indices = indices[:-1]
-        print('self.indices', len(self.indices))
         self.n_used_features = len(temp_f[self.low_diag_indices][self.indices]) + INPUT_SHAPE
         self.upper_points_inds = upper_points_inds
         self.lower_points_inds = lower_points_inds
         self.classifier_fextractor = CFeatureGenerator(connectivity_list=np.array(CF_CONLIST), n_points=n_points)
         self.features = np.empty(shape=INPUT_SHAPE, dtype=np.float32)
-        print('INPUT_SHAPE', INPUT_SHAPE)
-        self.height_std = height_std
-        self.height_weight = height_weight
         self.init_buffers(features_std_scale, features_weight_scale, xy_std_scale, xy_weight_scale)
 
     # noinspection PyAttributeOutsideInit
@@ -104,7 +103,9 @@ class FExtractor(FeatureExtractor):
         select = human[:, -1] > self.p_threshold
         points = human[:, :-1][select]
         if len(points) == 0:
-            return np.asarray([0, 0], dtype='float32')
+            # Return negative values. In this case the xy coords
+            # of the corresponding registered representation won't be updated
+            return np.asarray([-1, -1], dtype='float32')
 
         mean_point = points.mean(axis=0)
         image_size = kwargs['image_size']
@@ -156,5 +157,5 @@ class FExtractor(FeatureExtractor):
         return FancyRepresentation(
             f, self.std_features, self.feature_weights,
             xy, self.xy_std, xy_weights,
-            h, self.height_std, self.height_weight
+            h
         )

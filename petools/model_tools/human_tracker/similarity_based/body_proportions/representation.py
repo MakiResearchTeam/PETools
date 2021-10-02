@@ -56,5 +56,3 @@ class FancyRepresentation(HumanRepresentation):
     xy_weights: XYDecayingWeights
 
     height: float
-    std_height: float
-    height_weight: float
