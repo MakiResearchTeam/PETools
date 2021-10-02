@@ -19,7 +19,7 @@ setup(
         'model_tools/pose_classifier/process_data/classifier_stats/*.npy',
         'model_tools/human_tracker/similarity_based/body_proportions/data_statistics/*.npy'
     ]},
-    version=meta['__title__'],
+    version=meta['__version__'],
     description=meta['__description__'],
     long_description='...',
     author=meta['__author__'],
