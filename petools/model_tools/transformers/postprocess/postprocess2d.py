@@ -1,9 +1,9 @@
 import numpy as np
 
-from . import HumanProcessor
-from .core import DataProcessor
-from ...tools import Human
-from .utils import HIP_ID
+from petools.model_tools.transformers import HumanProcessor
+from petools.model_tools.transformers.core import DataProcessor
+from petools.model_tools.transformers.utils import HIP_ID
+from petools.tools import Human
 
 
 class Postprocess2D(DataProcessor):

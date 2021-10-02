@@ -3,7 +3,8 @@ import os
 import pathlib
 
 from petools.tools.estimate_tools import Human
-from .utils import *
+from petools.model_tools.transformers.utils import *
+from .optimized_methods import *
 
 
 class HumanProcessor:
@@ -132,32 +133,42 @@ class HumanProcessor:
         std_path = os.path.join(data_stats_dir, STD_3D)
         assert os.path.isfile(std_path), f"Could not find std_3d.npy in {std_path}."
         std_3d = np.load(std_path)
-        return HumanProcessor(mean_2d, std_2d, mean_3d, std_3d)
 
-    def __init__(self, mean_2d, std_2d, mean_3d, std_3d):
+        pca_matrix_path = os.path.join(data_stats_dir, PCA_MATRIX_BACKWARD)
+        assert os.path.isfile(pca_matrix_path), f"Could not find {PCA_MATRIX_BACKWARD} in {pca_matrix_path}."
+        pca_matrix = np.load(pca_matrix_path)
+        return HumanProcessor(mean_2d, std_2d, mean_3d, std_3d, pca_matrix)
+
+    def __init__(self, mean_2d, std_2d, mean_3d, std_3d, pca_matrix):
         self.mean2d = mean_2d.reshape(-1).astype('float32')
         self.std2d = std_2d.reshape(-1).astype('float32')
         self.mean3d = mean_3d.reshape(-1).astype('float32')
         self.std3d = std_3d.reshape(-1).astype('float32')
+        self.pca_matrix = pca_matrix.astype(np.float32)
 
     def norm2d(self, human):
-        if isinstance(human, Human):
-            human = human.to_np()[:, :2]
-        else:
-            human = np.asarray(human)
-
-        return (human.reshape(-1) - self.mean2d) / self.std2d
+        human = self._preprocess_input_human(human)
+        return norm2d_njit(human, self.mean2d, self.std2d)
 
     def denorm2d(self, human):
-        return human.reshape(-1) * self.std2d + self.mean2d
+        return denorm2d_njit(human, self.mean2d, self.std2d)
 
     def norm3d(self, human):
-        if isinstance(human, Human):
-            human = human.to_np_from3d()[:, :3]
-        else:
-            human = np.asarray(human)
-
-        return (human.reshape(-1) - self.mean3d) / self.std3d
+        human = self._preprocess_input_human(human, axis=3)
+        return norm3d_njit(human, self.mean3d, self.std3d)
 
     def denorm3d(self, human):
-        return human.reshape(-1) * self.std3d + self.mean3d
+        return denorm3d_njit(human, self.mean3d, self.std3d)
+
+    def denorm3d_pca(self, human):
+        """
+        Transforms the data from the PCA space to the initial data space.
+        """
+        return denorm3d_pca_njit(human, self.pca_matrix)
+
+    def _preprocess_input_human(self, human, axis=2) -> np.ndarray:
+        if isinstance(human, Human):
+            human = human.to_np_from3d()[:, :axis]
+        else:
+            human = np.asarray(human, dtype=np.float32)
+        return human
