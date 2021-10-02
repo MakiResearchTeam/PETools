@@ -48,6 +48,10 @@ class SimpleSimilarity(Similarity):
             similarities = []
             similarity_mat[id] = similarities
             for human_ind, human_representation in enumerate(new_representations):
+                if self.debug_enabled:
+                    self.debug_log(
+                        f'Computing similarity between (registered_id, representation_ind): ({id}, {human_ind})'
+                    )
                 sim_val = self.sim_measure(registered_representation, human_representation, **kwargs)
                 similarities.append((human_ind, sim_val))
         return similarity_mat

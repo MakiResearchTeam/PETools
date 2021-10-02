@@ -43,7 +43,7 @@ def create_fake_preds(ids, dicts_points2d):
 
 class Projector:
     def __init__(
-            self, n_points=23, scale=200, shift=None, z_shift: float = None,
+            self, n_points=23, scale=1.0, shift=None, z_shift: float = None,
             z_far=100., z_near=0.1, fov=45.0, h=1000, w=1000,
             rotation_info: dict = None, centering_point: int = None, perspective_divide=False
     ):
@@ -80,6 +80,8 @@ class Projector:
             Whether to perform perspective divide when projecting the points.
         """
         self.projmat = self.init_projmat(z_far=z_far, z_near=z_near, fov=fov, h=h, w=w)
+        self.h = h
+        self.w = w
         self.scale = scale
         self.shift = np.asarray(shift)
         self.rotation_matrix = None
@@ -99,7 +101,7 @@ class Projector:
         a = h / w
         q = z_far / (z_far - z_near)
         return np.array([
-            [f / a, 0, 0, 0],
+            [f * a, 0, 0, 0],
             [0, f, 0, 0],
             [0, 0, q, 1],
             [0, 0, -z_near * q, 0]
@@ -110,6 +112,8 @@ class Projector:
         proj_points = self.buffer.dot(self.projmat)
         if self.perspective_divide:
             proj_points /= proj_points[:, -1, None] + 1e-6
+        proj_points[:, 0] *= self.w / 2
+        proj_points[:, 1] *= self.h / 2
         return proj_points[:, :3]
 
     def project(self, preds: dict, return_ids=True, return_fake_preds=False):
@@ -134,7 +138,7 @@ class Projector:
         ids, humans3dnp, centers = convert_to_3dnp(preds, self.centering_point)
         projected_humans = []
         for human3d, center in zip(humans3dnp, centers):
-            human3d[:, :3] /= 1000
+            human3d[:, :3] /= 1000 * 2.5
 
             # Rotate the human
             if isinstance(self.rotation_matrix, np.ndarray):

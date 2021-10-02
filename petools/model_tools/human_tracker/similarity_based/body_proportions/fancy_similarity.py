@@ -9,9 +9,10 @@ from .gaussian_measure import GaussianMeasure
 
 
 class FancySimilarity(SimpleSimilarity):
-    def __init__(self, distance=0.075):
+    def __init__(self, distance=0.075, min_height_ratio=1.1):
         super().__init__(sim_measure=GaussianMeasure())
         self.distance = distance
+        self.min_height_ratio = min_height_ratio
 
     def compute_similarity_matrix(self, registered_representations: List[Tuple[REPRESENTATION_ID, FancyRepresentation]],
                                   new_representations: List[FancyRepresentation], **kwargs) -> Union[SIMMAT, None]:
@@ -23,13 +24,19 @@ class FancySimilarity(SimpleSimilarity):
 
                 dist = LA.norm(reg_repr1.xy - reg_repr2.xy)
 
+                # If the heights ratio is too large, then we do not need to turn off
+                # the weight decay.
+                min_h = min(reg_repr1.height, reg_repr2.height)
+                max_h = max(reg_repr1.height, reg_repr2.height)
+                ratio = max_h / min_h
+
                 if self.debug_enabled:
                     self.debug_log(f'Distance between reprs with id1={id1} and id2={id2} is dist={dist}.')
 
-                if dist < self.distance:
+                if dist < self.distance and ratio < self.min_height_ratio:
                     reg_repr1.xy_weights.start_decay()
                     if self.debug_enabled:
-                        self.debug_log(f'Started decay on representation with id={id1}.')
+                        self.debug_log(f'Started decay on representation with id={id1}, height_ratio={ratio}.')
                     break
 
         return super().compute_similarity_matrix(registered_representations, new_representations, **kwargs)

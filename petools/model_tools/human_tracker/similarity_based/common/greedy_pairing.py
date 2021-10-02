@@ -10,7 +10,7 @@ class GreedyPairing(PairingProtocol):
     - the larger the value, the less similar features are.
     """
 
-    def __init__(self, threshold: float = 0.1, comparator=lambda a, b: a > b, worst_similarity_value=0.1):
+    def __init__(self, threshold: float = 0.1, comparator=lambda a, b: a > b, worst_similarity_value=0.01):
         """
         Parameters
         ----------
