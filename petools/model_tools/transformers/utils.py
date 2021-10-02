@@ -1,25 +1,29 @@
 CONVERT_STATS_3D = '3d_converter_stats'
 
+MEAN_2D_V0 = 'mean_2d.npy'
 MEAN_2D_V1 = 'mean_2d_v1.npy'
-MEAN_2D_V2 = 'mean_2d.npy'
+MEAN_2D_V2 = 'mean_2d_v2.npy'
 MEAN_2D = MEAN_2D_V2
 
+MEAN_3D_V0 = 'mean_3d.npy'
 MEAN_3D_V1 = 'mean_3d_v1.npy'
-MEAN_3D_V2 = 'mean_3d.npy'
+MEAN_3D_V2 = 'mean_3d_v2.npy'
 MEAN_3D = MEAN_3D_V2
 
+STD_2D_V0 = 'std_2d.npy'
 STD_2D_V1 = 'std_2d_v1.npy'
-STD_2D_V2 = 'std_2d.npy'
+STD_2D_V2 = 'std_2d_v2.npy'
 STD_2D = STD_2D_V2
 
+STD_3D_V0 = 'std_3d.npy'
 STD_3D_V1 = 'std_3d_v1.npy'
-STD_3D_V2 = 'std_3d.npy'
+STD_3D_V2 = 'std_3d_v2.npy'
 STD_3D = STD_3D_V2
 
-PCA_MATRIX_BACKWARD_V1 = 'pca_mat_backward.npy'
+PCA_MATRIX_BACKWARD_V1 = 'pca_mat_backward_v1.npy'
 PCA_MATRIX_BACKWARD = PCA_MATRIX_BACKWARD_V1
 
-PCA_MATRIX_FORWARD_V1 = 'pca_mat_forward.npy'
+PCA_MATRIX_FORWARD_V1 = 'pca_mat_forward_v1.npy'
 PCA_MATRIX_FORWARD = PCA_MATRIX_FORWARD_V1
 
 
