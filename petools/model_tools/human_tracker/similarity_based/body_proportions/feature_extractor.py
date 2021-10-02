@@ -93,10 +93,10 @@ class FExtractor(FeatureExtractor):
     # noinspection PyAttributeOutsideInit
     def init_buffers(self, std_scale, weights_scale, xy_weight_std, xy_weight_scale):
         self.std_features = np.ones(self.n_used_features, dtype='float32') * std_scale
-        self.feature_weights = np.ones(self.n_used_features, dtype='float32') / self.n_used_features * weights_scale
-        self.feature_weights[:self.n_used_features - INPUT_SHAPE] *= 2.0
-        self.feature_weights[self.n_used_features - INPUT_SHAPE:] *= 0.5
-        #self.feature_weights[self.n_used_features:] = 1 / INPUT_SHAPE * 0.0
+        self.feature_weights = np.ones(self.n_used_features, dtype='float32')
+        self.feature_weights[:self.n_used_features - INPUT_SHAPE] *= 2.5
+        self.feature_weights[self.n_used_features - INPUT_SHAPE:] /= 2.5
+        self.feature_weights *= weights_scale / self.feature_weights.sum()
         self.xy_weights = np.ones(1, dtype='float32') * xy_weight_scale
         self.xy_std = np.ones(1, dtype='float32') * xy_weight_std
 

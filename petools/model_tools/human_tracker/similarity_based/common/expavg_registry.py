@@ -44,10 +44,12 @@ class ExpAvgRegistry(RepresentationRegistry):
             return
         else:
             holder.n_absent = 0
+        self.merge_reprs(holder.representation, representation)
 
+    def merge_reprs(self, old_repr: HumanRepresentation, new_repr: HumanRepresentation):
         # Update feature values using exponential averaging
-        holder.representation.features = \
-            holder.representation.features * (1.0 - self.alpha) + representation.features * self.alpha
+        old_repr.features = \
+            old_repr.features * (1.0 - self.alpha) + new_repr.features * self.alpha
 
     # noinspection PyTypeChecker
     @property
