@@ -6,10 +6,10 @@ from ..utils import H36_2DPOINTS_DIM_FLAT
 
 class Transformer(ProtobufModel):
 
-    def __init__(self, protobuf_path: str, seq_len=32, session: tf.Session = None):
+    def __init__(self, protobuf_path: str, seq_len=32, dim=H36_2DPOINTS_DIM_FLAT, session: tf.Session = None):
         super().__init__(
             protobuf_path, input_map={
-                'input': ('float32', [1, seq_len, H36_2DPOINTS_DIM_FLAT], 'input_'),
+                'input': ('float32', [1, seq_len, dim], 'input_'),
                 'mask': ('float32', [1, seq_len], 'mask_')
             },
             output_tensors=['Identity:0'],
