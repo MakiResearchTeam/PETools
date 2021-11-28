@@ -153,6 +153,7 @@ class Projector:
             # Perform scaling and shifting
             human3d[:, :3] *= self.scale
             if self.centering_point:
+                human3d[:, :2] -= human3d[self.centering_point, :2]
                 human3d[:, :2] += center[:2]
             else:
                 human3d[:, :2] += self.shift

@@ -82,8 +82,8 @@ def draw_humans(
     """
     if isinstance(humans, dict):
         humans_ = humans.get(PosePredictorInterface.HUMANS)
-        assert humans_, f'Received dictionary which does not contain {PosePredictorInterface.HUMANS} key. ' \
-                        f'Received dict={humans_}'
+        assert humans_ is not None, f"Received dictionary which does not contain '{PosePredictorInterface.HUMANS}' key. " \
+                        f'Received dict={humans}'
         humans_ids = [id for id, human_2d, human_3d, pose_info in humans_]
         humans = [human_2d for id, human_2d, human_3d, pose_info in humans_]
 
