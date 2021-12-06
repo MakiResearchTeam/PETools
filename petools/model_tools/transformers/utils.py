@@ -21,10 +21,12 @@ STD_3D_V2 = 'std_3d_v2.npy'
 STD_3D = STD_3D_V2
 
 PCA_MATRIX_BACKWARD_V1 = 'pca_mat_backward_v1.npy'
-PCA_MATRIX_BACKWARD = PCA_MATRIX_BACKWARD_V1
+PCA_MATRIX_BACKWARD_V2 = 'pca_mat_backward_v2.npy'
+PCA_MATRIX_BACKWARD = PCA_MATRIX_BACKWARD_V2
 
 PCA_MATRIX_FORWARD_V1 = 'pca_mat_forward_v1.npy'
-PCA_MATRIX_FORWARD = PCA_MATRIX_FORWARD_V1
+PCA_MATRIX_FORWARD_V2 = 'pca_mat_forward_v2.npy'
+PCA_MATRIX_FORWARD = PCA_MATRIX_FORWARD_V2
 
 
 # Map production keypoints (predicted from NN)
