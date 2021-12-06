@@ -34,9 +34,12 @@ def visualize_paf(
 
 def draw_skeleton(
         image, humans: list, connect_indexes: list, color=(255, 0, 0), thickness=2,
-        draw_pose_name: bool = False, pose_name_position: tuple = (100, 100),
-        draw_pose_conf: bool = False, pose_conf_position: tuple = (120, 120),
-        pose_name_list: list = None,  pose_conf_class_list: list = None):
+        draw_pose_name: bool = False, pose_name_position: tuple = (100, 100), pose_name_text_size: int = 2, pose_name_text_thick=6,
+        draw_pose_conf: bool = False, pose_conf_position: tuple = (120, 120), pose_conf_text_size: int = 2, pose_conf_text_thick=6,
+        pose_name_list: list = None,  pose_conf_class_list: list = None,
+        draw_pose_angle: bool = False, pose_angle_position: tuple = (120, 200), pose_angle_text_size = 2, pose_angle_text_thick=6,
+        draw_pose_angle_name: bool = False, pose_angle_name_position: tuple = (120, 240), pose_angle_name_text_size = 2, pose_angle_name_text_thick=6,
+        pose_angle_step: tuple = (10, 0), pose_angle_name_list: list = None, pose_angle_list: list = None):
     if draw_pose_conf:
         assert len(pose_name_list) == len(humans)
 
@@ -65,13 +68,31 @@ def draw_skeleton(
 
         if draw_pose_name and pose_name_list is not None:
             cv2.putText(
-                image, str(pose_name_list[indx]), pose_name_position, cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 6
+                image, str(pose_name_list[indx]), pose_name_position, cv2.FONT_HERSHEY_SIMPLEX, pose_name_text_size, (0, 0, 255), pose_name_text_thick
             )
 
         if draw_pose_conf and pose_conf_class_list is not None:
             cv2.putText(
-                image, str(pose_conf_class_list[indx]), pose_conf_position, cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 6
+                image, str(pose_conf_class_list[indx]), pose_conf_position, cv2.FONT_HERSHEY_SIMPLEX, pose_conf_text_size, (0, 0, 255), pose_conf_text_thick
             )
+
+        if draw_pose_angle and pose_angle_list is not None:
+            start_x, start_y = pose_angle_position
+            for single_angle in pose_angle_list[indx]:
+                cv2.putText(
+                    image, str(round(single_angle, 3)), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, pose_angle_text_size, (0, 0, 255), pose_angle_text_thick
+                )
+                start_x += pose_angle_step[0]
+                start_y += pose_angle_step[1]
+
+        if draw_pose_angle_name and pose_angle_name_list is not None:
+            start_x, start_y = pose_angle_name_position
+            for single_angle_name in pose_angle_name_list[indx]:
+                cv2.putText(
+                    image, str(single_angle_name), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, pose_angle_name_text_size, (0, 0, 255), pose_angle_name_text_thick
+                )
+                start_x += pose_angle_step[0]
+                start_y += pose_angle_step[1]
 
     return image
 
