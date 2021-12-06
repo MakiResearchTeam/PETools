@@ -30,6 +30,7 @@ class ProportionsLengthCalculator:
         """
         self._proportions = proportions
         self._main_line_indx = main_line_indx
+        self._prev_value = None
 
     def __call__(self, preds: Mapping[str, List[Tuple[int, dict, dict, Tuple[str, float]]]]) -> Dict[str, Dict[str, float]]:
         """
@@ -62,7 +63,7 @@ class ProportionsLengthCalculator:
         for single_pred_data in preds[PosePredictorInterface.HUMANS]:
             result_dict = {}
             human_id = str(single_pred_data[0])
-            points_2d = np.asarray(list(single_pred_data[1].values()), dtype=np.float32)[:, :-1] # Skip prob values
+            points_2d = np.asarray(list(single_pred_data[1].values()), dtype=np.float32)
             main_length = self.calculate_main_length(points_2d)
 
             for name_prop, prop_value in self._proportions:
@@ -80,11 +81,18 @@ class ProportionsLengthCalculator:
         lines_length = []
         for p1, p2 in self._main_line_indx:
             p1_data, p2_data = data[p1], data[p2]
-            length_s = self._calculate_length_line(p1_data, p2_data)
+            if p1_data[-1] < 1e-3 or p2_data[-1] < 1e-3:
+                continue # One of the points - are not visible
+            length_s = self._calculate_length_line(p1_data[:-1], p2_data[:-1]) # Skip prob value
             lines_length.append(float(length_s)) # Get rid of numpy type
+
+        if len(lines_length) == 0:
+            assert self._prev_value is not None
+            return self._prev_value
 
         # Calc avg
         line_avg = sum(lines_length) / len(lines_length)
+        self._prev_value = line_avg
         return line_avg
 
     def _calculate_length_line(self, start_point: np.ndarray, end_point: np.ndarray):
