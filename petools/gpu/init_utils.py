@@ -1,7 +1,7 @@
 from petools.model_tools.one_euro_filter import OneEuroModule
 from petools.model_tools.transformers import HumanProcessor, Transformer, PoseTransformer
 from petools.model_tools.transformers import (Postprocess3DPCANoFingers, Postprocess2D,
-                                              Preprocess3D, Preprocess2D, SequenceBuffer)
+                                              Preprocess3DNF, Preprocess2D, SequenceBuffer)
 from petools.model_tools.transformers.utils import H36_2DPOINTS_DIM_FLAT
 
 from petools.model_tools.pose_classifier import (PosePreprocessor, PoseClassifier, Classifier,
@@ -26,11 +26,11 @@ def init_corrector(pb_path: str, session=None) -> callable:
 
 def init_converter(pb_path: str, session=None) -> callable:
     human_processor = HumanProcessor.init_from_lib()
-    converter_t = Transformer(protobuf_path=pb_path, session=session)
+    converter_t = Transformer(protobuf_path=pb_path, dim=H36_2DPOINTS_DIM_FLAT, session=session)
     converter_fn = lambda: PoseTransformer(
         transformer=converter_t,
         seq_buffer=SequenceBuffer(dim=H36_2DPOINTS_DIM_FLAT, seqlen=32),
-        preprocess=Preprocess3D(human_processor),
+        preprocess=Preprocess3DNF(human_processor),
         postprocess=Postprocess3DPCANoFingers(human_processor)
     )
     return converter_fn

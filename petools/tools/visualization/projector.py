@@ -11,7 +11,7 @@ def convert_to_3dnp(preds, centering_point=None):
     ids = []
     points3d_list = []
     centers = []
-    for id, points2d, points3d, pose_info in humans:
+    for id, points2d, points3d, pose_info, angles_info in humans:
         ids.append(id)
         points3d_list.append(dict_to_numpy(points3d))
         if centering_point:
