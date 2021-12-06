@@ -6,7 +6,7 @@ from petools.core import PosePredictorInterface
 
 class ProportionsLengthCalculator:
 
-    def __init__(self, proportions: Mapping[str, list], main_line_indx: List[Tuple[int, int]] = [(4, 10), (5, 11)]):
+    def __init__(self, proportions: Mapping[str, int], main_line_indx: List[Tuple[int, int]] = [(4, 10), (5, 11)]):
         """
 
         Parameters
@@ -68,6 +68,10 @@ class ProportionsLengthCalculator:
 
             for name_prop, prop_value in self._proportions:
                 # Calculate proportion for single data
+                print(main_length)
+                print(f'main_length type is {type(main_length)}')
+                print(prop_value)
+                print(f'prop_value type is {type(prop_value)}')
                 length_s = self.calculate_length_with_main_length(main_length, prop_value)
                 result_dict[name_prop] = length_s
             h_id_2_length_data[human_id] = result_dict
@@ -77,7 +81,7 @@ class ProportionsLengthCalculator:
     def calculate_length_with_main_length(self, main_length: float, proportion_value: float):
         return proportion_value * main_length
 
-    def calculate_main_length(self, data: np.ndarray):
+    def calculate_main_length(self, data: np.ndarray) -> float:
         lines_length = []
         for p1, p2 in self._main_line_indx:
             p1_data, p2_data = data[p1], data[p2]
