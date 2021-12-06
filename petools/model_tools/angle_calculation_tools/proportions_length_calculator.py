@@ -66,12 +66,8 @@ class ProportionsLengthCalculator:
             points_2d = np.asarray(list(single_pred_data[1].values()), dtype=np.float32)
             main_length = self.calculate_main_length(points_2d)
 
-            for name_prop, prop_value in self._proportions:
+            for name_prop, prop_value in self._proportions.items():
                 # Calculate proportion for single data
-                print(main_length)
-                print(f'main_length type is {type(main_length)}')
-                print(prop_value)
-                print(f'prop_value type is {type(prop_value)}')
                 length_s = self.calculate_length_with_main_length(main_length, prop_value)
                 result_dict[name_prop] = length_s
             h_id_2_length_data[human_id] = result_dict
