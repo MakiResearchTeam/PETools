@@ -1,7 +1,5 @@
 import copy
 from typing import List, Mapping, Tuple, Dict
-import numpy as np
-import math
 
 from petools.core import PosePredictorInterface
 from .angle_math import *
@@ -21,7 +19,7 @@ class AngleCalculator:
     right_knee_angle = 'right_knee_angle'
     left_knee_angle = 'left_knee_angle'
 
-    def __init__(self, name_angle_to_calc: List[str]):
+    def __init__(self, name_angle_to_calc: List[str] = None):
         """
 
         Parameters
@@ -31,6 +29,7 @@ class AngleCalculator:
 
         """
         self._name_angle_to_calc = name_angle_to_calc
+
         self._name_angle_2_func = {
             AngleCalculator.right_shoulder_angle: right_shoulder_angle,
             AngleCalculator.left_shoulder_angle: left_shoulder_angle,
@@ -46,9 +45,13 @@ class AngleCalculator:
             AngleCalculator.left_knee_angle: left_knee_angle
         }
 
+        if self._name_angle_to_calc is None:
+            self._name_angle_to_calc = list(self._name_angle_2_func.keys())
+
     def __call__(
             self, preds: Mapping[str, List[Tuple[int, dict, dict, Tuple[str, float]]]],
-            lengths: Mapping[str, Mapping[str, float]]) -> Mapping[str, List[Tuple[int, dict, dict, Tuple[str, float], Dict[str, float]]]]:
+            lengths: Mapping[str, Mapping[str, float]]) -> Mapping[
+        str, List[Tuple[int, dict, dict, Tuple[str, float], Dict[str, float]]]]:
         """
 
         Parameters
@@ -85,7 +88,6 @@ class AngleCalculator:
             human_id = str(pred[0])
             points2d = pred[1]
             points3d = pred[2]
-            pose_name = str(pred[-1][0])
 
             # Take length for this human
             limb_lengths = lengths.get(human_id)
@@ -94,10 +96,17 @@ class AngleCalculator:
                 continue
 
             result_angle_dict = {}
-            for name_angle, func in self._name_angle_2_func:
+            for name_angle in self._name_angle_to_calc:
+                func = self._name_angle_2_func.get(name_angle)
+                if func is None:
+                    print(f'Dont know angle with name={name_angle}. '
+                          f'Allowed angle names: {list(self._name_angle_2_func.keys())}.'
+                          f'\nSkipping.')
+                    continue
+
                 result_angle_dict[name_angle] = func(
-                    data_2d=points2d, data_3d=points3d,
-                    name_pose=pose_name, lengths=limb_lengths
+                    points2d=points2d, points3d=points3d,
+                    limb_lengths=limb_lengths
                 )
 
             new_tuple = (
@@ -107,4 +116,3 @@ class AngleCalculator:
             new_dict[PosePredictorInterface.HUMANS][i] = new_tuple
 
         return new_dict
-
