@@ -7,10 +7,10 @@ from .visualize_tools import draw_skeleton
 
 def draw_skeletons_on_image(
         image: np.ndarray, predictions: dict, color=(255, 0, 0), thick=3,
-        draw_pose_name: bool = False, pose_name_position: tuple = (100, 100), pose_name_text_size=2,
-        draw_pose_conf: bool = False, pose_conf_position: tuple = (120, 120), pose_conf_text_size=2,
-        draw_pose_angle: bool = False, pose_angle_position: tuple = (120, 200), pose_angle_text_size=2,
-        draw_pose_angle_name: bool = False, pose_angle_name_position: tuple = (120, 240), pose_angle_name_text_size=2,
+        draw_pose_name: bool = False, pose_name_position: tuple = (100, 100), pose_name_text_size=2, pose_name_text_thick=6,
+        draw_pose_conf: bool = False, pose_conf_position: tuple = (120, 120), pose_conf_text_size=2, pose_conf_text_thick=6,
+        draw_pose_angle: bool = False, pose_angle_position: tuple = (120, 200), pose_angle_text_size=2, pose_angle_text_thick=6,
+        draw_pose_angle_name: bool = False, pose_angle_name_position: tuple = (120, 240), pose_angle_name_text_size=2, pose_angle_name_text_thick=6,
         pose_angle_step: tuple = (10, 0)):
     """
     Draw skeletons from `preidctions` on certain `image`
@@ -67,10 +67,10 @@ def draw_skeletons_on_image(
 
     return draw_skeleton(
         image.copy(), humans, connect_indexes=CONNECT_KP, color=color, thickness=thick,
-        draw_pose_name=draw_pose_name, pose_name_position=pose_name_position, pose_name_text_size=pose_name_text_size,
-        draw_pose_conf=draw_pose_conf, pose_conf_position=pose_conf_position, pose_conf_text_size=pose_conf_text_size,
-        draw_pose_angle=draw_pose_angle, pose_angle_position=pose_angle_position, pose_angle_text_size=pose_angle_text_size,
-        draw_pose_angle_name=draw_pose_angle_name, pose_angle_name_position=pose_angle_name_position, pose_angle_name_text_size=pose_angle_name_text_size,
+        draw_pose_name=draw_pose_name, pose_name_position=pose_name_position, pose_name_text_size=pose_name_text_size, pose_name_text_thick=pose_name_text_thick,
+        draw_pose_conf=draw_pose_conf, pose_conf_position=pose_conf_position, pose_conf_text_size=pose_conf_text_size, pose_conf_text_thick=pose_conf_text_thick,
+        draw_pose_angle=draw_pose_angle, pose_angle_position=pose_angle_position, pose_angle_text_size=pose_angle_text_size, pose_angle_text_thick=pose_angle_text_thick,
+        draw_pose_angle_name=draw_pose_angle_name, pose_angle_name_position=pose_angle_name_position, pose_angle_name_text_size=pose_angle_name_text_size, pose_angle_name_text_thick=pose_angle_name_text_thick,
         pose_angle_step=pose_angle_step, pose_name_list=pose_name_list, pose_conf_class_list=pose_conf_class_list,
         pose_angle_list=pose_angle_list, pose_angle_name_list=pose_angle_name_list,
     )
