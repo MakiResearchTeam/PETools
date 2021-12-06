@@ -25,7 +25,8 @@ class AngleCalculator:
         Parameters
         ----------
         name_angle_to_calc : list
-            List contains name of angle which must be calculated
+            List contains name of angle which must be calculated. If None, all angles are
+            calculated by default.
 
         """
         self._name_angle_to_calc = name_angle_to_calc
