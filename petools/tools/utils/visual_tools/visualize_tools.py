@@ -86,7 +86,7 @@ def draw_skeleton(
                 start_y += pose_angle_step[1]
 
         if draw_pose_angle_name and pose_angle_name_list is not None:
-            start_x, start_y = pose_angle_position
+            start_x, start_y = pose_angle_name_position
             for single_angle_name in pose_angle_name_list[indx]:
                 cv2.putText(
                     image, str(single_angle_name), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, pose_angle_name_text_size, (0, 0, 255), 6
