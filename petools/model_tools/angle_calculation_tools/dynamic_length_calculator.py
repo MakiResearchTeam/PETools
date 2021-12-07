@@ -136,7 +136,7 @@ class DynamicLengthCalculator:
                     preds={
                         PosePredictorInterface.HUMANS: [single_pred_data]
                     }
-                )[PosePredictorInterface.HUMANS][human_id]
+                )[human_id]
             else:
                 h_id_2_length_data[human_id] = copy.deepcopy(self._stats_for_human_dict[human_id])
 
