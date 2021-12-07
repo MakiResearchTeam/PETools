@@ -90,7 +90,7 @@ def compute_angle_2vec_V2(p1: list, p2: list, p3: list, p1p2_dist: float, p2p3_d
         Angle between vectors p2-p1 and p2-p3.
     """
     # v1 usually corresponds to a vector lying on shoulders or on pelvis.
-    v1 = compute_cuboid_diag(p2, p1, p1p2_dist, False)
+    v1 = compute_cuboid_diag(p2, p1, p1p2_dist, True)
     # v2 usually corresponds to a vector pointing to an elbow or to a knee.
     v2 = compute_cuboid_diag(p2, p3, p2p3_dist, False)
     prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
@@ -164,7 +164,7 @@ def right_shoulder_angle(points2d, points3d, limb_lengths):
 
 
 def left_shoulder_angle(points2d, points3d, limb_lengths):
-    # Right shoulder, left shoulder, light elbow
+    # Right shoulder, left shoulder, left elbow
     point_keys = ['p5', 'p4', 'p6']
     lengths_keys = ['ss', 'se']
     return angle2vecs(points2d, points3d, point_keys, limb_lengths, lengths_keys)
