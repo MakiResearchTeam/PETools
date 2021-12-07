@@ -13,4 +13,15 @@ PROPORTION_CONSTANTS = {
     'ss': 0.64
 }
 
-
+PROPORTIONS_INDX = {
+    # Hand | left and right
+    "se": [(4, 6), (5, 7)],
+    "ew": [(6, 8), (7, 9)],
+    # Legs | left and right
+    "hk": [(10, 12), (11, 13)],
+    "ka": [(12, 14), (13, 15)],
+    # Between hips | only one side
+    'hh': [(10, 11)],
+    # Between shoulders | only one side
+    'ss': [(4, 5)]
+}

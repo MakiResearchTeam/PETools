@@ -1,3 +1,4 @@
 from .angle_calculator import AngleCalculator
 from .proportions_length_calculator import ProportionsLengthCalculator
+from .dynamic_length_calculator import DynamicLengthCalculator
 from .constants import PROPORTION_CONSTANTS
