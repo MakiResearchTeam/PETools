@@ -8,13 +8,12 @@ from .constants import PROPORTIONS_INDX
 
 
 class DynamicLengthCalculator:
-
     MAX_NEUTRAL_POSE_COUNT = 30
     MAX_GRAB_STATS_COUNT = 90
 
     def __init__(
             self, proportions: Mapping[str, int], main_line_indx: List[Tuple[int, int]] = [(4, 10), (5, 11)],
-            name_neutral_pose: str = 'netralnya_poza'):
+            name_neutral_pose: str = 'netralnya_poza', pose_conf_threshold: float = 0.95):
         """
 
         Parameters
@@ -34,12 +33,14 @@ class DynamicLengthCalculator:
                 10 - Left hip
                 5 - Right shoulder
                 11 - Right hip
-
+        pose_conf_threshold : float
+            A neutral pose is considered a valid neutral pose if its confidence exceeds the threshold.
         """
         self._proportion_length_calculator = ProportionsLengthCalculator(
             proportions=proportions, main_line_indx=main_line_indx
         )
         self._name_neutral_pose = name_neutral_pose
+        self._pose_conf_threshold = pose_conf_threshold
         # For every dict below - {"id of human" : value}
         self._counter_neutral_pose_dict: Dict[str, int] = dict()
         self._temp_collected_stats_dict: Dict[str, dict] = dict()
@@ -47,7 +48,8 @@ class DynamicLengthCalculator:
         self._stats_are_ready_dict: Dict[str, bool] = dict()
         self._stats_for_human_dict: Dict[str, dict] = dict()
 
-    def __call__(self, preds: Mapping[str, List[Tuple[int, dict, dict, Tuple[str, float]]]]) -> Dict[str, Dict[str, float]]:
+    def __call__(self, preds: Mapping[str, List[Tuple[int, dict, dict, Tuple[str, float]]]]) -> Dict[
+        str, Dict[str, float]]:
         """
 
         Parameters
@@ -79,8 +81,8 @@ class DynamicLengthCalculator:
             result_dict = {}
             human_id = str(single_pred_data[0])
             # Check pose
-            pose_name = single_pred_data[3][0] # Name of pose
-            if pose_name == self._name_neutral_pose:
+            pose_name, pose_conf = single_pred_data[3]
+            if pose_name == self._name_neutral_pose and pose_conf >= self._pose_conf_threshold:
                 # +1 for counter if pose is neutral
                 is_human_here = self._counter_neutral_pose_dict.get(human_id)
                 if is_human_here is None:
@@ -95,7 +97,7 @@ class DynamicLengthCalculator:
                     # We should start grab stats for this person or continue to grab
                     is_human_stats_here = self._temp_collected_stats_dict.get(human_id)
                     if is_human_stats_here is None:
-                        self._temp_collected_stats_dict[human_id] = dict() # dict for each limb with length info
+                        self._temp_collected_stats_dict[human_id] = dict()  # dict for each limb with length info
                         self._counter_grab_stats_dict[human_id] = 0
                     self._counter_grab_stats_dict[human_id] = min(
                         self._counter_grab_stats_dict[human_id] + 1,
@@ -166,7 +168,7 @@ class DynamicLengthCalculator:
                 p1 = points_2d[p1_i].copy()
                 p2 = points_2d[p2_i].copy()
                 if p1[-1] < 1e-3 or p2[-1] < 1e-3:
-                    continue # One of the points - are not visible
+                    continue  # One of the points - are not visible
                 length = self._calculate_length_line(p1, p2)
                 all_lengths.append(length)
             if len(all_lengths) != 0:
