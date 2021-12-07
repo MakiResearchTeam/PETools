@@ -147,7 +147,10 @@ class DynamicLengthCalculator:
         for k, v_list in dict_stats.items():
             v_np = np.asarray(v_list, dtype=np.float32)
             std, mean = v_np.std(), v_np.mean()
-            selected = mean - 3 * std < v_np < mean + 3 * std
+            selected = np.bitwise_and(
+                mean - 3 * std <= v_np,
+                v_np <= mean + 3 * std
+            )
             good_lengths = v_np[selected]
             avg_length = good_lengths.mean()
             avg_length_dict[k] = avg_length
