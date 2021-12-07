@@ -191,4 +191,4 @@ class DynamicLengthCalculator:
         return dict_1
 
     def _calculate_length_line(self, start_point: np.ndarray, end_point: np.ndarray):
-        return np.sqrt(np.sum(np.square(end_point - start_point, axis=-1)))
+        return np.sqrt(np.sum(np.square(end_point - start_point), axis=-1))
