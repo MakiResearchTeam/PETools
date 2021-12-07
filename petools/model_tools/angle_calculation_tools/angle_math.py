@@ -29,7 +29,7 @@ def compute_cuboid_diag(p1: list, p2: list, diag3d_length: float, p1_closer: boo
 
     dist_squared = x ** 2 + y ** 2
     diff = diag3d_length ** 2 - dist_squared
-    z = math.sqrt(abs(diff))
+    z = math.sqrt(diff if diff > 0. else 0.)
     # Z axis is going away from camera (closer to the camera, smaller the z)
     if not p1_closer:
         z *= -1
