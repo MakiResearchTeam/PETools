@@ -82,7 +82,7 @@ class DynamicLengthCalculator:
             pose_name = single_pred_data[3][0] # Name of pose
             if pose_name == self._name_neutral_pose:
                 # +1 for counter if pose is neutral
-                is_human_here = self._counter_neutral_pose_dict[human_id]
+                is_human_here = self._counter_neutral_pose_dict.get(human_id)
                 if is_human_here is None:
                     self._counter_neutral_pose_dict[human_id] = 0
                 self._counter_neutral_pose_dict[human_id] = min(
@@ -93,7 +93,7 @@ class DynamicLengthCalculator:
                 # Check if neutral poses are more than param
                 if self._counter_neutral_pose_dict[human_id] == self.MAX_NEUTRAL_POSE_COUNT:
                     # We should start grab stats for this person or continue to grab
-                    is_human_stats_here = self._temp_collected_stats_dict[human_id]
+                    is_human_stats_here = self._temp_collected_stats_dict.get(human_id)
                     if is_human_stats_here is None:
                         self._temp_collected_stats_dict[human_id] = dict() # dict for each limb with length info
                         self._counter_grab_stats_dict[human_id] = 0
@@ -128,11 +128,9 @@ class DynamicLengthCalculator:
                     del self._temp_collected_stats_dict[human_id]
                 if self._counter_grab_stats_dict[human_id] is not None:
                     del self._counter_grab_stats_dict[human_id]
-                if self._stats_are_ready_dict[human_id] is not None:
-                    del self._stats_are_ready_dict[human_id]
 
             # Check stats
-            is_human_stats_ready = self._stats_are_ready_dict[human_id]
+            is_human_stats_ready = self._stats_are_ready_dict.get(human_id)
             if is_human_stats_ready is None:
                 h_id_2_length_data[human_id] = self._proportion_length_calculator(
                     preds={
