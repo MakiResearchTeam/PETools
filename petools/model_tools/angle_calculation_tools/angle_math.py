@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from icecream import ic
 
 
 def compute_cuboid_diag(p1: list, p2: list, diag3d_length: float, p1_closer: bool):
@@ -91,7 +90,7 @@ def compute_angle_2vec_V2(p1: list, p2: list, p3: list, p1p2_dist: float, p2p3_d
         Angle between vectors p2-p1 and p2-p3.
     """
     # v1 usually corresponds to a vector lying on shoulders or on pelvis.
-    v1 = compute_cuboid_diag(p2, p1, p1p2_dist, False)
+    v1 = compute_cuboid_diag(p2, p1, p1p2_dist, True)
     # v2 usually corresponds to a vector pointing to an elbow or to a knee.
     v2 = compute_cuboid_diag(p2, p3, p2p3_dist, False)
     prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
@@ -165,7 +164,7 @@ def right_shoulder_angle(points2d, points3d, limb_lengths):
 
 
 def left_shoulder_angle(points2d, points3d, limb_lengths):
-    # Right shoulder, left shoulder, light elbow
+    # Right shoulder, left shoulder, left elbow
     point_keys = ['p5', 'p4', 'p6']
     lengths_keys = ['ss', 'se']
     return angle2vecs(points2d, points3d, point_keys, limb_lengths, lengths_keys)
@@ -193,7 +192,7 @@ def right_shoulder_normal_angle(points2d, points3d, limb_lengths):
 
 
 def left_shoulder_normal_angle(points2d, points3d, limb_lengths):
-    # Right shoulder, right elbow
+    # Left shoulder, left elbow
     point_keys = ['p4', 'p6']
     lengths_key = 'se'
     return angle1vec(points2d, points3d, point_keys, limb_lengths, lengths_key)
@@ -237,5 +236,5 @@ def right_knee_angle(points2d, points3d, limb_lengths):
 def left_knee_angle(points2d, points3d, limb_lengths):
     # Left hip, left knee, left ankle
     point_keys = ['p10', 'p12', 'p14']
-    lengths_keys = ['se', 'ew']
+    lengths_keys = ['hk', 'ka']
     return angle2vecs_V2(points2d, points3d, point_keys, limb_lengths, lengths_keys)
