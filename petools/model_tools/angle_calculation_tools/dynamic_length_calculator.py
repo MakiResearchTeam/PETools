@@ -122,11 +122,11 @@ class DynamicLengthCalculator:
                 # Another pose
                 # We must drop all stats for this person, if its here
                 # But keep stats which already calculated for person (for future use)
-                if self._counter_neutral_pose_dict[human_id] is not None:
+                if self._counter_neutral_pose_dict.get(human_id) is not None:
                     del self._counter_neutral_pose_dict[human_id]
-                if self._temp_collected_stats_dict[human_id] is not None:
+                if self._temp_collected_stats_dict.get(human_id) is not None:
                     del self._temp_collected_stats_dict[human_id]
-                if self._counter_grab_stats_dict[human_id] is not None:
+                if self._counter_grab_stats_dict.get(human_id) is not None:
                     del self._counter_grab_stats_dict[human_id]
 
             # Check stats
