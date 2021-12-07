@@ -157,7 +157,7 @@ class DynamicLengthCalculator:
     def calculate_length_from_pred(self, pred: Tuple[int, dict, dict, Tuple[str, float]]) -> Dict[str, float]:
         name_limb2length = dict()
         points_2d = np.asarray(list(pred[1].values()), dtype=np.float32)
-        for name_prop, indxes_list in PROPORTIONS_INDX:
+        for name_prop, indxes_list in PROPORTIONS_INDX.items():
             all_lengths = []
             for p1_i, p2_i in indxes_list:
                 p1 = points_2d[p1_i].copy()
