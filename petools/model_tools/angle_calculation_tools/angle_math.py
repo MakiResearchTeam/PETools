@@ -97,6 +97,36 @@ def compute_angle_2vec_V2(p1: list, p2: list, p3: list, p1p2_dist: float, p2p3_d
     return float(np.arccos(prod) * 180 / np.pi)
 
 
+def compute_angle_2vec_V3(p1: list, p2: list, p3: list, p1p2_dist: float, p2p3_dist: float):
+    """
+    Computes angle between vectors p2-p1 and p2-p3.
+
+    Parameters
+    ----------
+    p1 : list
+        [x, y, z]
+    p2 : list
+        [x, y, z]
+    p3 : list
+        [x, y, z]
+    p1p2_dist : float
+        Distance between points p1 and p2 in 3D space.
+    p2p3_dist : float
+        Distance between points p2 and p3 in 3D space.
+
+    Returns
+    -------
+    float
+        Angle between vectors p2-p1 and p2-p3.
+    """
+    # v1 usually corresponds to a vector lying on shoulders or on pelvis.
+    v1 = compute_cuboid_diag(p2, p1, p1p2_dist, False)
+    # v2 usually corresponds to a vector pointing to an elbow or to a knee.
+    v2 = compute_cuboid_diag(p2, p3, p2p3_dist, False)
+    prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
+    return float(np.arccos(prod) * 180 / np.pi)
+
+
 def compute_angle_1vec(p1, p2, p1p2_dist):
     """
     Computes angle between vectors p1-p2 and [0, 1, 0] (normal vector pointing down).
@@ -147,6 +177,16 @@ def angle2vecs_V2(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
     p2p1_dist = limb_lengths[limb_lengths_keys[0]]
     p2p3_dist = limb_lengths[limb_lengths_keys[1]]
     return compute_angle_2vec_V2(p1, p2, p3, p2p1_dist, p2p3_dist)
+
+
+# Only for elbows
+def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_keys):
+    p1 = extract_point(points2d, points3d, points_keys[0])
+    p2 = extract_point(points2d, points3d, points_keys[1])
+    p3 = extract_point(points2d, points3d, points_keys[2])
+    p2p1_dist = limb_lengths[limb_lengths_keys[0]]
+    p2p3_dist = limb_lengths[limb_lengths_keys[1]]
+    return compute_angle_2vec_V3(p1, p2, p3, p2p1_dist, p2p3_dist)
 
 
 def angle1vec(points2d, points3d, points_keys, limb_lengths, limb_lengths_key):
@@ -216,14 +256,14 @@ def right_elbow_angle(points2d, points3d, limb_lengths):
     # Right shoulder, right elbow, right wrist
     point_keys = ['p5', 'p7', 'p9']
     lengths_keys = ['se', 'ew']
-    return angle2vecs_V2(points2d, points3d, point_keys, limb_lengths, lengths_keys)
+    return angle2vecs_V3(points2d, points3d, point_keys, limb_lengths, lengths_keys)
 
 
 def left_elbow_angle(points2d, points3d, limb_lengths):
     # Left shoulder, left elbow, left wrist
     point_keys = ['p4', 'p6', 'p8']
     lengths_keys = ['se', 'ew']
-    return angle2vecs_V2(points2d, points3d, point_keys, limb_lengths, lengths_keys)
+    return angle2vecs_V3(points2d, points3d, point_keys, limb_lengths, lengths_keys)
 
 
 def right_knee_angle(points2d, points3d, limb_lengths):
