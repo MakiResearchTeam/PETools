@@ -121,6 +121,7 @@ class DynamicLengthCalculator:
             else:
                 # Another pose
                 # We must drop all stats for this person, if its here
+                # But keep stats which already calculated for person (for future use)
                 if self._counter_neutral_pose_dict[human_id] is not None:
                     del self._counter_neutral_pose_dict[human_id]
                 if self._temp_collected_stats_dict[human_id] is not None:
@@ -129,8 +130,6 @@ class DynamicLengthCalculator:
                     del self._counter_grab_stats_dict[human_id]
                 if self._stats_are_ready_dict[human_id] is not None:
                     del self._stats_are_ready_dict[human_id]
-                if self._stats_for_human_dict[human_id] is not None:
-                    del self._stats_for_human_dict[human_id]
 
             # Check stats
             is_human_stats_ready = self._stats_are_ready_dict[human_id]
