@@ -1,5 +1,6 @@
 import copy
 from typing import List, Mapping, Tuple, Dict
+import math
 
 from petools.core import PosePredictorInterface
 from .angle_math import *
@@ -105,10 +106,15 @@ class AngleCalculator:
                           f'\nSkipping.')
                     continue
 
-                result_angle_dict[name_angle] = func(
+                angle = func(
                     points2d=points2d, points3d=points3d,
                     limb_lengths=limb_lengths
                 )
+
+                if math.isnan(angle):
+                    angle = -1
+
+                result_angle_dict[name_angle] = angle
 
             new_tuple = (
                 *pred_new,  # Keep original dict safe!

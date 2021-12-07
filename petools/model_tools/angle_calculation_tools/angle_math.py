@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from icecream import ic
 
 
 def compute_cuboid_diag(p1: list, p2: list, diag3d_length: float, p1_closer: bool):
@@ -193,7 +192,7 @@ def right_shoulder_normal_angle(points2d, points3d, limb_lengths):
 
 
 def left_shoulder_normal_angle(points2d, points3d, limb_lengths):
-    # Right shoulder, right elbow
+    # Left shoulder, left elbow
     point_keys = ['p4', 'p6']
     lengths_key = 'se'
     return angle1vec(points2d, points3d, point_keys, limb_lengths, lengths_key)
@@ -237,5 +236,5 @@ def right_knee_angle(points2d, points3d, limb_lengths):
 def left_knee_angle(points2d, points3d, limb_lengths):
     # Left hip, left knee, left ankle
     point_keys = ['p10', 'p12', 'p14']
-    lengths_keys = ['se', 'ew']
+    lengths_keys = ['hk', 'ka']
     return angle2vecs_V2(points2d, points3d, point_keys, limb_lengths, lengths_keys)
