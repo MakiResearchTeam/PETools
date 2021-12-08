@@ -181,11 +181,37 @@ def angle2vecs_V2(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
 
 # Only for elbows
 def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_keys):
+    def euclid_dist(p1, p2):
+        x = p1[0] - p2[0]
+        y = p1[1] - p2[1]
+        return math.sqrt(x**2 + y**2)
+
+    def correct_points(p1, p2, dist_2d, dist_3d, ratio_diff):
+        # Pulls points together if they are close enough
+        # and moves them away from each other if they are far apart enough
+        _ratio_diff = 1 - dist_2d / dist_3d
+        if 0 < _ratio_diff < ratio_diff:
+            x_shift = (p2[0] - p1[0]) * _ratio_diff * 1.25  # magic numbers that work well
+            y_shift = (p2[1] - p1[1]) * _ratio_diff * 1.25
+            p1[0] -= x_shift
+            p1[1] -= y_shift
+        elif 0 < 1 - _ratio_diff < ratio_diff:
+            x_shift = (p2[0] - p1[0]) * (1 - _ratio_diff)
+            y_shift = (p2[1] - p1[1]) * (1 - _ratio_diff)
+            p1[0] += x_shift
+            p1[1] += y_shift
+
     p1 = extract_point(points2d, points3d, points_keys[0])
     p2 = extract_point(points2d, points3d, points_keys[1])
     p3 = extract_point(points2d, points3d, points_keys[2])
     p2p1_dist = limb_lengths[limb_lengths_keys[0]]
     p2p3_dist = limb_lengths[limb_lengths_keys[1]]
+
+    p2p1_2d_dist = euclid_dist(p2, p1)
+    p2p3_2d_dist = euclid_dist(p2, p3)
+    ratio_diff = 0.5  # magic number that work well
+    correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio_diff)
+    correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio_diff)
     return compute_angle_2vec_V3(p1, p2, p3, p2p1_dist, p2p3_dist)
 
 
