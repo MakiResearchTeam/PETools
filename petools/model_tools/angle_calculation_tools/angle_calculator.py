@@ -1,6 +1,5 @@
 import copy
 from typing import List, Mapping, Tuple, Dict
-import math
 
 from petools.core import PosePredictorInterface
 from .angle_math import *
