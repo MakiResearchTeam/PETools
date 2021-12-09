@@ -187,35 +187,6 @@ def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
     p2p1_dist = limb_lengths[limb_lengths_keys[0]]
     p2p3_dist = limb_lengths[limb_lengths_keys[1]]
 
-    # --- Magical points correction
-    def euclid_dist(p1, p2):
-        x = p1[0] - p2[0]
-        y = p1[1] - p2[1]
-        return math.sqrt(x**2 + y**2)
-
-    def correct_points(p1, p2, dist_2d, dist_3d, ratio1, ratio2):
-        # Pulls points together if they are close enough
-        # and moves them away from each other if they are far apart enough
-        ratio = dist_2d / dist_3d
-        if ratio > ratio1:
-            # Move point apart making the vectors longer
-            x_shift = (p2[0] - p1[0]) * (1 - ratio) * 1.25  # magic numbers that work well
-            y_shift = (p2[1] - p1[1]) * (1 - ratio) * 1.25
-            p1[0] -= x_shift
-            p1[1] -= y_shift
-        elif ratio < ratio2:
-            x_shift = (p2[0] - p1[0]) * ratio * 0.8
-            y_shift = (p2[1] - p1[1]) * ratio * 0.8
-            p1[0] += x_shift
-            p1[1] += y_shift
-
-    #p2p1_2d_dist = euclid_dist(p2, p1)
-    #p2p3_2d_dist = euclid_dist(p2, p3)
-    #ratio1 = 0.7  # magic number that work well
-    #ratio2 = 0.275  # magic number that work well
-    #correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio1, ratio2)
-    #correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio1, ratio2)
-
     # --- Correcting depth based on how shoulders are located in space
     def find_angle(v1, v2):
         # Finds a singed angle between to vectors.
@@ -255,6 +226,35 @@ def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
     p1[2] = compute_correct_z(np.array([p1[0], p1[2]]), middle_point, rotmat)
     p2[2] = compute_correct_z(np.array([p2[0], p2[2]]), middle_point, rotmat)
     p3[2] = compute_correct_z(np.array([p3[0], p3[2]]), middle_point, rotmat)
+
+    # --- Magical points correction
+    def euclid_dist(p1, p2):
+        x = p1[0] - p2[0]
+        y = p1[1] - p2[1]
+        return math.sqrt(x ** 2 + y ** 2)
+
+    def correct_points(p1, p2, dist_2d, dist_3d, ratio1, ratio2):
+        # Pulls points together if they are close enough
+        # and moves them away from each other if they are far apart enough
+        ratio = dist_2d / dist_3d
+        if ratio > ratio1:
+            # Move point apart making the vectors longer
+            x_shift = (p2[0] - p1[0]) * (1 - ratio) * 1.25  # magic numbers that work well
+            y_shift = (p2[1] - p1[1]) * (1 - ratio) * 1.25
+            p1[0] -= x_shift
+            p1[1] -= y_shift
+        elif ratio < ratio2:
+            x_shift = (p2[0] - p1[0]) * ratio * 0.8
+            y_shift = (p2[1] - p1[1]) * ratio * 0.8
+            p1[0] += x_shift
+            p1[1] += y_shift
+
+    p2p1_2d_dist = euclid_dist(p2, p1)
+    p2p3_2d_dist = euclid_dist(p2, p3)
+    ratio1 = 0.7  # magic number that work well
+    ratio2 = 0.275  # magic number that work well
+    correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio1, ratio2)
+    correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio1, ratio2)
 
     return compute_angle_2vec_V3(p1, p2, p3, p2p1_dist, p2p3_dist)
 
