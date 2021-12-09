@@ -204,7 +204,7 @@ def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
         ])
 
     ls_p, rs_p = left_shoulder_p, right_shoulder_p
-    ls_p, rs_p = np.array([ls_p[0], ls_p[1]]), np.array([rs_p[0], rs_p[1]])
+    ls_p, rs_p = np.array([ls_p[0], ls_p[2]]), np.array([rs_p[0], rs_p[2]])
     ls_rs_vec = rs_p - ls_p
     # Equivalent to rotating the vector by 90 degrees counterclockwise
     ls_rs_vec_normal = np.array([-ls_rs_vec[1], ls_rs_vec[0]])
