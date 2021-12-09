@@ -180,38 +180,82 @@ def angle2vecs_V2(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
 
 
 # Only for elbows
-def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_keys):
-    def euclid_dist(p1, p2):
-        x = p1[0] - p2[0]
-        y = p1[1] - p2[1]
-        return math.sqrt(x**2 + y**2)
-
-    def correct_points(p1, p2, dist_2d, dist_3d, ratio_diff):
-        # Pulls points together if they are close enough
-        # and moves them away from each other if they are far apart enough
-        _ratio_diff = 1 - dist_2d / dist_3d
-        if 0 < _ratio_diff < ratio_diff:
-            x_shift = (p2[0] - p1[0]) * _ratio_diff * 1.25  # magic numbers that work well
-            y_shift = (p2[1] - p1[1]) * _ratio_diff * 1.25
-            p1[0] -= x_shift
-            p1[1] -= y_shift
-        elif 0 < 1 - _ratio_diff < ratio_diff:
-            x_shift = (p2[0] - p1[0]) * (1 - _ratio_diff)
-            y_shift = (p2[1] - p1[1]) * (1 - _ratio_diff)
-            p1[0] += x_shift
-            p1[1] += y_shift
-
+def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_keys, left_shoulder_p, right_shoulder_p):
     p1 = extract_point(points2d, points3d, points_keys[0])
     p2 = extract_point(points2d, points3d, points_keys[1])
     p3 = extract_point(points2d, points3d, points_keys[2])
     p2p1_dist = limb_lengths[limb_lengths_keys[0]]
     p2p3_dist = limb_lengths[limb_lengths_keys[1]]
 
-    #p2p1_2d_dist = euclid_dist(p2, p1)
-    #p2p3_2d_dist = euclid_dist(p2, p3)
-    #ratio_diff = 0.5  # magic number that work well
-    #correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio_diff)
-    #correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio_diff)
+    # --- Magical points correction
+    def euclid_dist(p1, p2):
+        x = p1[0] - p2[0]
+        y = p1[1] - p2[1]
+        return math.sqrt(x**2 + y**2)
+
+    def correct_points(p1, p2, dist_2d, dist_3d, ratio1, ratio2):
+        # Pulls points together if they are close enough
+        # and moves them away from each other if they are far apart enough
+        ratio = dist_2d / dist_3d
+        if ratio > ratio1:
+            # Move point apart making the vectors longer
+            x_shift = (p2[0] - p1[0]) * (1 - ratio) * 1.25  # magic numbers that work well
+            y_shift = (p2[1] - p1[1]) * (1 - ratio) * 1.25
+            p1[0] -= x_shift
+            p1[1] -= y_shift
+        elif ratio < ratio2:
+            x_shift = (p2[0] - p1[0]) * ratio * 0.8
+            y_shift = (p2[1] - p1[1]) * ratio * 0.8
+            p1[0] += x_shift
+            p1[1] += y_shift
+
+    p2p1_2d_dist = euclid_dist(p2, p1)
+    p2p3_2d_dist = euclid_dist(p2, p3)
+    ratio1 = 0.7  # magic number that work well
+    ratio2 = 0.275  # magic number that work well
+    correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio1, ratio2)
+    correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio1, ratio2)
+
+    # --- Correcting depth based on how shoulders are located in space
+    def find_angle(v1, v2):
+        # Finds a singed angle between to vectors.
+        # If v2 is a rotated version of v1 by A degrees (A is positive), the A is returned,
+        # otherwise -A is returned.
+        norm_prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
+        angle = np.degrees(np.arccos(norm_prod))
+        return angle * -np.sign(np.cross(v1, v2))
+
+    def make_rotmat(angle):
+        angle = np.radians(angle)
+        return np.array([
+            [np.cos(angle), -np.sin(angle)],
+            [np.sin(angle), np.cos(angle)]
+        ])
+
+    ls_p, rs_p = left_shoulder_p, right_shoulder_p
+    ls_p, rs_p = np.array([ls_p[0], ls_p[1]]), np.array([rs_p[0], rs_p[1]])
+    ls_rs_vec = rs_p - ls_p
+    # Equivalent to rotating the vector by 90 degrees counterclockwise
+    ls_rs_vec_normal = np.array([-ls_rs_vec[1], ls_rs_vec[0]])
+
+    # Normal vector that points to the camera
+    camera_normal = [0, -1]
+    angle = find_angle(ls_rs_vec_normal, camera_normal)
+    rotmat = make_rotmat(-angle)
+
+    # Rotate points so that the shoulders normal has the same direction as the camera_normal
+    middle_point = (ls_p + rs_p) / 2  # Every point is rotated around the middle point
+
+    def compute_correct_z(init_point, middle_point, rotmat):
+        init_point_vec = init_point - middle_point
+        corrected_point_vec = rotmat.dot(init_point_vec)
+        corrected_point = corrected_point_vec + middle_point
+        return corrected_point[1]
+
+    p1[2] = compute_correct_z(np.array([p1[0], p1[2]]), middle_point, rotmat)
+    p2[2] = compute_correct_z(np.array([p2[0], p2[2]]), middle_point, rotmat)
+    p3[2] = compute_correct_z(np.array([p3[0], p3[2]]), middle_point, rotmat)
+
     return compute_angle_2vec_V3(p1, p2, p3, p2p1_dist, p2p3_dist)
 
 
@@ -282,14 +326,22 @@ def right_elbow_angle(points2d, points3d, limb_lengths):
     # Right shoulder, right elbow, right wrist
     point_keys = ['p5', 'p7', 'p9']
     lengths_keys = ['se', 'ew']
-    return angle2vecs_V3(points2d, points3d, point_keys, limb_lengths, lengths_keys)
+    # Left shoulder
+    ls_p = extract_point(points2d, points3d, 'p4')
+    # Left shoulder
+    rs_p = extract_point(points2d, points3d, 'p5')
+    return angle2vecs_V3(points2d, points3d, point_keys, limb_lengths, lengths_keys, ls_p, rs_p)
 
 
 def left_elbow_angle(points2d, points3d, limb_lengths):
     # Left shoulder, left elbow, left wrist
     point_keys = ['p4', 'p6', 'p8']
     lengths_keys = ['se', 'ew']
-    return angle2vecs_V3(points2d, points3d, point_keys, limb_lengths, lengths_keys)
+    # Left shoulder
+    ls_p = extract_point(points2d, points3d, 'p4')
+    # Left shoulder
+    rs_p = extract_point(points2d, points3d, 'p5')
+    return angle2vecs_V3(points2d, points3d, point_keys, limb_lengths, lengths_keys, ls_p, rs_p)
 
 
 def right_knee_angle(points2d, points3d, limb_lengths):
