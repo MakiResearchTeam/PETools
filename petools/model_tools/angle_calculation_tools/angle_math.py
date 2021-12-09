@@ -223,9 +223,9 @@ def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
         corrected_point = corrected_point_vec + middle_point
         return corrected_point[1]
 
-    p1[2] = compute_correct_z(np.array([p1[0], p1[2]]), middle_point, rotmat)
-    p2[2] = compute_correct_z(np.array([p2[0], p2[2]]), middle_point, rotmat)
-    p3[2] = compute_correct_z(np.array([p3[0], p3[2]]), middle_point, rotmat)
+    #p1[2] = compute_correct_z(np.array([p1[0], p1[2]]), middle_point, rotmat)
+    #p2[2] = compute_correct_z(np.array([p2[0], p2[2]]), middle_point, rotmat)
+    #p3[2] = compute_correct_z(np.array([p3[0], p3[2]]), middle_point, rotmat)
 
     # --- Magical points correction
     def euclid_dist(p1, p2):
@@ -252,7 +252,7 @@ def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
     p2p1_2d_dist = euclid_dist(p2, p1)
     p2p3_2d_dist = euclid_dist(p2, p3)
     ratio1 = 0.85  # magic number that work well
-    ratio2 = 0.25  # magic number that work well, -1 means the corresponding correction won't happen
+    ratio2 = 0.4  # magic number that work well, -1 means the corresponding correction won't happen
     correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio1, ratio2)
     correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio1, ratio2)
 
