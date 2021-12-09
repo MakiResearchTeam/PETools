@@ -120,9 +120,9 @@ def compute_angle_2vec_V3(p1: list, p2: list, p3: list, p1p2_dist: float, p2p3_d
         Angle between vectors p2-p1 and p2-p3.
     """
     # v1 usually corresponds to a vector lying on shoulders or on pelvis.
-    v1 = compute_cuboid_diag(p2, p1, p1p2_dist, False)
+    v1 = compute_cuboid_diag(p2, p1, p1p2_dist, p2[2] < p1[2])
     # v2 usually corresponds to a vector pointing to an elbow or to a knee.
-    v2 = compute_cuboid_diag(p2, p3, p2p3_dist, False)
+    v2 = compute_cuboid_diag(p2, p3, p2p3_dist, p2[2] > p3[2])
     prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
     return float(np.arccos(prod) * 180 / np.pi)
 
@@ -207,11 +207,11 @@ def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
     p2p1_dist = limb_lengths[limb_lengths_keys[0]]
     p2p3_dist = limb_lengths[limb_lengths_keys[1]]
 
-    p2p1_2d_dist = euclid_dist(p2, p1)
-    p2p3_2d_dist = euclid_dist(p2, p3)
-    ratio_diff = 0.5  # magic number that work well
-    correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio_diff)
-    correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio_diff)
+    #p2p1_2d_dist = euclid_dist(p2, p1)
+    #p2p3_2d_dist = euclid_dist(p2, p3)
+    #ratio_diff = 0.5  # magic number that work well
+    #correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio_diff)
+    #correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio_diff)
     return compute_angle_2vec_V3(p1, p2, p3, p2p1_dist, p2p3_dist)
 
 
