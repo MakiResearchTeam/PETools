@@ -252,7 +252,7 @@ def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
     p2p1_2d_dist = euclid_dist(p2, p1)
     p2p3_2d_dist = euclid_dist(p2, p3)
     ratio1 = 0.7  # magic number that work well
-    ratio2 = 0.275  # magic number that work well
+    ratio2 = -1  # magic number that work well, -1 means the corresponding correction won't happen
     correct_points(p1, p2, p2p1_2d_dist, p2p1_dist, ratio1, ratio2)
     correct_points(p3, p2, p2p3_2d_dist, p2p3_dist, ratio1, ratio2)
 
