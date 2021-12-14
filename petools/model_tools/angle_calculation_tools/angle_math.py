@@ -62,7 +62,7 @@ def compute_angle_2vec(p1: list, p2: list, p3: list, p1p2_dist: float, p2p3_dist
     v1 = compute_cuboid_diag(p2, p1, p1p2_dist, p2[2] < p1[2])
     # v2 usually corresponds to a vector pointing to an elbow or to a knee.
     v2 = compute_cuboid_diag(p2, p3, p2p3_dist, False)
-    prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
+    prod = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
     return float(np.arccos(prod) * 180 / np.pi)
 
 
@@ -93,7 +93,7 @@ def compute_angle_2vec_V2(p1: list, p2: list, p3: list, p1p2_dist: float, p2p3_d
     v1 = compute_cuboid_diag(p2, p1, p1p2_dist, True)
     # v2 usually corresponds to a vector pointing to an elbow or to a knee.
     v2 = compute_cuboid_diag(p2, p3, p2p3_dist, False)
-    prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
+    prod = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
     return float(np.arccos(prod) * 180 / np.pi)
 
 
@@ -123,7 +123,7 @@ def compute_angle_2vec_V3(p1: list, p2: list, p3: list, p1p2_dist: float, p2p3_d
     v1 = compute_cuboid_diag(p2, p1, p1p2_dist, p2[2] < p1[2])
     # v2 usually corresponds to a vector pointing to an elbow or to a knee.
     v2 = compute_cuboid_diag(p2, p3, p2p3_dist, p2[2] > p3[2])
-    prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
+    prod = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
     return float(np.arccos(prod) * 180 / np.pi)
 
 
@@ -147,7 +147,7 @@ def compute_angle_1vec(p1, p2, p1p2_dist):
     """
     # v1 usually corresponds to a vector pointing to an elbow or a knee.
     v1 = compute_cuboid_diag(p1, p2, p1p2_dist, False)
-    prod = np.dot([0, 1, 0], v1) / np.linalg.norm(v1)
+    prod = np.dot([0, 1, 0], v1) / (np.linalg.norm(v1) + 1e-6)
     return float(np.arccos(prod) * 180 / np.pi)
 
 
@@ -192,7 +192,7 @@ def angle2vecs_V3(points2d, points3d, points_keys, limb_lengths, limb_lengths_ke
         # Finds a singed angle between to vectors.
         # If v2 is a rotated version of v1 by A degrees (A is positive), the A is returned,
         # otherwise -A is returned.
-        norm_prod = np.dot(v1, v2) / np.linalg.norm(v1) / np.linalg.norm(v2)
+        norm_prod = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
         angle = np.degrees(np.arccos(norm_prod))
         return angle * -np.sign(np.cross(v1, v2))
 

@@ -79,9 +79,9 @@ class DynamicLengthCalculator:
         h_id_2_length_data = {}
         for single_pred_data in preds[PosePredictorInterface.HUMANS]:
             result_dict = {}
-            human_id = str(single_pred_data[0])
+            human_id = str(single_pred_data['human_id'])
             # Check pose
-            pose_name, pose_conf = single_pred_data[3]
+            pose_name, pose_conf = single_pred_data['human_pose_name'], single_pred_data['human_pose_confidence']
             if pose_name == self._name_neutral_pose and pose_conf >= self._pose_conf_threshold:
                 # +1 for counter if pose is neutral
                 is_human_here = self._counter_neutral_pose_dict.get(human_id)
@@ -159,9 +159,9 @@ class DynamicLengthCalculator:
 
         return avg_length_dict
 
-    def calculate_length_from_pred(self, pred: Tuple[int, dict, dict, Tuple[str, float]]) -> Dict[str, float]:
+    def calculate_length_from_pred(self, pred: dict) -> Dict[str, float]:
         name_limb2length = dict()
-        points_2d = np.asarray(list(pred[1].values()), dtype=np.float32)
+        points_2d = np.asarray(list(pred['human_2d'].values()), dtype=np.float32)
         for name_prop, indxes_list in PROPORTIONS_INDX.items():
             all_lengths = []
             for p1_i, p2_i in indxes_list:

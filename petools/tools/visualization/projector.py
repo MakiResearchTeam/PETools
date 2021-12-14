@@ -11,7 +11,8 @@ def convert_to_3dnp(preds, centering_point=None):
     ids = []
     points3d_list = []
     centers = []
-    for id, points2d, points3d, pose_info, angles_info in humans:
+    for human in humans:
+        id, points2d, points3d = human['human_id'], human['human_2d'], human['human_3d']
         ids.append(id)
         points3d_list.append(dict_to_numpy(points3d))
         if centering_point:
@@ -36,7 +37,13 @@ def numpy_to_dict2d(points):
 def create_fake_preds(ids, dicts_points2d):
     humans = []
     for id, dict_points2d in zip(ids, dicts_points2d):
-        humans.append((id, dict_points2d, None, ('None', 0.0)))
+        humans.append({
+            'human_id':id,
+            'human_3d': dict_points2d,
+            'human_2d': None,
+            'human_pose_name':'None',
+            'human_pose_confidence': 0.0
+        })
 
     return {'humans': humans}
 

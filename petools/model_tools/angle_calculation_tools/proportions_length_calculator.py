@@ -62,8 +62,8 @@ class ProportionsLengthCalculator:
         h_id_2_length_data = {}
         for single_pred_data in preds[PosePredictorInterface.HUMANS]:
             result_dict = {}
-            human_id = str(single_pred_data[0])
-            points_2d = np.asarray(list(single_pred_data[1].values()), dtype=np.float32)
+            human_id = str(single_pred_data['human_id'])
+            points_2d = np.asarray(list(single_pred_data['human_2d'].values()), dtype=np.float32)
             main_length = self.calculate_main_length(points_2d)
 
             for name_prop, prop_value in self._proportions.items():

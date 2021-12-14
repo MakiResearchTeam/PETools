@@ -49,10 +49,7 @@ class AngleCalculator:
         if self._name_angle_to_calc is None:
             self._name_angle_to_calc = list(self._name_angle_2_func.keys())
 
-    def __call__(
-            self, preds: Mapping[str, List[Tuple[int, dict, dict, Tuple[str, float]]]],
-            lengths: Mapping[str, Mapping[str, float]]) -> Mapping[
-        str, List[Tuple[int, dict, dict, Tuple[str, float], Dict[str, float]]]]:
+    def __call__(self, preds: dict, lengths: dict) -> dict:
         """
 
         Parameters
@@ -86,9 +83,9 @@ class AngleCalculator:
         for i, (pred, pred_new) in enumerate(
                 zip(preds[PosePredictorInterface.HUMANS], new_dict[PosePredictorInterface.HUMANS])
         ):
-            human_id = str(pred[0])
-            points2d = pred[1]
-            points3d = pred[2]
+            human_id = str(pred['human_id'])
+            points2d = pred['human_2d']
+            points3d = pred['human_3d']
 
             # Take length for this human
             limb_lengths = lengths.get(human_id)
@@ -110,15 +107,12 @@ class AngleCalculator:
                     limb_lengths=limb_lengths
                 )
 
-                if math.isnan(angle):
+                if math.isnan(angle) or math.isinf(angle):
                     angle = -1
 
                 result_angle_dict[name_angle] = angle
 
-            new_tuple = (
-                *pred_new,  # Keep original dict safe!
-                result_angle_dict
-            )
-            new_dict[PosePredictorInterface.HUMANS][i] = new_tuple
+            pred_new['angles'] = result_angle_dict
+            new_dict[PosePredictorInterface.HUMANS][i] = pred_new
 
         return new_dict

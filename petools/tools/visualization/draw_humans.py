@@ -84,13 +84,13 @@ def draw_humans(
         humans_ = humans.get(PosePredictorInterface.HUMANS)
         assert humans_ is not None, f"Received dictionary which does not contain '{PosePredictorInterface.HUMANS}' key. " \
                         f'Received dict={humans}'
-        humans_ids = [id for id, human_2d, human_3d, pose_info in humans_]
-        humans = [human_2d for id, human_2d, human_3d, pose_info in humans_]
+        humans_ids = [human['human_id'] for human in humans_]
+        humans = [human['human_2d'] for human in humans_]
 
         if draw_pose_name:
-            pose_name_list = [pose_info[0] for id, human_2d, human_3d, pose_info in humans_]
+            pose_name_list = [human['human_pose_name'] for human in humans_]
         if draw_pose_conf:
-            pose_conf_list = [pose_info[1] for id, human_2d, human_3d, pose_info in humans_]
+            pose_conf_list = [human['human_pose_confidence'] for human in humans_]
 
     # No humans to draw
     if len(humans) == 0:

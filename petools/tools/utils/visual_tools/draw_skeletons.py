@@ -44,24 +44,24 @@ def draw_skeletons_on_image(
     """
     predictions_humans = predictions[PosePredictorInterface.HUMANS]
     # 1 - index for 2d points
-    humans = [list(single_h[1].values()) for single_h in predictions_humans]
+    humans = [list(single_h['human_2d'].values()) for single_h in predictions_humans]
     if draw_pose_name:
-        pose_name_list = [single_h[3][0] for single_h in predictions_humans]
+        pose_name_list = [single_h['human_pose_name'] for single_h in predictions_humans]
     else:
         pose_name_list = None
 
     if draw_pose_conf:
-        pose_conf_class_list = [single_h[3][1] for single_h in predictions_humans]
+        pose_conf_class_list = [single_h['human_pose_confidence'] for single_h in predictions_humans]
     else:
         pose_conf_class_list = None
 
     if draw_pose_angle:
-        pose_angle_list = [list(single_h[4].values()) for single_h in predictions_humans]
+        pose_angle_list = [list(single_h['angles'].values()) for single_h in predictions_humans]
     else:
         pose_angle_list = None
 
     if draw_pose_angle_name:
-        pose_angle_name_list = [list(single_h[4].keys()) for single_h in predictions_humans]
+        pose_angle_name_list = [list(single_h['angles'].keys()) for single_h in predictions_humans]
     else:
         pose_angle_name_list = None
 
