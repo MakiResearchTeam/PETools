@@ -30,7 +30,7 @@ class ProportionsLengthCalculator:
         """
         self._proportions = proportions
         self._main_line_indx = main_line_indx
-        self._prev_value = None
+        self._prev_value = 0
 
     def __call__(self, preds: Mapping[str, List[Tuple[int, dict, dict, Tuple[str, float]]]]) -> Dict[str, Dict[str, float]]:
         """
@@ -82,9 +82,9 @@ class ProportionsLengthCalculator:
         for p1, p2 in self._main_line_indx:
             p1_data, p2_data = data[p1], data[p2]
             if p1_data[-1] < 1e-3 or p2_data[-1] < 1e-3:
-                continue # One of the points - are not visible
-            length_s = self._calculate_length_line(p1_data[:-1], p2_data[:-1]) # Skip prob value
-            lines_length.append(float(length_s)) # Get rid of numpy type
+                continue  # One of the points - are not visible
+            length_s = self._calculate_length_line(p1_data[:-1], p2_data[:-1])  # Skip prob value
+            lines_length.append(float(length_s))  # Get rid of numpy type
 
         if len(lines_length) == 0:
             assert self._prev_value is not None
