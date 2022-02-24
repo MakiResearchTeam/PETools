@@ -34,7 +34,8 @@ def draw_humans(
         draw_pose_conf: bool = False, pose_conf_position: tuple = (100, 170),
         pose_name_list: list = None, pose_conf_list: list = None,
         do_coherence_check: bool = True,
-        root_points: tuple = (2, 0, 1, 4, 5, 10, 11, 22)
+        root_points: tuple = (2, 0, 1, 4, 5, 10, 11, 22),
+        inplace: bool = True
 ):
     """
     Draws all the `humans` on the given image inplace. If you don't want the original image to be modified,
@@ -74,16 +75,26 @@ def draw_humans(
     root_points : tuple
         A list of root points used in the coherence check. From those points tracing will be performed
         to mask the absent (unconnected) part of the skeleton graph.
+    inplace : bool
+        Whether to draw on the provided image or on its copy.
+
+    Returns
+    -------
+    image : np.ndarray
+        And image with drawn skeletons.
 
     Warnings
     --------
     Currently the method draws all the pose info (name and confidence) in one place.
     Please be aware as in case of drawing multiple humans the info for each one will overlap.
     """
+    if not inplace:
+        image = image.copy()
+
     if isinstance(humans, dict):
         humans_ = humans.get(PosePredictorInterface.HUMANS)
         assert humans_ is not None, f"Received dictionary which does not contain '{PosePredictorInterface.HUMANS}' key. " \
-                        f'Received dict={humans}'
+                                    f'Received dict={humans}'
         humans_ids = [human['human_id'] for human in humans_]
         humans = [human['human_2d'] for human in humans_]
 
@@ -132,3 +143,4 @@ def draw_humans(
             do_coherence_check=do_coherence_check,
             root_points=root_points
         )
+    return image
