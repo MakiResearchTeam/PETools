@@ -4,6 +4,7 @@ import numpy as np
 from petools.tools import Human
 from .coherence_check import coherence_check
 from petools.tools.estimate_tools.constants import CONNECT_KP
+from .config import TextDrawConfig
 
 
 def _draw_human(
@@ -13,20 +14,10 @@ def _draw_human(
         color: tuple = (255, 0, 0),
         thickness: int = 2,
         conf_threshold: float = 1e-3,
-
         pose_name: str = None,
         pose_name_position: tuple = (100, 100),
-        pose_name_font: int = cv2.FONT_HERSHEY_SIMPLEX,
-        pose_name_font_scale: int = 2,
-        pose_name_font_color: tuple = (0, 0, 255),
-        pose_name_font_thickness: int = 6,
-
         pose_conf: float = None,
         pose_conf_position: tuple = (120, 120),
-        pose_conf_font: int = cv2.FONT_HERSHEY_SIMPLEX,
-        pose_conf_font_scale: int = 2,
-        pose_conf_font_color: tuple = (0, 0, 255),
-        pose_conf_font_thickness: int = 6
 ):
     """
     Draws a single human on the given image. Note that drawing happens inplace, so if you don't
@@ -51,26 +42,10 @@ def _draw_human(
         Name of the pose class.
     pose_name_position : tuple
         Position where to draw the pose name.
-    pose_name_font : int
-        Pose name's font.
-    pose_name_font_scale : int
-        Scale of the pose name's font.
-    pose_name_font_color : int
-        Color of the pose name's font.
-    pose_name_font_thickness : int
-        Thickness of the pose name's font.
     pose_conf : float, optional
         Confidence of the given pose (class) name.
     pose_conf_position : tuple
         Position where to draw the pose name.
-    pose_conf_font : int
-        Font used to draw the confidence.
-    pose_conf_font_scale : int
-        Scale of the font for confidence.
-    pose_conf_font_color : tuple
-        Position where to draw the confidence.
-    pose_conf_font_thickness : int
-        Thickness of the font for confidence.
     """
     for i in range(len(connect_indices)):
         ind1, ind2 = connect_indices[i]
@@ -89,10 +64,10 @@ def _draw_human(
             image,
             pose_name,
             pose_name_position,
-            pose_name_font,
-            pose_name_font_scale,
-            pose_name_font_color,
-            pose_name_font_thickness
+            TextDrawConfig.POSE_NAME_FONT,
+            TextDrawConfig.POSE_NAME_FONT_SCALE,
+            TextDrawConfig.POSE_NAME_FONT_COLOR,
+            TextDrawConfig.POSE_NAME_FONT_THICKNESS
         )
 
     if pose_name:
@@ -100,10 +75,10 @@ def _draw_human(
             image,
             str(pose_conf),
             pose_conf_position,
-            pose_conf_font,
-            pose_conf_font_scale,
-            pose_conf_font_color,
-            pose_conf_font_thickness
+            TextDrawConfig.POSE_CONF_FONT,
+            TextDrawConfig.POSE_CONF_FONT_SCALE,
+            TextDrawConfig.POSE_CONF_FONT_COLOR,
+            TextDrawConfig.POSE_CONF_FONT_THICKNESS
         )
 
 
