@@ -49,7 +49,8 @@ class PosePredictor(PosePredictorInterface):
             min_h=320,
             expected_w=600,
             norm_mode=CAFFE,
-            gpu_id=0
+            gpu_id=0,
+            is_tracking=True
     ):
         """
         Create Pose Predictor wrapper of PEModel
@@ -87,7 +88,9 @@ class PosePredictor(PosePredictorInterface):
         gpu_id : int or str
             Number of GPU, which must be used to run estimate_tools on it,
             If CPU is needed - enter any symbol (expect digits), for example: ";"
-
+        is_tracking : bool
+            Whether to perform tracking. If set to False, humans will still receive ids, but they will not persist
+            and no smoothing to the skeletons' coordinates will be applied.
         """
 
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
@@ -106,7 +109,12 @@ class PosePredictor(PosePredictorInterface):
         self.__corrector_init = corrector_initializer
         self.__classifier_init = classifier_initializer
         self.__external_human_tracker = human_tracker
+
+        self.__is_tracking = is_tracking
         self._init_model()
+
+    def set_is_tracking(self, is_tracking: bool):
+        self.__is_tracking = is_tracking
 
     def _init_model(self):
         """
@@ -286,8 +294,13 @@ class PosePredictor(PosePredictorInterface):
         humans = self.__human_cleaner(humans)
         # 7. Track humans, assign unique id for every prediction and track human further;
         humans = self.__tracker(humans, image_size=original_in_size)
+        if not self.__is_tracking:
+            # Reset the tracker so that there is no dependence of the next
+            # prediction on the current result.
+            self.__tracker.reset()
         # 8. One Euro algorithm which smooth keypoints movement
-        humans = self.__smoother(humans)
+        if self.__is_tracking:
+            humans = self.__smoother(humans)
         # 9. Corrector, correct predictions;
         # Corrector need source resolution to perform human normalization
         humans = self.__corrector(humans, source_resolution=original_in_size)

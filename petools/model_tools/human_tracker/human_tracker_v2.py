@@ -1,8 +1,9 @@
 import numpy as np
 
+from petools.core import Tracker
 
-class HumanTrackerV2:
 
+class HumanTrackerV2(Tracker):
     def __init__(self, square_percent=0.3):
         """
         Parameters
@@ -10,6 +11,7 @@ class HumanTrackerV2:
         square_percent : float
             Threshold for movement of the avg point.
         """
+        super().__init__()
         self._img_size = None
         self._square_percent = square_percent
 
@@ -23,7 +25,7 @@ class HumanTrackerV2:
         # i.e. has id, otherwise new id will be assign
         image_size = kwargs['image_size']
         if self._img_size is None or self._img_size != image_size:
-            self.reset(new_image_size=image_size, square_percent=self._square_percent)
+            self.reset_(new_image_size=image_size, square_percent=self._square_percent)
 
         used_h = [False]*len(humans)
 
@@ -79,7 +81,7 @@ class HumanTrackerV2:
             return None
         return np.mean(visible_h_np[:, :-1], axis=0)
 
-    def reset(self, new_image_size, square_percent=0.3, force_update=False):
+    def reset_(self, new_image_size, square_percent=0.3, force_update=False):
         """
         Reset parameters of the tracker, if `new_image_size` is different than
         assigned before, otherwise reset will be not applied
@@ -108,4 +110,8 @@ class HumanTrackerV2:
         # Store { human_id : avg_point }
         self._id2mean_point = dict()
         self._id_counter = 0
+        self.debug_log('Internal tracking reset.')
 
+    def reset(self):
+        self.debug_log('Manual tracking rest.')
+        self.reset_(self._img_size, self._square_percent, force_update=True)

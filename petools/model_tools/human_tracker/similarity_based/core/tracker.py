@@ -130,3 +130,4 @@ class SimilarityBasedTracker(Tracker):
         self.similarity.reset()
         self.pairing_protocol.reset()
         self.frame_number = 0
+        self.debug_log('Reset.')
