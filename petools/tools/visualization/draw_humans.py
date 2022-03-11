@@ -105,7 +105,7 @@ def draw_humans(
 
     # No humans to draw
     if len(humans) == 0:
-        return
+        return image
 
     if pose_name_list:
         assert len(pose_name_list) == len(humans)
